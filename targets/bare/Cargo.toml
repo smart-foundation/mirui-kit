@@ -1,0 +1,14 @@
+[workspace]
+
+[package]
+name = "bare"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "no_std bare-metal shell for the mirui file manager"
+
+[dependencies]
+fm = { path = "../../crates/fm" }
+mirui = { version = "=0.51.0", default-features = false, features = ["quad-aa"] }
+critical-section = "1.2"

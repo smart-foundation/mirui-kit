@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = ["crates/fm", "crates/sdl2-link", "targets/desktop", "targets/snapshot"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+mirui = { version = "=0.51.0", default-features = false }
+mirx = { version = "=0.51.0", default-features = false }
+fm = { path = "crates/fm" }
+sdl2-link = { path = "crates/sdl2-link" }

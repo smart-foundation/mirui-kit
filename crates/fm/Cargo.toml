@@ -1,0 +1,19 @@
+[package]
+name = "fm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "no_std Apple-inspired file manager UI built on mirui"
+
+[dependencies]
+mirui = { workspace = true, default-features = false, features = ["quad-aa"] }
+mirx = { workspace = true, default-features = false }
+
+# The test harness is a `std` binary: it needs a `critical-section`
+# implementation, which `mirui/std` provides.
+[dev-dependencies]
+mirui = { workspace = true, default-features = false, features = ["quad-aa", "std"] }
+# The workspace unifies the SDL backend into every host build, so the test
+# binaries need the same linker path as the desktop target.
+sdl2-link = { workspace = true }
