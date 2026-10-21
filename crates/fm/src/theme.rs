@@ -20,6 +20,10 @@ pub const TRAFFIC_YELLOW: ColorToken = ColorToken::custom("traffic_yellow");
 pub const TRAFFIC_GREEN: ColorToken = ColorToken::custom("traffic_green");
 /// Fully transparent, for "no background" cases.
 pub const CLEAR: ColorToken = ColorToken::custom("clear");
+/// The dimming layer behind a modal sheet.
+pub const DIM: ColorToken = ColorToken::custom("dim");
+/// The highlight of a folder that would receive a dropped file.
+pub const DROP: ColorToken = ColorToken::custom("drop");
 
 /// The dark palette.
 pub fn dark_theme() -> Theme {
@@ -40,6 +44,8 @@ pub fn dark_theme() -> Theme {
         (TRAFFIC_YELLOW, Color::rgb(0xFF, 0xBD, 0x2E)),
         (TRAFFIC_GREEN, Color::rgb(0x28, 0xC8, 0x40)),
         (CLEAR, Color::rgba(0, 0, 0, 0)),
+        (DIM, Color::rgba(0, 0, 0, 0x99)),
+        (DROP, Color::rgb(0x1E, 0x5A, 0x33)),
     ])
 }
 
@@ -62,6 +68,8 @@ pub fn light_theme() -> Theme {
         (TRAFFIC_YELLOW, Color::rgb(0xFE, 0xBC, 0x2E)),
         (TRAFFIC_GREEN, Color::rgb(0x28, 0xC8, 0x40)),
         (CLEAR, Color::rgba(0, 0, 0, 0)),
+        (DIM, Color::rgba(0, 0, 0, 0x66)),
+        (DROP, Color::rgb(0xD9, 0xF2, 0xD9)),
     ])
 }
 

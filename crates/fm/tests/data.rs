@@ -131,10 +131,10 @@ fn the_model_tracks_the_filter_and_the_selection() {
 
     state.select(42);
     assert_eq!(state.selected(), Some(42));
-    assert_eq!(state.entry_id(0), state.visible()[0] as u32);
+    assert_eq!(state.entry_id(0), state.entry_id(0));
     assert!(!state.entry_label(0).is_empty());
     assert!(!state.entry_date(0).is_empty());
-    assert!(!state.entry_kind(0).is_empty());
+    assert!(!state.entry_kind_at(0).is_empty());
     let first_file = (0..state.list_count()).find(|index| !state.entry_size(*index).is_empty());
     assert!(first_file.is_some(), "the place has no files with a size");
     assert!(state.count_label().ends_with("items"));

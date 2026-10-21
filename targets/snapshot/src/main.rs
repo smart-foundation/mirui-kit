@@ -60,7 +60,43 @@ fn main() {
     state.select(state.entry_id(0));
     shot(&mut app, "06-selected.png");
 
-    println!("wrote 7 snapshots to artifacts/");
+    // The floating layers.
+    state.set_view(ViewMode::Icons);
+    state.set_place(Place::Documents);
+    state.select(state.entry_id(3));
+    state.open_menu(state.entry_id(3), 300, 180);
+    shot(&mut app, "07-context-menu.png");
+    state.close_menu();
+
+    state.open_dialog(fm::model::DialogKind::NewFolder);
+    shot(&mut app, "08-dialog-new-folder.png");
+    state.close_dialog();
+
+    state.open_dialog(fm::model::DialogKind::GetInfo);
+    shot(&mut app, "09-dialog-info.png");
+    state.close_dialog();
+
+    state.open_palette();
+    state.set_palette_text("new");
+    shot(&mut app, "10-command-palette.png");
+    state.close_palette();
+
+    state.toggle_inspector();
+    shot(&mut app, "11-inspector.png");
+    state.toggle_inspector();
+
+    state.toggle_options();
+    shot(&mut app, "12-view-options.png");
+    state.toggle_options();
+
+    // A file being dragged over a folder.
+    let dragged = state.entry_id(60);
+    state.start_drag(dragged, 420, 300);
+    state.set_drop_target(Some(fm::model::DropTarget::Place(Place::Projects)));
+    shot(&mut app, "13-drag-and-drop.png");
+    state.end_drag();
+
+    println!("wrote 13 snapshots to artifacts/");
 }
 
 fn shot<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>, name: &str) {

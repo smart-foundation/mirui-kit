@@ -2,13 +2,22 @@
 
 use mirui::prelude::*;
 use mirui::ui::widgets::lazy_list::CreateCell;
-use mirui::ui::widgets::{Button, Icon, LazyList, ListItem, ParagraphStyle, Text};
+use mirui::ui::widgets::{Button, LazyList, ListItem, ParagraphStyle, Text};
 
-use crate::data;
-use crate::icons;
-use crate::model::{FmState, ViewMode};
+use crate::model::{DropTarget, FmState, GRID_COLUMNS, ViewMode};
 use crate::theme;
-use crate::ui::kit::pad;
+use crate::ui::kindicon::{kind_icon, kind_icon_at};
+use crate::ui::kit::{pad, pad_h, pad_v};
+
+/// Marks a tile as a drop target, and says which file it holds.
+#[derive(Clone, Copy, Debug)]
+pub struct DropZone {
+    pub position: u32,
+    pub folder: bool,
+    pub place: Option<crate::model::Place>,
+}
+
+impl mirui::ecs::Component for DropZone {}
 
 /// The content pane.
 #[compose]
@@ -16,6 +25,7 @@ pub fn area(fm: model!(FmState)) -> Entity {
     ui! {
         Column (
             grow: 1.0,
+            shrink: 1.0,
             bg_color: ColorToken::Surface
         ) {
             if ${ fm.view() == ViewMode::Icons } {
@@ -27,7 +37,7 @@ pub fn area(fm: model!(FmState)) -> Entity {
     }
 }
 
-/// Icon grid: one tile per file, wrapped over several rows.
+/// Icon grid: fixed columns of tiles, one row per line.
 #[compose]
 fn icon_grid(fm: model!(FmState)) -> Entity {
     ui! {
@@ -36,18 +46,30 @@ fn icon_grid(fm: model!(FmState)) -> Entity {
             grow: 1.0,
             padding: pad(16, 16, 16, 16)
         ) {
-            Row (
+            Column (
                 width: Dimension::percent(100),
-                wrap: FlexWrap::Wrap,
-                column_gap: 6,
+                height: ${ Dimension::px(fm.grid_height()) },
                 row_gap: 10
             ) {
-                // Keyed by the entry index: when the place or the filter
-                // changes, the keys change with it and the tiles are rebuilt
-                // instead of being reused with stale content.
-                walk ${ { let _ = fm.revision(); fm.grid_indices() } } with index by index {
-                    cell (fm, index)
+                walk ${ { let _ = fm.revision(); fm.grid_row_indexes() } } with row {
+                    grid_row (fm, row)
                 }
+            }
+        }
+    }
+}
+
+/// The column positions of the icon grid.
+#[allow(dead_code)]
+const COLUMN_INDEXES: [u32; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
+
+/// One row of tiles.
+#[compose]
+fn grid_row(fm: model!(FmState), row: u32) -> Entity {
+    ui! {
+        Row (width: Dimension::percent(100), height: 98, column_gap: 6) {
+            walk 0..GRID_COLUMNS with column {
+                cell (fm, row * GRID_COLUMNS + column)
             }
         }
     }
@@ -55,17 +77,21 @@ fn icon_grid(fm: model!(FmState)) -> Entity {
 
 /// One file tile.
 #[compose]
-fn cell(fm: model!(FmState), index: u32) -> Entity {
-    let entry = data::entry(index as usize);
+fn cell(fm: model!(FmState), position: u32) -> Entity {
+    let id = fm.entry_id(position);
+    let folder = fm.entry_is_kind(id, 0);
+    let icon_size = fm.icon_size();
     ui! {
         Button (
             width: 104,
             height: 98,
             border_radius: 8,
-            padding: crate::ui::kit::pad_v(0),
-            normal_color: ${ if fm.selected() == Some(entry.id) { theme::SELECTION } else { theme::CLEAR } },
+            padding: pad_v(0),
+            normal_color: ${ if fm.drop_target() == Some(DropTarget::Tile(position)) { theme::DROP } else if fm.selected() == Some(id) { theme::SELECTION } else { theme::CLEAR } },
             pressed_color: theme::SELECTION
-        ) {
+        ) [
+            DropZone { position, folder, place: None }
+        ] {
             Column (
                 width: Dimension::percent(100),
                 height: Dimension::percent(100),
@@ -73,16 +99,24 @@ fn cell(fm: model!(FmState), index: u32) -> Entity {
                 justify: JustifyContent::Center,
                 row_gap: 6
             ) {
-                Icon (path: entry.kind.icon().clone(), color: entry.kind.tint(), width: 42, height: 42)
+                kind_icon (fm, id, icon_size as i32)
                 Text (
-                    text: entry.display_name(),
+                    text: ${ { let _ = fm.revision(); fm.entry_title(id) } },
                     font_size: 11,
                     text_color: ColorToken::OnSurface,
                     paragraph: ParagraphStyle::label()
                 )
             }
         } on Tap {
-            fm.select(entry.id);
+            fm.select(id);
+        } on LongPress {
+            fm.open_menu(id, event.x.to_int(), event.y.to_int());
+        } on DragStart {
+            fm.start_drag(id, event.x.to_int(), event.y.to_int());
+        } on DragMove {
+            fm.drag_to(event.x.to_int(), event.y.to_int());
+        } on DragEnd {
+            fm.end_drag();
         }
     }
 }
@@ -111,25 +145,6 @@ fn create_row(fm: model!(FmState), event: event!(CreateCell)) -> Entity {
     }
 }
 
-/// The icon of a recycled row.
-///
-/// A recycled cell can end up on any entry, and an icon path is not a reactive
-/// property, so every kind gets its own icon and only the matching one stays
-/// visible.
-#[compose]
-fn kind_icon(fm: model!(FmState), item: model!(ListItem)) -> Entity {
-    ui! {
-        Row (width: 14, height: 14) {
-            Icon (path: icons::FOLDER.clone(), color: data::Kind::Folder.tint(), width: 14, height: 14, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(item.index(), 0) } })
-            Icon (path: icons::DOCUMENT.clone(), color: data::Kind::Document.tint(), width: 14, height: 14, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(item.index(), 1) } })
-            Icon (path: icons::IMAGE.clone(), color: data::Kind::Image.tint(), width: 14, height: 14, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(item.index(), 2) } })
-            Icon (path: icons::CODE.clone(), color: data::Kind::Code.tint(), width: 14, height: 14, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(item.index(), 3) } })
-            Icon (path: icons::ARCHIVE.clone(), color: data::Kind::Archive.tint(), width: 14, height: 14, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(item.index(), 4) } })
-            Icon (path: icons::AUDIO.clone(), color: data::Kind::Audio.tint(), width: 14, height: 14, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(item.index(), 5) } })
-        }
-    }
-}
-
 /// A single row of the virtualised list.
 #[compose]
 fn row_cell(fm: model!(FmState), item: model!(ListItem)) -> Entity {
@@ -137,8 +152,8 @@ fn row_cell(fm: model!(FmState), item: model!(ListItem)) -> Entity {
         Button (
             width: Dimension::percent(100),
             height: 26,
-            padding: crate::ui::kit::pad_v(0),
-            normal_color: ${ if fm.selected() == Some(fm.entry_id(item.index())) { theme::SELECTION } else { theme::CLEAR } },
+            padding: pad_v(0),
+            normal_color: ${ { let _ = fm.revision(); if fm.selected() == Some(fm.entry_id(item.index())) { theme::SELECTION } else { theme::CLEAR } } },
             pressed_color: theme::SELECTION
         ) {
             Row (
@@ -146,9 +161,9 @@ fn row_cell(fm: model!(FmState), item: model!(ListItem)) -> Entity {
                 height: 26,
                 align: AlignItems::Center,
                 column_gap: 8,
-                padding: crate::ui::kit::pad_h(12)
+                padding: pad_h(12)
             ) {
-                kind_icon (fm, item)
+                kind_icon_at (fm, item, 14)
                 Text (
                     text: ${ { let _ = fm.revision(); fm.entry_label(item.index()) } },
                     font_size: 12,
@@ -156,19 +171,19 @@ fn row_cell(fm: model!(FmState), item: model!(ListItem)) -> Entity {
                     grow: 1.0
                 )
                 Text (
-                    text: ${ { let _ = fm.revision(); fm.entry_kind(item.index()) } },
+                    text: ${ { let _ = fm.revision(); fm.entry_kind_at(item.index()) } },
                     font_size: 11,
                     text_color: ColorToken::OnSurfaceVariant,
                     width: 78
                 )
                 Text (
-                    text: ${ { let _ = fm.revision(); fm.entry_size(item.index()) } },
+                    text: ${ { let _ = fm.revision(); fm.entry_size_at(item.index()) } },
                     font_size: 11,
                     text_color: ColorToken::OnSurfaceVariant,
                     width: 72
                 )
                 Text (
-                    text: ${ { let _ = fm.revision(); fm.entry_date(item.index()) } },
+                    text: ${ { let _ = fm.revision(); fm.entry_date_at(item.index()) } },
                     font_size: 11,
                     text_color: ColorToken::OnSurfaceVariant,
                     width: 80

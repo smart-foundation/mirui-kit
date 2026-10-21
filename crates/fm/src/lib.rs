@@ -32,6 +32,7 @@ pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) -> model:
     let state = app.add_model(model::FmState::new()).finish();
     state.recompute();
     app.add_system(sync::theme_sync::system(state.clone()));
+    app.add_system(sync::drop_target::system(state.clone()));
     let root = app.spawn_root().id();
     app.compose(root, ui::shell(state.clone()));
     state

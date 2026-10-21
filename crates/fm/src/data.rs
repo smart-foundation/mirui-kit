@@ -279,6 +279,17 @@ pub const fn place_count(place: Place) -> usize {
     end - start
 }
 
+/// The place an absolute entry index belongs to.
+pub fn place_of(index: usize) -> crate::model::Place {
+    for place in PLACES {
+        let (start, end) = place_range(place);
+        if index >= start && index < end {
+            return place;
+        }
+    }
+    crate::model::Place::Documents
+}
+
 /// Entry at an absolute index.
 pub fn entry(index: usize) -> &'static Entry {
     &ENTRIES[index.min(ENTRY_COUNT - 1)]

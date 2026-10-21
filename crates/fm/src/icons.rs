@@ -59,3 +59,9 @@ pub static CHEVRON_LEFT: Path = path!(M 15 4 L 7 12 L 15 20 L 17 18 L 11 12 L 17
 
 /// A chevron pointing right.
 pub static CHEVRON_RIGHT: Path = path!(M 9 4 L 17 12 L 9 20 L 7 18 L 13 12 L 7 6 Z);
+
+/// A gear, for the view options.
+pub static GEAR: Path = path!(M 11 2 L 13 2 L 13 5 L 15 6 L 18 4 L 20 6 L 18 9 L 19 11 L 22 11 L 22 14 L 19 14 L 18 16 L 20 19 L 18 21 L 15 19 L 13 20 L 13 22 L 11 22 L 11 20 L 9 19 L 6 21 L 4 19 L 6 16 L 5 14 L 2 14 L 2 11 L 5 11 L 6 9 L 4 6 L 6 4 L 9 6 L 11 5 Z M 12 8 A 4 4 0 1 0 12 16 A 4 4 0 1 0 12 8 Z);
+
+/// A side panel, for the inspector.
+pub static PANEL: Path = path!(M 3 4 L 21 4 L 21 20 L 3 20 Z M 15 4 L 15 20 L 15 4 Z);

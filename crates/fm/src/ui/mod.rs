@@ -1,16 +1,29 @@
-//! The application shell: toolbar, sidebar, content, status bar.
+//! The application shell: toolbar, sidebar, content, inspector, status bar,
+//! and the layers that float above them — context menu, modal sheets, the
+//! command palette and the drag badge.
 
 use mirui::prelude::*;
 
 use crate::model::FmState;
 use crate::ui::chrome::toolbar;
 use crate::ui::content::area;
-use crate::ui::sidebar::panel;
-use crate::ui::status::bar;
+use crate::ui::dialog::dialog_layer;
+use crate::ui::inspector::panel;
+use crate::ui::menu::{drag_badge, menu_layer};
+use crate::ui::options::options_layer;
+use crate::ui::palette::palette_layer;
+use crate::ui::sidebar::sidebar;
+use crate::ui::status::{bar, toast};
 
 pub mod chrome;
 pub mod content;
+pub mod dialog;
+pub mod inspector;
+pub mod kindicon;
 pub mod kit;
+pub mod menu;
+pub mod options;
+pub mod palette;
 pub mod sidebar;
 pub mod status;
 
@@ -25,10 +38,17 @@ pub fn shell(fm: model!(FmState)) -> Entity {
         ) {
             toolbar (fm)
             Row (width: Dimension::percent(100), grow: 1.0) {
-                panel (fm)
+                sidebar (fm)
                 area (fm)
+                panel (fm)
             }
             bar (fm)
+            options_layer (fm)
+            menu_layer (fm)
+            dialog_layer (fm)
+            palette_layer (fm)
+            toast (fm)
+            drag_badge (fm)
         }
     }
 }

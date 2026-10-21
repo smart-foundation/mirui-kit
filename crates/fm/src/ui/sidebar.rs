@@ -7,13 +7,14 @@ use mirui::ui::widgets::{Icon, Text};
 
 use crate::data;
 use crate::icons;
-use crate::model::{FmState, Place};
+use crate::model::{DropTarget, FmState, Place};
 use crate::theme;
+use crate::ui::content::DropZone;
 use crate::ui::kit::pad;
 
 /// The sidebar pane.
 #[compose]
-pub fn panel(fm: model!(FmState)) -> Entity {
+pub fn sidebar(fm: model!(FmState)) -> Entity {
     ui! {
         Column (
             id: "sidebar",
@@ -58,9 +59,10 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
             align: AlignItems::Center,
             column_gap: 8,
             padding: crate::ui::kit::pad_h(6),
-            bg_color: ${ if fm.place() == place { theme::SELECTION } else { theme::CLEAR } }
+            bg_color: ${ if fm.drop_target() == Some(DropTarget::Place(place)) { theme::DROP } else if fm.place() == place { theme::SELECTION } else { theme::CLEAR } }
         ) [
             HitTarget
+            DropZone { position: 0, folder: true, place: Some(place) }
         ] {
             Icon (
                 path: data::place_icon(place).clone(),

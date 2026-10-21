@@ -1,11 +1,11 @@
 //! The window: title bar, toolbar, search and view switcher.
 
 use mirui::prelude::*;
-use mirui::ui::widgets::{Icon, Placeholder, Text, TextEditing, TextInput};
+use mirui::ui::widgets::{Button, Icon, Placeholder, Text, TextEditing, TextInput};
 
 use crate::data;
 use crate::icons;
-use crate::model::{FmState, ViewMode};
+use crate::model::{DialogKind, FmState, ViewMode};
 use crate::theme;
 use crate::ui::kit::{pad, pad_h, pad_v};
 
@@ -40,8 +40,12 @@ pub fn toolbar(fm: model!(FmState)) -> Entity {
                 )
             }
             View (grow: 1.0)
+            palette_button (fm)
+            new_folder_button (fm)
             view_switch (fm)
             search_field (fm)
+            options_button (fm)
+            inspector_button (fm)
             theme_button (fm)
         }
     }
@@ -111,6 +115,75 @@ fn forward_button(fm: model!(FmState)) -> Entity {
     }
 }
 
+/// Opens the command palette.
+#[compose]
+fn palette_button(fm: model!(FmState)) -> Entity {
+    ui! {
+        Button (
+            id: "toolbar_palette",
+            width: 96,
+            height: 26,
+            border_radius: 6,
+            padding: pad_v(0),
+            normal_color: theme::CLEAR,
+            pressed_color: theme::SELECTION
+        ) {
+            Row (
+                width: Dimension::percent(100),
+                height: 26,
+                align: AlignItems::Center,
+                column_gap: 6,
+                padding: pad_h(8)
+            ) {
+                Icon (path: icons::SEARCH.clone(), color: ColorToken::OnSurfaceVariant, width: 13, height: 13)
+                Text (
+                    text: "Cmd K",
+                    grow: 1.0,
+                    font_size: 11,
+                    text_color: ColorToken::OnSurfaceVariant
+                )
+            }
+        } on Tap {
+            fm.open_palette();
+        }
+    }
+}
+
+/// Creates a new folder.
+#[compose]
+fn new_folder_button(fm: model!(FmState)) -> Entity {
+    ui! {
+        Button (
+            id: "toolbar_new_folder",
+            width: 96,
+            height: 26,
+            border_radius: 6,
+            padding: pad_v(0),
+            normal_color: theme::CLEAR,
+            pressed_color: theme::SELECTION
+        ) {
+            Row (
+                width: Dimension::percent(100),
+                height: 26,
+                align: AlignItems::Center,
+                column_gap: 6,
+                padding: pad_h(8)
+            ) {
+                Icon (path: icons::FOLDER.clone(), color: ColorToken::OnSurfaceVariant, width: 13, height: 13)
+                Text (
+                    text: "New Folder",
+                    grow: 1.0,
+                    font_size: 11,
+                    text_color: ColorToken::OnSurfaceVariant
+                )
+            }
+        } on Tap {
+            fm.set_folder_text("");
+            fm.open_dialog(DialogKind::NewFolder);
+        }
+    }
+}
+
 /// Icon grid / list segmented control.
 #[compose]
 fn view_switch(fm: model!(FmState)) -> Entity {
@@ -162,7 +235,7 @@ fn view_switch(fm: model!(FmState)) -> Entity {
 fn search_field(fm: model!(FmState)) -> Entity {
     ui! {
         Row (
-            width: 210,
+            width: 190,
             height: 26,
             border_radius: 7,
             bg_color: ColorToken::Surface,
@@ -171,13 +244,56 @@ fn search_field(fm: model!(FmState)) -> Entity {
             padding: pad_h(6)
         ) {
             Icon (path: icons::SEARCH.clone(), color: ColorToken::OnSurfaceVariant, width: 13, height: 13)
-            TextInput (width: 176, height: 20) [
+            TextInput (width: 156, height: 20) [
                 TextEditing::new(fm.document()),
                 Placeholder("Search"),
             ] on TextEditing::Changed {
                 let text = fm.document_text();
                 fm.set_query(&text);
             }
+        }
+    }
+}
+
+/// Opens the view options.
+#[compose]
+fn options_button(fm: model!(FmState)) -> Entity {
+    ui! {
+        View (
+            id: "toolbar_options",
+            width: 28,
+            height: 26,
+            border_radius: 6,
+            align: AlignItems::Center,
+            justify: JustifyContent::Center
+        ) [
+            HitTarget
+        ] {
+            Icon (path: icons::GEAR.clone(), color: ColorToken::OnSurface, width: 15, height: 15)
+        } on Tap {
+            fm.toggle_options();
+        }
+    }
+}
+
+/// Shows or hides the inspector.
+#[compose]
+fn inspector_button(fm: model!(FmState)) -> Entity {
+    ui! {
+        View (
+            id: "toolbar_inspector",
+            width: 28,
+            height: 26,
+            border_radius: 6,
+            align: AlignItems::Center,
+            justify: JustifyContent::Center,
+            bg_color: ${ if fm.inspector() { theme::SELECTION } else { theme::CLEAR } }
+        ) [
+            HitTarget
+        ] {
+            Icon (path: icons::PANEL.clone(), color: ColorToken::OnSurface, width: 15, height: 15)
+        } on Tap {
+            fm.toggle_inspector();
         }
     }
 }
