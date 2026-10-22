@@ -26,6 +26,16 @@ pub const DIM: ColorToken = ColorToken::custom("dim");
 pub const DROP: ColorToken = ColorToken::custom("drop");
 /// The raised surface used by the context menu button.
 pub const SURFACE: ColorToken = ColorToken::custom("raised");
+/// The surface of a hovered item.
+pub const HOVER: ColorToken = ColorToken::custom("hover");
+/// The surface of a pressed item.
+pub const PRESSED: ColorToken = ColorToken::custom("pressed");
+/// The background of a hovered menu entry.
+pub const MENU_HOVER: ColorToken = ColorToken::custom("menu_hover");
+/// The background of a resting menu entry.
+pub const MENU_REST: ColorToken = ColorToken::custom("menu_rest");
+/// The thumb of a scroll bar.
+pub const SCROLLBAR: ColorToken = ColorToken::custom("scrollbar");
 
 /// The dark palette.
 pub fn dark_theme() -> Theme {
@@ -49,6 +59,11 @@ pub fn dark_theme() -> Theme {
         (DIM, Color::rgba(0, 0, 0, 0x99)),
         (DROP, Color::rgb(0x1E, 0x5A, 0x33)),
         (SURFACE, Color::rgb(0x45, 0x45, 0x4A)),
+        (HOVER, Color::rgba(0xFF, 0xFF, 0xFF, 0x14)),
+        (PRESSED, Color::rgba(0xFF, 0xFF, 0xFF, 0x24)),
+        (MENU_HOVER, Color::rgba(0x0A, 0x84, 0xFF, 0x4D)),
+        (MENU_REST, Color::rgba(0, 0, 0, 0)),
+        (SCROLLBAR, Color::rgba(0xFF, 0xFF, 0xFF, 0x57)),
     ])
 }
 
@@ -74,6 +89,11 @@ pub fn light_theme() -> Theme {
         (DIM, Color::rgba(0, 0, 0, 0x66)),
         (DROP, Color::rgb(0xD9, 0xF2, 0xD9)),
         (SURFACE, Color::rgb(0xE6, 0xE6, 0xEA)),
+        (HOVER, Color::rgba(0x00, 0x00, 0x00, 0x0D)),
+        (PRESSED, Color::rgba(0x00, 0x00, 0x00, 0x17)),
+        (MENU_HOVER, Color::rgba(0x00, 0x7A, 0xFF, 0x29)),
+        (MENU_REST, Color::rgba(0, 0, 0, 0)),
+        (SCROLLBAR, Color::rgba(0, 0, 0, 0x42)),
     ])
 }
 

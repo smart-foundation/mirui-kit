@@ -16,6 +16,7 @@ patterns get frozen into the OS app suite.
 | ![context menu](artifacts/07-context-menu.png) | ![dialog](artifacts/08-dialog-new-folder.png) |
 | ![command palette](artifacts/10-command-palette.png) | ![inspector](artifacts/11-inspector.png) |
 | ![view options](artifacts/12-view-options.png) | ![drag and drop](artifacts/13-drag-and-drop.png) |
+| ![notifications](artifacts/14-notifications.png) | ![the running app](artifacts/desktop-window.png) |
 
 ## What is in here
 
@@ -53,10 +54,15 @@ tools/             the SVG -> mirui path converter for the icon set
 |---|---|
 | **Finder-style shell** | Traffic lights, a unified toolbar, a translucent sidebar, an icon grid, a virtualised list, a status bar |
 | **Real interaction** | Clicking, double clicking, right clicking, dragging, typing — all through mirui's hit testing |
-| **Context menu** | Right click a file: open, get info, rename, duplicate, move to another place, move to trash, put back |
+| **Hover states** | Every tile, sidebar row, menu row and panel row has a real hover and press state, in both palettes |
+| **Context menu** | Right click any file — not only the selected one: open, get info, rename, duplicate, move to another place, move to trash, put back |
+| **Background menu** | Right click the empty space: new folder, sort by name / date / size, view options |
 | **Modal sheets** | New folder, rename, get info, about and a trash confirmation, each with its own text field |
-| **Command palette** | `Cmd K`: fifteen commands, filtered as you type |
+| **Command palette** | `Ctrl P`: sixteen commands, filtered as you type |
 | **Drag and drop** | Drag a file onto a folder or a place in the sidebar; the target lights up and the file moves |
+| **Scroll bars** | A thin overlay thumb on the trailing edge of every scrolling area, drawn by the app — mirui has no scroll bar widget at all |
+| **Notifications** | A queue of notices with an icon, a title and a body, retired by a timer; every action reports through it |
+| **Screenshot** | `Ctrl Shift S` captures the frame exactly as it is — an open sheet is captured untouched — and the host writes the PNG |
 | **Controls** | Icon-size slider, hidden-files checkbox, sort segmented control, search field, view switcher, inspector toggle, theme toggle, progress bar, tab bar |
 | **Two palettes** | Light and dark, switched live, with a system that keeps the app theme in step with the model |
 | **Virtualised list** | Thousands of rows, only the visible ones exist as entities, cells recycle and rebind |
@@ -66,12 +72,16 @@ tools/             the SVG -> mirui path converter for the icon set
 
 ```bash
 make build          # host build
-make test           # 34 unit + interaction tests
+make test           # 46 unit + interaction tests
 make clippy         # lint gate
 make snapshot       # writes artifacts/*.png
 make desktop        # interactive window
 make bare           # no_std RISC-V image
 ```
+
+**Run it in release.** The software renderer is ten to forty times slower in a debug
+build, and this app draws a few hundred vector paths per frame: `make desktop` and
+`make snapshot` already pass `--release`.
 
 or directly:
 
@@ -133,6 +143,10 @@ patterns are copied into the OS app suite.
 * **A container has no intrinsic size.** Every panel, sheet and grid needs an explicit height,
   and a wrapping row cannot report how tall it became — the icon grid is a fixed number of columns
   whose height the model computes.
+* **mirui's `LazyList` invalidates every retained cell on every frame**, which repaints the row's
+  text and its vector icon: a list of a few hundred rows costs milliseconds per frame. The list view
+  is therefore a plain scrolling column with a capped number of rows, and only the visible view
+  builds its rows at all.
 * **A composition argument is evaluated once**, when the tree is built. Anything that changes has
   to be read from the model *inside* the handler, not passed in.
 * **A reactive binding should read a precise observation**, not a global counter: every binding
@@ -147,6 +161,10 @@ patterns are copied into the OS app suite.
   pointer cursor in a system, not from the drag gesture.
 * **The software backend caches no vector paths**: every scaled icon is re-rasterised on every
   repaint, so a full grid of icons is the dominant cost of a redraw.
+* **A widget that binds a property re-dirties itself** when the property writes the component
+  before it compares the value. `Button.normal_color` and `Text.text` do; `bg_color` does not. The
+  hover is therefore painted by a view that reads the widget state and paints nothing at rest, and
+  the selection stays a reactive `bg_color`.
 * **`App::run` never blocks.** Without `FrameRateCapPlugin` the loop spins on a whole core and
   the window stops responding to the compositor.
 * **`mirui` is pinned to `=0.51.0`**: the DSL surface is still moving.

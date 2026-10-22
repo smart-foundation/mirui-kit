@@ -54,4 +54,32 @@ fn main() {
         app.tick();
     }
     println!("20 place changes: {:?}", t.elapsed());
+
+    // The view toggle: the case that used to melt down.
+    let t = Instant::now();
+    for i in 0..20 {
+        state.set_view(if i % 2 == 0 {
+            fm::model::ViewMode::List
+        } else {
+            fm::model::ViewMode::Icons
+        });
+        app.tick();
+    }
+    println!("20 view toggles: {:?}", t.elapsed());
+
+    // How does the list view behave once it is up?
+    state.set_view(fm::model::ViewMode::List);
+    app.tick();
+    let t = Instant::now();
+    for _ in 0..60 {
+        app.tick();
+    }
+    println!("60 idle ticks in the list view: {:?}", t.elapsed());
+
+    let t = Instant::now();
+    for i in 0..20u32 {
+        state.select(i);
+        app.tick();
+    }
+    println!("20 selections in the list view: {:?}", t.elapsed());
 }

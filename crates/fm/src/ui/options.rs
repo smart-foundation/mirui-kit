@@ -9,6 +9,7 @@ use mirui::ui::widgets::{Button, Checkbox, Slider, Text};
 use crate::model::{FmState, SortMode};
 use crate::text;
 use crate::theme;
+use crate::ui::hover::HoverSurface;
 use crate::ui::kit::{pad, pad_v};
 
 /// The popover, shown while the toolbar button is held down.
@@ -76,7 +77,24 @@ pub fn options_layer(fm: model!(FmState)) -> Entity {
                         let value = fm.icon_size();
                         let _ = value;
                     }
-                    Row (width: Dimension::percent(100), height: 22, align: AlignItems::Center, column_gap: 8) {
+                    Row (
+                        width: Dimension::percent(100),
+                        height: 22,
+                        align: AlignItems::Center,
+                        column_gap: 8,
+                        border_radius: 4,
+                        // The row rests in the colour of the panel, so it is
+                        // invisible until the pointer is on it.
+                        bg_color: ColorToken::Surface
+                    ) [
+                        HitTarget
+                        InteractionFeedback
+                        HoverSurface {
+                            hover: theme::MENU_HOVER.into(),
+                            pressed: theme::MENU_HOVER.into(),
+                            radius: Fixed::from_int(4)
+                        }
+                    ] {
                         Checkbox (
                             width: 16,
                             height: 16,
@@ -113,9 +131,17 @@ fn sort_button(fm: model!(FmState), sort: u8, label: &'static str) -> Entity {
             height: 24,
             border_radius: 5,
             padding: pad_v(0),
-            normal_color: theme::CLEAR,
+            // The button rests in the colour of the panel, so it is invisible
+            // until the pointer is on it.
+            normal_color: ColorToken::Surface,
             pressed_color: theme::SELECTION
-        ) {
+        ) [
+            HoverSurface {
+                hover: theme::MENU_HOVER.into(),
+                pressed: theme::MENU_HOVER.into(),
+                radius: Fixed::from_int(5)
+            }
+        ] {
             Text (
                 text: label,
                 width: Dimension::percent(100),

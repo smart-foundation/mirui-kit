@@ -9,6 +9,7 @@ use mirui::ui::widgets::{Button, ProgressBar, TabBar, Text};
 use crate::model::FmState;
 use crate::text;
 use crate::theme;
+use crate::ui::hover::HoverSurface;
 use crate::ui::kindicon::selected_icon;
 use crate::ui::kit::{pad, pad_v};
 
@@ -118,7 +119,23 @@ fn preview(fm: model!(FmState)) -> Entity {
 #[compose]
 fn detail(fm: model!(FmState), label: &'static str, field: u8) -> Entity {
     ui! {
-        Row (width: Dimension::percent(100), height: 18, column_gap: 8) {
+        Row (
+            width: Dimension::percent(100),
+            height: 18,
+            column_gap: 8,
+            border_radius: 4,
+            // The row rests in the colour of the panel, so it is invisible
+            // until the pointer is on it.
+            bg_color: ColorToken::SurfaceVariant
+        ) [
+            HitTarget
+            InteractionFeedback
+            HoverSurface {
+                hover: theme::MENU_HOVER.into(),
+                pressed: theme::MENU_HOVER.into(),
+                radius: Fixed::from_int(4)
+            }
+        ] {
             Text (text: label, width: 74, font_size: text::SMALL, text_color: ColorToken::OnSurfaceVariant)
             Text (
                 text: ${ { let _ = fm.selected(); let _ = fm.listing_revision(); fm.info_field(field) } },

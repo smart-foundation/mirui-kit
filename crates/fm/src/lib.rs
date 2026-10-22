@@ -20,19 +20,17 @@ pub mod ui;
 
 use mirui::app::{App, RendererFactory};
 use mirui::prelude::*;
-use mirui::render::font::{FontManager, FontToken};
-
-/// The UI typeface, in mirui's MIRX asset container.
-pub const FONT_BYTES: &[u8] = include_bytes!("../../../assets/misans_ui.mirx");
 
 /// Install the theme, the typeface and the state model, then build the tree.
 ///
 /// Returns the handle of the state model so the host can drive it.
 pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) -> model::FmStateHandle {
     theme::install(app);
-    install_font(app);
+    font::install(app);
+    install_views(app);
     let state = app.add_model(model::FmState::new()).finish();
     state.recompute();
+    sync::install_notifications(app, &state);
     app.add_system(sync::theme_sync::system(state.clone()));
     app.add_system(sync::drag_tracking::system(state.clone()));
     let root = app.spawn_root().id();
@@ -40,22 +38,13 @@ pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) -> model:
     state
 }
 
-/// Register the typeface for every built-in font role.
+/// Register the views of the widget kit.
 ///
-/// The typeface is served through its signed distance field (see
-/// [`font`]), so every size comes from one scalable representation and the
-/// stems stay solid instead of being resampled from a bitmap.
-pub fn install_font<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) {
-    let font = font::sdf_font(
-        "MiSans UI",
-        12,
-        FONT_BYTES,
-        &mirx::reader::PayloadLimits::HOST,
-    )
-    .expect("MiSans UI MIRX asset decodes");
-    let Some(manager) = app.world.resource::<FontManager>() else {
-        return;
-    };
-    manager.add_static(FontToken::Default.cache_key(), font.clone());
-    manager.add_static(FontToken::Heading.cache_key(), font);
+/// The built-in widgets come with `App::with_default_widgets`; the views
+/// that paint a hover, a selection and a file icon are registered here, so
+/// every tile, row and menu entry can carry them.
+fn install_views<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) {
+    app.with_widget(ui::hover::hover_surface::view());
+    app.with_widget(ui::hover::kind_icon::view());
+    app.with_widget(ui::scrollbar::scroll_bar::view());
 }

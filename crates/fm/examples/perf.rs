@@ -123,6 +123,20 @@ fn main() {
     summarise("selection change", &reports);
     damage(&app, "selection change");
 
+    // --- list view ------------------------------------------------------
+    state.set_view(fm::model::ViewMode::List);
+    app.tick();
+    let list = Instant::now();
+    for _ in 0..60 {
+        app.tick();
+    }
+    println!("60 idle ticks in the list view: {:?} total", list.elapsed());
+    let reports = take_reports();
+    summarise("list view", &reports);
+    damage(&app, "list view");
+    state.set_view(fm::model::ViewMode::Icons);
+    app.tick();
+
     // --- filter ---------------------------------------------------------
     let filter = Instant::now();
     for _ in 0..20 {

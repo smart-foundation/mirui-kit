@@ -1,11 +1,11 @@
 //! Typography.
 //!
-//! The typeface is served through [`crate::font`], which hands out the exact
-//! coverage raster whenever the asset has one for the requested size: a
-//! coverage raster is a blit, so it stays cheap, and at its own size it is as
-//! sharp as it can be. The sizes the asset does not have exactly fall back to
-//! its signed distance field, which scales smoothly but has to be resampled
-//! for every pixel, so the type scale sticks to the sizes that are baked.
+//! The typeface is served through [`crate::font`]. Every size on this scale is
+//! baked into the assets as a coverage atlas at the exact pixel size it is
+//! drawn at, so the glyphs are blitted one to one and the stems stay sharp.
+//! The assets carry the scale at 1x, at 1.5x and at 2x, and a signed distance
+//! atlas for the sizes in between, which is smooth but has to be resampled
+//! for every pixel.
 //!
 //! The scale follows what a desktop file manager uses: small text for the
 //! icon grid and the status bar, body text for the list, the sidebar and the

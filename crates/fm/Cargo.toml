@@ -10,6 +10,29 @@ description = "no_std Apple-inspired file manager UI built on mirui"
 mirui = { workspace = true, default-features = false, features = ["quad-aa"] }
 mirx = { workspace = true, default-features = false }
 
+[features]
+# The regular weight is always compiled in; every other weight is behind a
+# feature, because a weight is around two megabytes of atlas.
+default = ["weight-medium", "weight-semibold"]
+weight-medium = []
+weight-semibold = []
+weight-thin = []
+weight-extralight = []
+weight-light = []
+weight-bold = []
+weight-extrabold = []
+weight-black = []
+weights-all = [
+    "weight-medium",
+    "weight-semibold",
+    "weight-thin",
+    "weight-extralight",
+    "weight-light",
+    "weight-bold",
+    "weight-extrabold",
+    "weight-black",
+]
+
 # The test harness is a `std` binary: it needs a `critical-section`
 # implementation, which `mirui/std` provides.
 [dev-dependencies]

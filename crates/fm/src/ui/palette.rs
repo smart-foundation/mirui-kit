@@ -10,6 +10,7 @@ use mirui::ui::widgets::{Button, Placeholder, Text, TextEditing, TextInput};
 use crate::model::{COMMANDS, FmState};
 use crate::text;
 use crate::theme;
+use crate::ui::hover::HoverSurface;
 use crate::ui::kit::{pad, pad_h, pad_v};
 
 /// The palette layer.
@@ -110,6 +111,7 @@ fn command_rows(fm: model!(FmState)) -> Entity {
             command_row (fm, 12)
             command_row (fm, 13)
             command_row (fm, 14)
+            command_row (fm, 15)
         }
     }
 }
@@ -125,10 +127,18 @@ fn command_row(fm: model!(FmState), index: usize) -> Entity {
             height: 26,
             border_radius: 5,
             padding: pad_v(0),
-            normal_color: theme::CLEAR,
+            // The row rests in the colour of the panel, so it is invisible
+            // until the pointer is on it.
+            normal_color: ColorToken::Surface,
             pressed_color: theme::SELECTION,
             visible: ${ { let _ = fm.palette_revision(); fm.command_matches(index) } }
-        ) {
+        ) [
+            HoverSurface {
+                hover: theme::MENU_HOVER.into(),
+                pressed: theme::MENU_HOVER.into(),
+                radius: Fixed::from_int(5)
+            }
+        ] {
             Row (
                 width: Dimension::percent(100),
                 height: 26,

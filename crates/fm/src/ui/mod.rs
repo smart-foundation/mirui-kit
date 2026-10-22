@@ -18,12 +18,14 @@ use crate::ui::status::{bar, toast};
 pub mod chrome;
 pub mod content;
 pub mod dialog;
+pub mod hover;
 pub mod inspector;
 pub mod kindicon;
 pub mod kit;
 pub mod menu;
 pub mod options;
 pub mod palette;
+pub mod scrollbar;
 pub mod sidebar;
 pub mod status;
 
@@ -44,10 +46,12 @@ pub fn shell(fm: model!(FmState)) -> Entity {
             }
             bar (fm)
             options_layer (fm)
+            // The message sits below the menu: when both are on screen the
+            // menu wins the hit test, so its dismissal is not swallowed.
+            toast (fm)
             menu_layer (fm)
             dialog_layer (fm)
             palette_layer (fm)
-            toast (fm)
             drag_badge (fm)
         }
     }

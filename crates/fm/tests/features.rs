@@ -8,7 +8,10 @@ use mirui::render::texture::{ColorFormat, Texture};
 use mirui::surface::{DisplayInfo, FramebufferAccess, InputEvent, PointerKind, Surface};
 use mirui::types::{Fixed, PhysicalRect};
 
-use fm::model::{Command, DialogKind, DropTarget, FmStateHandle, Place, SortMode, ViewMode};
+use fm::model::{
+    Command, DialogKind, DropTarget, FmStateHandle, MenuTarget, NoticeKind, Place, SortMode,
+    ViewMode,
+};
 
 const WIDTH: u16 = 1180;
 const HEIGHT: u16 = 720;
@@ -213,7 +216,11 @@ fn a_right_click_opens_the_context_menu() {
     app.tick();
 
     assert!(state.menu_open(), "the right click opened the context menu");
-    assert_eq!(state.menu_target(), Some(id), "the menu is for the file");
+    assert_eq!(
+        state.menu_target(),
+        Some(MenuTarget::Item(id)),
+        "the menu is for the file"
+    );
 }
 
 #[test]
@@ -429,8 +436,8 @@ fn the_icon_size_and_the_sort_order_change_the_listing() {
     assert_eq!(state.icon_size(), 64);
     assert_eq!(state.sort_label(), "Sorted by Date");
     assert_eq!(state.grid_indices().len(), before.len());
-    assert_eq!(state.grid_rows(), 5);
-    assert_eq!(state.grid_height(), 5 * 98 + 4 * 10);
+    assert_eq!(state.grid_rows(), 4);
+    assert_eq!(state.grid_height(), 4 * 98 + 3 * 10);
 }
 
 #[test]
@@ -445,3 +452,156 @@ fn the_view_switch_rebuilds_the_listing() {
     assert_eq!(state.view(), ViewMode::List);
     assert_eq!(state.shown(), state.total());
 }
+
+#[test]
+fn the_listing_revision_only_moves_when_the_files_change() {
+    let (mut app, state) = app_with(Vec::new());
+    let before = state.listing_revision();
+
+    // The view does not change the files, so the grid and the list keep
+    // their cells.
+    state.set_view(ViewMode::List);
+    app.render().expect("frame");
+    assert_eq!(state.view(), ViewMode::List);
+    assert_eq!(
+        state.listing_revision(),
+        before,
+        "the listing did not change"
+    );
+
+    // The icon size does not change the files either.
+    state.set_icon_size(64);
+    app.render().expect("frame");
+    assert_eq!(state.listing_revision(), before, "the listing did not change");
+
+    // A change of the files does move the revision.
+    state.set_query("report");
+    app.render().expect("frame");
+    assert!(
+        state.listing_revision() > before,
+        "the listing changed, so the revision moved"
+    );
+}
+
+#[test]
+fn the_notifications_stack_up_and_retire() {
+    let (_app, state) = app_with(Vec::new());
+    state.notify(NoticeKind::Info, "First", "one");
+    state.notify(NoticeKind::Success, "Second", "two");
+    assert_eq!(state.notice_count(), 2);
+    assert_eq!(state.notice_title(0), "First");
+    assert_eq!(state.notice_body(0), "one");
+    assert_eq!(state.notice_kind(1), NoticeKind::Success);
+
+    // The stack holds three notifications at most: the oldest one leaves.
+    state.notify(NoticeKind::Warning, "Third", "three");
+    state.notify(NoticeKind::Error, "Fourth", "four");
+    assert_eq!(state.notice_count(), 3);
+    assert_eq!(state.notice_title(0), "Second");
+
+    // A click dismisses one of them.
+    state.dismiss(0);
+    assert_eq!(state.notice_count(), 2);
+    assert_eq!(state.notice_title(0), "Third");
+
+    // The timer retires the oldest notification after four seconds.
+    for _ in 0..fm::model::NOTICE_TICKS {
+        state.tick_notices();
+    }
+    assert_eq!(state.notice_count(), 1, "the oldest notification retired");
+    assert_eq!(state.notice_title(0), "Fourth");
+}
+
+#[test]
+fn a_status_message_is_a_notification() {
+    let (_app, state) = app_with(Vec::new());
+    state.say("Moved to Trash");
+    assert_eq!(state.notice_count(), 1);
+    assert_eq!(state.notice_title(0), "Moved to Trash");
+    assert!(state.toast_visible(), "the status message is showing");
+
+    state.clear_toast();
+    assert_eq!(state.notice_count(), 0);
+    assert!(!state.toast_visible());
+}
+
+#[test]
+fn the_menu_belongs_to_the_file_under_the_pointer() {
+    let (_app, state) = app_with(Vec::new());
+    let hovered = state.entry_id(0);
+    let selected = state.entry_id(1);
+    state.set_hovered(Some(hovered));
+    state.select(selected);
+
+    state.open_menu_at_pointer(300, 180);
+    assert_eq!(
+        state.menu_target(),
+        Some(MenuTarget::Item(hovered)),
+        "the menu belongs to the file under the pointer"
+    );
+
+    // Without a file under the pointer the selection is used.
+    state.close_menu();
+    state.set_hovered(None);
+    state.open_menu_at_pointer(300, 180);
+    assert_eq!(state.menu_target(), Some(MenuTarget::Item(selected)));
+
+    // Without a file and without a selection the empty space gets its own
+    // menu.
+    state.close_menu();
+    state.select_optional(None);
+    state.open_menu_at_pointer(300, 180);
+    assert_eq!(state.menu_target(), Some(MenuTarget::Background));
+    assert!(state.menu_open());
+}
+
+#[test]
+fn a_screenshot_request_changes_nothing_else() {
+    let (mut app, state) = app_with(Vec::new());
+    let id = state.entry_id(0);
+    state.select(id);
+    state.open_dialog(DialogKind::GetInfo);
+    app.render().expect("frame");
+
+    let before = state.screenshot_requested();
+    state.request_screenshot();
+    assert_eq!(state.screenshot_requested(), before + 1);
+
+    // The sheet is still open and the selection did not move: the frame the
+    // host captures is the frame the user is looking at.
+    assert_eq!(state.dialog(), Some(DialogKind::GetInfo));
+    assert_eq!(state.selected(), Some(id));
+    assert!(!state.menu_open());
+    assert_eq!(state.dragging(), None);
+}
+
+
+
+#[test]
+fn clicking_a_notification_dismisses_it() {
+    let (mut app, state) = app_with(Vec::new());
+    state.notify(NoticeKind::Info, "First", "one");
+    state.notify(NoticeKind::Info, "Second", "two");
+    app.render().expect("frame");
+
+    // The cards of the stack, the newest one at the bottom.
+    let query = app.world.query::<mirui::ui::ComputedRect>();
+    let mut cards: Vec<mirui::types::Rect> = query
+        .iter()
+        .filter(|(_, rect)| rect.0.w.to_int() == 320)
+        .map(|(_, rect)| rect.0)
+        .collect();
+    cards.sort_by_key(|rect| rect.y.to_int());
+    let card = cards[0];
+
+    app.backend.events = tap(
+        (card.x + card.w / 2).to_int(),
+        (card.y + card.h / 2).to_int(),
+    );
+    app.backend.cursor = 0;
+    app.tick();
+
+    assert_eq!(state.notice_count(), 1, "the notification was dismissed");
+    assert_eq!(state.notice_title(0), "Second");
+}
+

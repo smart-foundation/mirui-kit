@@ -19,6 +19,51 @@ use mirui::ui::widgets::TextDocument;
 
 use crate::data::{self, Kind};
 
+/// How many places the back button remembers.
+pub const HISTORY_MAX: usize = 32;
+
+/// The width of the context menu panel, in logical pixels.
+pub const MENU_WIDTH: i32 = 214;
+
+/// The height of the context menu panel, in logical pixels.
+pub const MENU_HEIGHT: i32 = 214;
+
+/// The height of the background context menu panel, in logical pixels.
+///
+/// The background menu has fewer rows than the file menu, so its panel is
+/// shorter.
+pub const MENU_BACKGROUND_HEIGHT: i32 = 136;
+
+/// How many notifications are on screen at once.
+///
+/// The stack is short on purpose: a queue that grows without bound hides the
+/// window it is drawn on.
+pub const NOTICE_MAX: usize = 3;
+
+/// How many timer ticks a notification stays on screen.
+///
+/// The notification timer ticks four times a second, so ten ticks are about
+/// two and a half seconds: long enough to read, short enough to stay out of
+/// the way.
+pub const NOTICE_TICKS: u32 = 10;
+
+/// The kind of a notification.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum NoticeKind {
+    Info,
+    Success,
+    Warning,
+    Error,
+}
+
+/// A notification in the stack.
+#[derive(Clone, Debug)]
+pub struct Notice {
+    pub kind: NoticeKind,
+    pub title: String,
+    pub body: String,
+}
+
 /// A sidebar place.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Place {
@@ -54,6 +99,15 @@ pub enum DropTarget {
     Place(Place),
 }
 
+/// What an open context menu belongs to.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum MenuTarget {
+    /// The menu of one file.
+    Item(u32),
+    /// The menu of the empty space around the files.
+    Background,
+}
+
 /// Which modal sheet is open.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum DialogKind {
@@ -81,12 +135,13 @@ pub enum Command {
     GoDownloads,
     GoProjects,
     GoTrash,
+    TakeScreenshot,
     About,
     Dismiss,
 }
 
 /// Every palette command: label, shortcut hint and what it does.
-pub const COMMANDS: [(&str, &str, Command); 15] = [
+pub const COMMANDS: [(&str, &str, Command); 16] = [
     ("New Folder", "Cmd N", Command::NewFolder),
     ("Toggle Icon or List View", "Cmd 1", Command::ToggleView),
     ("Toggle Light or Dark", "Cmd T", Command::ToggleTheme),
@@ -100,6 +155,7 @@ pub const COMMANDS: [(&str, &str, Command); 15] = [
     ("Downloads", "", Command::GoDownloads),
     ("Projects", "", Command::GoProjects),
     ("Trash", "", Command::GoTrash),
+    ("Take Screenshot", "Ctrl Shift S", Command::TakeScreenshot),
     ("About this Demo", "", Command::About),
     ("Dismiss", "Esc", Command::Dismiss),
 ];
@@ -107,7 +163,7 @@ pub const COMMANDS: [(&str, &str, Command); 15] = [
 /// Upper bound on files drawn in the icon grid. Five rows of eight tiles fit
 /// on a 720 pixel window without scrolling, and every tile is a widget the
 /// renderer has to draw, so the grid stays small on purpose.
-pub const ICON_GRID_MAX: u32 = 40;
+pub const ICON_GRID_MAX: u32 = 32;
 
 /// A search result is a short list: drawing forty hits is noise, and the
 /// rebuild of forty tiles is what makes typing feel heavy.
@@ -121,6 +177,9 @@ pub const GRID_ROW_HEIGHT: i32 = 108;
 
 /// Height of one tile.
 pub const TILE_HEIGHT: i32 = 98;
+
+/// How many rows the list view shows at most.
+pub const LIST_ROW_MAX: u32 = 48;
 
 /// Ids of user created folders start here, above the static table.
 pub const CREATED_BASE: u32 = 1_000_000;
@@ -211,6 +270,37 @@ pub struct FmState {
     pub toast_visible: bool,
     #[observe]
     pub toast_id: u32,
+    /// The palette the theme system installed: `Some(dark)` once it did.
+    ///
+    /// The application installs the dark palette to begin with, so the model
+    /// starts out in sync with it.
+    theme_applied: Option<bool>,
+    /// The pointer event sequence the synchroniser has already seen.
+    press_seq: u32,
+    /// The window size, in logical pixels.
+    viewport: (i32, i32),
+    /// The notifications on screen, oldest first.
+    notices: Vec<Notice>,
+    /// How many timer ticks each notification has been on screen.
+    notice_ages: Vec<u32>,
+    /// How many notifications are on screen.
+    #[observe]
+    pub notice_count: u32,
+    /// Bumped whenever the notification queue changes.
+    #[observe]
+    pub notice_seq: u32,
+    /// The file under the pointer, if any.
+    #[observe]
+    pub hovered_item: Option<u32>,
+    /// What the open context menu belongs to.
+    #[observe]
+    pub menu_target: Option<MenuTarget>,
+    /// The height of the open context menu, in logical pixels.
+    #[observe]
+    pub menu_height: i32,
+    /// How many screenshots the host has been asked for.
+    #[observe]
+    pub screenshot_requested: u32,
 }
 
 impl FmState {
@@ -253,11 +343,22 @@ impl FmState {
             drop_target: None,
             inspector: false,
             options_open: false,
-            icon_size: 44,
+            icon_size: 36,
             show_hidden: false,
             sort: SortMode::Name,
             toast_visible: false,
             toast_id: 0,
+            theme_applied: Some(true),
+            press_seq: 0,
+            viewport: (0, 0),
+            notices: Vec::new(),
+            notice_ages: Vec::new(),
+            notice_count: 0,
+            notice_seq: 0,
+            hovered_item: None,
+            menu_target: None,
+            menu_height: MENU_HEIGHT,
+            screenshot_requested: 0,
         }
     }
 }
@@ -282,6 +383,11 @@ impl FmState {
     pub fn set_place(&mut self, place: Place) {
         if self.place != place {
             self.history.push(self.place);
+            // The history is a convenience, not a log: it must not grow
+            // without bound.
+            if self.history.len() > HISTORY_MAX {
+                self.history.drain(..self.history.len() - HISTORY_MAX);
+            }
             self.place = place;
             self.selected = None;
             self.close_menu();
@@ -382,36 +488,83 @@ impl FmState {
     // --- menus ------------------------------------------------------------
 
     /// Open the context menu for a file at a screen position.
-    pub fn open_menu(&mut self, id: u32, x: i32, y: i32) {
+    ///
+    /// The menu belongs to the file, not to the selection: a right click on
+    /// a file opens the menu of that file.
+    pub fn open_menu_for(&mut self, id: u32, x: i32, y: i32) {
+        self.open_menu_at(x, y, MENU_HEIGHT);
         self.menu = Some(id);
-        self.menu_x = x;
-        self.menu_y = y;
+        self.menu_target = Some(MenuTarget::Item(id));
         self.revision += 1;
     }
 
-    /// Open the context menu for the selected file at a pointer position.
+    /// Open the context menu of a file: the older name of
+    /// [`FmState::open_menu_for`].
+    pub fn open_menu(&mut self, id: u32, x: i32, y: i32) {
+        self.open_menu_for(id, x, y);
+    }
+
+    /// Open the context menu of the empty space around the files.
+    pub fn open_background_menu(&mut self, x: i32, y: i32) {
+        self.open_menu_at(x, y, MENU_BACKGROUND_HEIGHT);
+        self.menu = None;
+        self.menu_target = Some(MenuTarget::Background);
+        self.revision += 1;
+    }
+
+    /// Open the context menu that belongs to the pointer.
+    ///
+    /// The file under the pointer wins; without one the selection is used.
+    /// Empty space without a selection opens the background menu.
     pub fn open_menu_at_pointer(&mut self, x: i32, y: i32) {
-        if let Some(id) = self.selected {
-            self.open_menu(id, x, y);
+        if let Some(id) = self.hovered_item {
+            self.open_menu_for(id, x, y);
+        } else if let Some(id) = self.selected {
+            self.open_menu_for(id, x, y);
+        } else {
+            self.open_background_menu(x, y);
         }
+    }
+
+    /// Place the menu panel and remember how tall it is.
+    fn open_menu_at(&mut self, x: i32, y: i32, height: i32) {
+        // The panel has to stay on screen, so the position is clamped to the
+        // window the synchroniser reported. A window that is not known yet
+        // leaves the position alone.
+        let (width, window_height) = self.viewport;
+        let (x, y) = if width > 0 && window_height > 0 {
+            (
+                x.clamp(0, (width - MENU_WIDTH).max(0)),
+                y.clamp(0, (window_height - height).max(0)),
+            )
+        } else {
+            (x, y)
+        };
+        self.menu_x = x;
+        self.menu_y = y;
+        self.menu_height = height;
     }
 
     /// Close the context menu.
     pub fn close_menu(&mut self) {
-        if self.menu.is_some() {
+        if self.menu.is_some() || self.menu_target.is_some() {
             self.menu = None;
+            self.menu_target = None;
             self.revision += 1;
         }
     }
 
     /// The file the open context menu belongs to.
-    pub fn menu_target(&self) -> Option<u32> {
-        self.menu
+    pub fn menu_item(&self) -> Option<u32> {
+        match self.menu_target {
+            Some(MenuTarget::Item(id)) => Some(id),
+            _ => None,
+        }
     }
 
     /// Whether a context menu is open.
     pub fn menu_open(&self) -> bool {
-        self.menu.is_some()
+        self.menu_target.is_some()
     }
 
     /// Screen position of the open context menu.
@@ -425,6 +578,7 @@ impl FmState {
     pub fn open_dialog(&mut self, kind: DialogKind) {
         self.dialog = Some(kind);
         self.menu = None;
+        self.menu_target = None;
         self.revision += 1;
     }
 
@@ -533,6 +687,7 @@ impl FmState {
             Command::GoDownloads => self.set_place(Place::Downloads),
             Command::GoProjects => self.set_place(Place::Projects),
             Command::GoTrash => self.set_place(Place::Trash),
+            Command::TakeScreenshot => self.request_screenshot(),
             Command::About => self.open_dialog(DialogKind::About),
             Command::Dismiss => {
                 self.close_palette();
@@ -675,6 +830,11 @@ impl FmState {
 
     /// The drag finished: drop the file on whatever was under the pointer.
     pub fn end_drag(&mut self) {
+        // Nothing to end: leave the model alone, so a frame without a drag
+        // does not write to it at all.
+        if self.dragging.is_none() && self.drop_target.is_none() && self.pressed.is_none() {
+            return;
+        }
         self.pressed = None;
         let dragged = self.dragging.take();
         let target = self.drop_target.take();
@@ -705,24 +865,211 @@ impl FmState {
     // --- status message ---------------------------------------------------
 
     /// Show a short status message.
+    ///
+    /// The message is a notification: the old toast is the head of the queue.
     pub fn say(&mut self, message: &str) {
-        self.toast = Some(message.to_owned());
-        self.toast_visible = true;
-        self.toast_id += 1;
-        self.revision += 1;
+        self.notify(NoticeKind::Info, message, "");
     }
 
     /// Clear the status message.
     pub fn clear_toast(&mut self) {
+        self.notices.clear();
+        self.notice_ages.clear();
         self.toast = None;
         self.toast_visible = false;
         self.toast_id += 1;
+        self.notice_count = 0;
+        self.notice_seq += 1;
         self.revision += 1;
     }
 
     /// The text of the current status message.
     pub fn toast_text(&self) -> String {
-        self.toast.clone().unwrap_or_default()
+        self.notices
+            .last()
+            .map(|notice| notice.title.clone())
+            .unwrap_or_default()
+    }
+
+    // --- notifications ----------------------------------------------------
+
+    /// Push a notification onto the stack.
+    ///
+    /// The stack holds at most [`NOTICE_MAX`] notifications: the oldest one
+    /// leaves when a fourth arrives.
+    pub fn notify(&mut self, kind: NoticeKind, title: &str, body: &str) {
+        self.notices.push(Notice {
+            kind,
+            title: title.to_owned(),
+            body: body.to_owned(),
+        });
+        self.notice_ages.push(0);
+        while self.notices.len() > NOTICE_MAX {
+            self.notices.remove(0);
+            self.notice_ages.remove(0);
+        }
+        self.toast = Some(title.to_owned());
+        self.toast_visible = true;
+        self.toast_id += 1;
+        self.notice_count = self.notices.len() as u32;
+        self.notice_seq += 1;
+        self.revision += 1;
+    }
+
+    /// Remove the notification at an index.
+    pub fn dismiss(&mut self, index: usize) {
+        if index >= self.notices.len() {
+            return;
+        }
+        self.notices.remove(index);
+        self.notice_ages.remove(index);
+        self.toast = self.notices.last().map(|notice| notice.title.clone());
+        self.toast_visible = !self.notices.is_empty();
+        self.toast_id += 1;
+        self.notice_count = self.notices.len() as u32;
+        self.notice_seq += 1;
+        self.revision += 1;
+    }
+
+    /// The notifications on screen, oldest first.
+    pub fn notices(&self) -> Vec<Notice> {
+        self.notices.clone()
+    }
+
+    /// The kind of the notification at an index.
+    pub fn notice_kind(&self, index: usize) -> NoticeKind {
+        self.notices
+            .get(index)
+            .map(|notice| notice.kind)
+            .unwrap_or(NoticeKind::Info)
+    }
+
+    /// The title of the notification at an index.
+    pub fn notice_title(&self, index: usize) -> String {
+        self.notices
+            .get(index)
+            .map(|notice| notice.title.clone())
+            .unwrap_or_default()
+    }
+
+    /// The body of the notification at an index.
+    pub fn notice_body(&self, index: usize) -> String {
+        self.notices
+            .get(index)
+            .map(|notice| notice.body.clone())
+            .unwrap_or_default()
+    }
+
+    /// Retire the oldest notification.
+    pub fn retire_oldest_notice(&mut self) {
+        if self.notices.is_empty() {
+            return;
+        }
+        self.notices.remove(0);
+        self.notice_ages.remove(0);
+        self.toast = self.notices.last().map(|notice| notice.title.clone());
+        self.toast_visible = !self.notices.is_empty();
+        self.toast_id += 1;
+        self.notice_count = self.notices.len() as u32;
+        self.notice_seq += 1;
+        self.revision += 1;
+    }
+
+    /// Age the notifications by one tick and retire the ones that are done.
+    ///
+    /// The notification timer calls this four times a second, so a
+    /// notification lives for about two and a half seconds. One notification
+    /// leaves per tick: the others follow a quarter of a second later, so the
+    /// stack fades instead of vanishing at once.
+    pub fn tick_notices(&mut self) {
+        if self.notices.is_empty() {
+            return;
+        }
+        for age in self.notice_ages.iter_mut() {
+            *age += 1;
+        }
+        let Some(index) = self.notice_ages.iter().position(|age| *age >= NOTICE_TICKS) else {
+            return;
+        };
+        self.notices.remove(index);
+        self.notice_ages.remove(index);
+        self.toast = self.notices.last().map(|notice| notice.title.clone());
+        self.toast_visible = !self.notices.is_empty();
+        self.toast_id += 1;
+        self.notice_count = self.notices.len() as u32;
+        self.notice_seq += 1;
+        self.revision += 1;
+    }
+
+    /// Advance the countdown of the notifications by one tick.
+    ///
+    /// The notification timer calls this: it is the same as
+    /// [`FmState::tick_notices`], kept under its older name.
+    pub fn tick_toast(&mut self) {
+        self.tick_notices();
+    }
+
+    // --- hover -------------------------------------------------------------
+
+    /// Remember the file under the pointer.
+    pub fn set_hovered(&mut self, id: Option<u32>) {
+        if self.hovered_item != id {
+            self.hovered_item = id;
+            self.revision += 1;
+        }
+    }
+
+    // --- screenshot --------------------------------------------------------
+
+    /// Ask the host for a screenshot of the next frame.
+    ///
+    /// Nothing else changes: the sheet that is open stays open, the
+    /// selection stays where it is, so the frame the host captures is the
+    /// frame the user sees.
+    pub fn request_screenshot(&mut self) {
+        self.screenshot_requested += 1;
+    }
+
+    // --- synchronisation ---------------------------------------------------
+
+    /// The palette the theme system installed, if it installed one.
+    pub fn theme_applied(&self) -> Option<bool> {
+        self.theme_applied
+    }
+
+    /// Record the palette the theme system just installed.
+    pub fn set_theme_applied(&mut self, dark: bool) {
+        self.theme_applied = Some(dark);
+    }
+
+    /// The pointer event sequence the synchroniser has already seen.
+    pub fn press_seq(&self) -> u32 {
+        self.press_seq
+    }
+
+    /// Note a pointer event sequence.
+    ///
+    /// A sequence is only handled once, so a press is not seen twice.
+    pub fn note_press_seq(&mut self, seq: u32) {
+        self.press_seq = seq;
+    }
+
+    /// The window size, in logical pixels.
+    pub fn viewport(&self) -> (i32, i32) {
+        self.viewport
+    }
+
+    /// Record the window size, in logical pixels.
+    pub fn set_viewport(&mut self, width: i32, height: i32) {
+        self.viewport = (width, height);
+    }
+
+    /// Whether a point falls inside the open context menu.
+    pub fn menu_contains(&self, x: i32, y: i32) -> bool {
+        x >= self.menu_x
+            && x < self.menu_x + MENU_WIDTH
+            && y >= self.menu_y
+            && y < self.menu_y + self.menu_height
     }
 
     // --- options popover --------------------------------------------------
@@ -985,9 +1332,16 @@ impl FmState {
     }
 
     /// Recount the filtered files after a state change.
+    ///
+    /// The listing revision only moves when the listing itself changed:
+    /// switching the view or the icon size does not touch the files, and a
+    /// rebuild of the grid would throw the cell pool away for nothing.
     pub fn recompute(&mut self) {
-        self.listing_revision += 1;
-        self.visible = self.collect_visible();
+        let visible = self.collect_visible();
+        if visible != self.visible {
+            self.visible = visible;
+            self.listing_revision += 1;
+        }
         self.total = self.visible.len() as u32;
         self.shown = if self.view == ViewMode::Icons {
             self.total.min(ICON_GRID_MAX)
@@ -995,6 +1349,20 @@ impl FmState {
             self.total
         };
         self.revision += 1;
+    }
+
+    /// How many rows the list view shows.
+    ///
+    /// The list is a plain scrolling column, so the number of rows is capped:
+    /// laying out a whole folder of a few hundred files on every keystroke is
+    /// not worth it.
+    pub fn row_count(&self) -> u32 {
+        self.visible.len().min(LIST_ROW_MAX as usize) as u32
+    }
+
+    /// The row indexes the list view shows.
+    pub fn row_indexes(&self) -> Vec<u32> {
+        (0..self.row_count()).collect()
     }
 
     /// The entry ids the icon grid shows.

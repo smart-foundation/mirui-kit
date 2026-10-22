@@ -9,5 +9,6 @@ description = "Interactive mirui file manager on a desktop window"
 [dependencies]
 fm = { workspace = true }
 mirui = { workspace = true, default-features = false, features = ["sdl", "std"] }
+png = "0.18"
 sdl2-link = { workspace = true }
 sdl2 = "0.37"

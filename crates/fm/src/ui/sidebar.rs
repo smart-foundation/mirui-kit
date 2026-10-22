@@ -11,6 +11,7 @@ use crate::model::{DropTarget, FmState, Place};
 use crate::text;
 use crate::theme;
 use crate::ui::content::DropZone;
+use crate::ui::hover::HoverSurface;
 use crate::ui::kit::pad;
 
 /// The sidebar pane.
@@ -60,10 +61,19 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
             align: AlignItems::Center,
             column_gap: 8,
             padding: crate::ui::kit::pad_h(6),
-            bg_color: ${ if fm.drop_target() == Some(DropTarget::Place(place)) { theme::DROP } else if fm.place() == place { theme::SELECTION } else { theme::CLEAR } }
+            // The row rests in the colour of the sidebar, so it is invisible
+            // until the pointer is on it: mirui lifts the background of a
+            // hovered widget.
+            bg_color: ${ if fm.drop_target() == Some(DropTarget::Place(place)) { theme::DROP } else if fm.place() == place { theme::SELECTION } else { ColorToken::SurfaceVariant } }
         ) [
             HitTarget
+            InteractionFeedback
             DropZone { id: 0, folder: true, place: Some(place) }
+            HoverSurface {
+                hover: theme::MENU_HOVER.into(),
+                pressed: theme::MENU_HOVER.into(),
+                radius: Fixed::from_int(6)
+            }
         ] {
             Icon (
                 path: data::place_icon(place).clone(),

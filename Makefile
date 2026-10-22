@@ -1,6 +1,6 @@
 CARGO ?= cargo
 
-.PHONY: all build test clippy fmt snapshot desktop bare clean
+.PHONY: all build test clippy fmt snapshot shot desktop bare clean
 
 all: build test clippy bare
 
@@ -19,11 +19,15 @@ fmt:
 
 # Renders the UI states into artifacts/*.png
 snapshot:
-	$(CARGO) run -p snapshot
+	$(CARGO) run --release -p snapshot
 
 # The interactive window
 desktop:
-	$(CARGO) run -p desktop
+	$(CARGO) run --release -p desktop
+
+# A screenshot of the running desktop window
+shot:
+	$(CARGO) run -p desktop -- --shot artifacts/desktop.png
 
 # The no_std gate: the same application crate for a bare-metal target
 bare:

@@ -138,7 +138,7 @@ fn palette_button(fm: model!(FmState)) -> Entity {
             ) {
                 Icon (path: icons::SEARCH.clone(), color: ColorToken::OnSurfaceVariant, width: 13, height: 13)
                 Text (
-                    text: "Cmd K",
+                    text: "Ctrl P",
                     grow: 1.0,
                     font_size: text::SMALL,
                     text_color: ColorToken::OnSurfaceVariant
