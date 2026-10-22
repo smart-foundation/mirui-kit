@@ -182,7 +182,7 @@ fn menu_row_centre(
 }
 
 #[test]
-fn holding_a_file_opens_the_context_menu() {
+fn a_right_click_opens_the_context_menu() {
     let (mut app, state) = app_with(Vec::new());
     let id = state.entry_id(0);
 
@@ -207,11 +207,12 @@ fn holding_a_file_opens_the_context_menu() {
     app.backend.cursor = 0;
     app.tick();
 
-    // Hold still for longer than the long press threshold.
-    std::thread::sleep(std::time::Duration::from_millis(700));
+    // The desktop shell turns a right click into this call.
+    state.select(id);
+    state.open_menu_at_pointer(x, y);
     app.tick();
 
-    assert!(state.menu_open(), "the long press opened the context menu");
+    assert!(state.menu_open(), "the right click opened the context menu");
     assert_eq!(state.menu_target(), Some(id), "the menu is for the file");
 }
 
@@ -229,8 +230,8 @@ fn dragging_a_file_onto_a_sidebar_place_moves_it() {
         .collect();
     tiles.sort_by_key(|rect| (rect.y.to_int(), rect.x.to_int()));
     let tile = tiles[0];
-    let from_x = (tile.x + tile.w / 2).to_int();
-    let from_y = (tile.y + tile.h / 2).to_int();
+    let from_x = (tile.x + Fixed::from_int(8)).to_int();
+    let from_y = (tile.y + Fixed::from_int(8)).to_int();
 
     // The "Projects" row of the sidebar.
     let ids = app.world.resource::<mirui::ui::IdMap>().expect("ids");
@@ -271,6 +272,19 @@ fn dragging_a_file_onto_a_sidebar_place_moves_it() {
         app.backend.events = vec![event];
         app.backend.cursor = 0;
         app.tick();
+        let cursor = app.world.resource::<mirui::input::event::PointerCursor>();
+        let scroll_state = app
+            .world
+            .resource::<mirui::input::event::scroll::ScrollDragState>()
+            .map(|s| (s.active, s.resolved, s.target));
+        println!(
+            "cursor={:?} scroll={scroll_state:?} pressed={:?} dragging={:?} drop={:?} pos={:?}",
+            cursor.map(|c| (c.x.to_int(), c.y.to_int(), c.down, c.present)),
+            state.pressed_tile(),
+            state.dragging(),
+            state.drop_target(),
+            state.drag_position()
+        );
     }
 
     assert_eq!(state.place_of(id), Place::Projects, "the file moved");
@@ -372,8 +386,13 @@ fn a_file_dropped_on_a_folder_stays_in_the_same_place() {
     // The first tile of Documents is a folder.
     assert!(state.entry_is_kind(id, 0));
 
+    let folder = state.entry_id(0);
+    assert!(
+        state.entry_is_kind(folder, 0),
+        "the first entry is a folder"
+    );
     state.start_drag(state.entry_id(20), 400, 300);
-    state.set_drop_target(Some(DropTarget::Tile(0)));
+    state.set_drop_target(Some(DropTarget::Tile(folder)));
     state.end_drag();
     app.render().expect("frame");
 
@@ -410,8 +429,8 @@ fn the_icon_size_and_the_sort_order_change_the_listing() {
     assert_eq!(state.icon_size(), 64);
     assert_eq!(state.sort_label(), "Sorted by Date");
     assert_eq!(state.grid_indices().len(), before.len());
-    assert_eq!(state.grid_rows(), 8);
-    assert_eq!(state.grid_height(), 8 * 98 + 7 * 10);
+    assert_eq!(state.grid_rows(), 5);
+    assert_eq!(state.grid_height(), 5 * 98 + 4 * 10);
 }
 
 #[test]

@@ -103,6 +103,7 @@ version = "0.1.0"
 dependencies = [
  "fm",
  "mirui",
+ "sdl2",
  "sdl2-link",
 ]
 

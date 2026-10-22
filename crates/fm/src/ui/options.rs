@@ -7,6 +7,7 @@ use mirui::prelude::*;
 use mirui::ui::widgets::{Button, Checkbox, Slider, Text};
 
 use crate::model::{FmState, SortMode};
+use crate::text;
 use crate::theme;
 use crate::ui::kit::{pad, pad_v};
 
@@ -50,15 +51,15 @@ pub fn options_layer(fm: model!(FmState)) -> Entity {
                 Column (width: Dimension::percent(100), row_gap: 12) {
                     Text (
                         text: "View Options",
-                        font_size: 12,
+                        font_size: text::SMALL,
                         text_color: ColorToken::OnSurfaceVariant
                     )
                     Row (width: Dimension::percent(100), height: 22, align: AlignItems::Center) {
-                        Text (text: "Icon size", grow: 1.0, font_size: 12, text_color: ColorToken::OnSurface)
+                        Text (text: "Icon size", grow: 1.0, font_size: text::SMALL, text_color: ColorToken::OnSurface)
                         Text (
                             text: ${ alloc::format!("{}", fm.icon_size()) },
                             width: 34,
-                            font_size: 11,
+                            font_size: text::SMALL,
                             text_color: ColorToken::OnSurfaceVariant
                         )
                     }
@@ -85,11 +86,11 @@ pub fn options_layer(fm: model!(FmState)) -> Entity {
                         ) on Checkbox::Toggled {
                             fm.toggle_hidden();
                         }
-                        Text (text: "Show hidden files", font_size: 12, text_color: ColorToken::OnSurface)
+                        Text (text: "Show hidden files", font_size: text::SMALL, text_color: ColorToken::OnSurface)
                     }
                     Text (
                         text: "Sort by",
-                        font_size: 12,
+                        font_size: text::SMALL,
                         text_color: ColorToken::OnSurfaceVariant
                     )
                     Row (width: Dimension::percent(100), height: 24, column_gap: 4) {
@@ -120,7 +121,7 @@ fn sort_button(fm: model!(FmState), sort: u8, label: &'static str) -> Entity {
                 width: Dimension::percent(100),
                 height: 24,
                 paragraph: mirui::ui::widgets::ParagraphStyle::label(),
-                font_size: 11,
+                font_size: text::SMALL,
                 text_color: ColorToken::OnSurface
             )
         } on Tap {

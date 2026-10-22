@@ -104,8 +104,14 @@ pub const COMMANDS: [(&str, &str, Command); 15] = [
     ("Dismiss", "Esc", Command::Dismiss),
 ];
 
-/// Upper bound on files drawn in the icon grid.
-pub const ICON_GRID_MAX: u32 = 60;
+/// Upper bound on files drawn in the icon grid. Five rows of eight tiles fit
+/// on a 720 pixel window without scrolling, and every tile is a widget the
+/// renderer has to draw, so the grid stays small on purpose.
+pub const ICON_GRID_MAX: u32 = 40;
+
+/// A search result is a short list: drawing forty hits is noise, and the
+/// rebuild of forty tiles is what makes typing feel heavy.
+pub const SEARCH_GRID_MAX: u32 = 12;
 
 /// How many tiles fit in one row of the icon grid.
 pub const GRID_COLUMNS: u32 = 8;
@@ -168,6 +174,19 @@ pub struct FmState {
     pub total: u32,
     #[observe]
     pub revision: u32,
+    /// Bumped when the listing changes: the grid and the list rebuild.
+    #[observe]
+    pub listing_revision: u32,
+    /// Bumped when a name changes: only the labels re-measure.
+    #[observe]
+    pub names_revision: u32,
+    /// Bumped when the palette filter changes.
+    #[observe]
+    pub palette_revision: u32,
+    /// The tile the pointer is pressing on, if any.
+    pressed: Option<u32>,
+    press_x: i32,
+    press_y: i32,
     #[observe]
     pub menu: Option<u32>,
     #[observe]
@@ -221,6 +240,12 @@ impl FmState {
             shown: 0,
             total: 0,
             revision: 0,
+            listing_revision: 0,
+            names_revision: 0,
+            palette_revision: 0,
+            pressed: None,
+            press_x: 0,
+            press_y: 0,
             menu: None,
             dialog: None,
             palette: false,
@@ -364,6 +389,13 @@ impl FmState {
         self.revision += 1;
     }
 
+    /// Open the context menu for the selected file at a pointer position.
+    pub fn open_menu_at_pointer(&mut self, x: i32, y: i32) {
+        if let Some(id) = self.selected {
+            self.open_menu(id, x, y);
+        }
+    }
+
     /// Close the context menu.
     pub fn close_menu(&mut self) {
         if self.menu.is_some() {
@@ -431,6 +463,7 @@ impl FmState {
         self.palette = true;
         self.menu = None;
         let _ = self.palette_document.set_text("");
+        self.palette_revision += 1;
         self.revision += 1;
     }
 
@@ -439,6 +472,7 @@ impl FmState {
         if self.palette {
             self.palette = false;
             let _ = self.palette_document.set_text("");
+            self.palette_revision += 1;
             self.revision += 1;
         }
     }
@@ -446,6 +480,7 @@ impl FmState {
     /// Replace the text in the palette field.
     pub fn set_palette_text(&mut self, text: &str) {
         let _ = self.palette_document.set_text(text);
+        self.palette_revision += 1;
     }
 
     /// The text typed into the palette field.
@@ -539,6 +574,7 @@ impl FmState {
             place: self.place_of(id),
             day: 1,
         });
+        self.names_revision += 1;
         self.close_menu();
         self.recompute();
         self.say("Duplicated");
@@ -552,6 +588,7 @@ impl FmState {
         }
         self.renames.retain(|(entry, _)| *entry != id);
         self.renames.push((id, name.to_owned()));
+        self.names_revision += 1;
         self.close_dialog();
         self.recompute();
         self.say("Renamed");
@@ -569,6 +606,7 @@ impl FmState {
             place: self.place,
             day: 1,
         });
+        self.names_revision += 1;
         self.close_dialog();
         self.recompute();
         self.say("New folder created");
@@ -584,6 +622,28 @@ impl FmState {
     }
 
     // --- drag and drop ----------------------------------------------------
+
+    /// The pointer went down on a file.
+    pub fn press_tile(&mut self, id: u32, x: i32, y: i32) {
+        self.pressed = Some(id);
+        self.press_x = x;
+        self.press_y = y;
+    }
+
+    /// The tile the pointer is pressing on.
+    pub fn pressed_tile(&self) -> Option<u32> {
+        self.pressed
+    }
+
+    /// Where the pointer went down.
+    pub fn press_position(&self) -> (i32, i32) {
+        (self.press_x, self.press_y)
+    }
+
+    /// Forget the pressed tile without starting a drag.
+    pub fn clear_press(&mut self) {
+        self.pressed = None;
+    }
 
     /// A drag started on a file.
     pub fn start_drag(&mut self, id: u32, x: i32, y: i32) {
@@ -615,12 +675,12 @@ impl FmState {
 
     /// The drag finished: drop the file on whatever was under the pointer.
     pub fn end_drag(&mut self) {
+        self.pressed = None;
         let dragged = self.dragging.take();
         let target = self.drop_target.take();
         if let (Some(dragged), Some(target)) = (dragged, target) {
             let destination = match target {
-                DropTarget::Tile(position) => {
-                    let id = self.entry_id(position);
+                DropTarget::Tile(id) => {
                     if self.entry_kind(id) == Kind::Folder {
                         Some(self.place_of(id))
                     } else {
@@ -741,6 +801,17 @@ impl FmState {
         }
     }
 
+    /// How tall the open sheet should be.
+    pub fn sheet_height(&self) -> i32 {
+        match self.dialog {
+            Some(DialogKind::NewFolder) | Some(DialogKind::Rename) => 168,
+            Some(DialogKind::GetInfo) => 216,
+            Some(DialogKind::About) => 200,
+            Some(DialogKind::Delete) => 132,
+            _ => 0,
+        }
+    }
+
     /// Where the selected item lives.
     pub fn info_place(&self) -> String {
         match self.selected {
@@ -777,8 +848,11 @@ impl FmState {
         data::entry(id as usize).display_name()
     }
 
-    /// Kind of an entry.
+    /// Kind of an entry. An empty tile has no kind to show.
     pub fn entry_kind(&self, id: u32) -> Kind {
+        if id == u32::MAX {
+            return Kind::Folder;
+        }
         if id >= CREATED_BASE {
             return Kind::Folder;
         }
@@ -831,7 +905,12 @@ impl FmState {
 
     /// How many tiles the icon grid shows.
     pub fn grid_count(&self) -> u32 {
-        self.visible.len().min(ICON_GRID_MAX as usize) as u32
+        let limit = if self.query.is_empty() {
+            ICON_GRID_MAX
+        } else {
+            SEARCH_GRID_MAX
+        };
+        self.visible.len().min(limit as usize) as u32
     }
 
     /// How many rows of tiles the icon grid has.
@@ -907,6 +986,7 @@ impl FmState {
 
     /// Recount the filtered files after a state change.
     pub fn recompute(&mut self) {
+        self.listing_revision += 1;
         self.visible = self.collect_visible();
         self.total = self.visible.len() as u32;
         self.shown = if self.view == ViewMode::Icons {
@@ -915,6 +995,33 @@ impl FmState {
             self.total
         };
         self.revision += 1;
+    }
+
+    /// The entry ids the icon grid shows.
+    pub fn grid_entries(&self) -> Vec<u32> {
+        self.visible
+            .iter()
+            .take(ICON_GRID_MAX as usize)
+            .copied()
+            .collect()
+    }
+
+    /// The entry at a position in the icon grid.
+    pub fn grid_entry(&self, position: u32) -> u32 {
+        self.visible
+            .get(position as usize)
+            .copied()
+            .unwrap_or(u32::MAX)
+    }
+
+    /// A key that changes whenever the contents of a grid row change.
+    pub fn grid_row_key(&self, row: u32) -> u64 {
+        let mut key = 0u64;
+        for column in 0..GRID_COLUMNS {
+            let id = self.grid_entry(row * GRID_COLUMNS + column);
+            key = key.wrapping_mul(31).wrapping_add(id as u64);
+        }
+        key
     }
 
     /// The entries of the current place, filtered and sorted.

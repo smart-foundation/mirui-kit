@@ -4,6 +4,7 @@ use mirui::prelude::*;
 use mirui::ui::widgets::{ProgressBar, Text};
 
 use crate::model::FmState;
+use crate::text;
 use crate::theme;
 use crate::ui::kit::pad_h;
 
@@ -20,19 +21,19 @@ pub fn bar(fm: model!(FmState)) -> Entity {
             padding: pad_h(12)
         ) {
             Text (
-                text: ${ { let _ = fm.revision(); fm.count_label() } },
-                font_size: 11,
+                text: ${ { let _ = fm.shown(); let _ = fm.total(); fm.count_label() } },
+                font_size: text::SMALL,
                 text_color: ColorToken::OnSurfaceVariant
             )
             Text (
-                text: ${ fm.sort_label() },
-                font_size: 11,
+                text: ${ { let _ = fm.sort(); fm.sort_label() } },
+                font_size: text::SMALL,
                 text_color: ColorToken::OnSurfaceVariant
             )
             View (grow: 1.0)
             Text (
                 text: "128.4 GB available",
-                font_size: 11,
+                font_size: text::SMALL,
                 text_color: ColorToken::OnSurfaceVariant
             )
             ProgressBar (
@@ -74,7 +75,7 @@ pub fn toast(fm: model!(FmState)) -> Entity {
             ) {
                 Text (
                     text: ${ { let _ = fm.toast_id(); fm.toast_text() } },
-                    font_size: 12,
+                    font_size: text::SMALL,
                     text_color: ColorToken::OnPrimary
                 )
             }

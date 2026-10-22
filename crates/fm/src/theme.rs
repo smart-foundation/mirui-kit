@@ -24,6 +24,8 @@ pub const CLEAR: ColorToken = ColorToken::custom("clear");
 pub const DIM: ColorToken = ColorToken::custom("dim");
 /// The highlight of a folder that would receive a dropped file.
 pub const DROP: ColorToken = ColorToken::custom("drop");
+/// The raised surface used by the context menu button.
+pub const SURFACE: ColorToken = ColorToken::custom("raised");
 
 /// The dark palette.
 pub fn dark_theme() -> Theme {
@@ -46,6 +48,7 @@ pub fn dark_theme() -> Theme {
         (CLEAR, Color::rgba(0, 0, 0, 0)),
         (DIM, Color::rgba(0, 0, 0, 0x99)),
         (DROP, Color::rgb(0x1E, 0x5A, 0x33)),
+        (SURFACE, Color::rgb(0x45, 0x45, 0x4A)),
     ])
 }
 
@@ -70,6 +73,7 @@ pub fn light_theme() -> Theme {
         (CLEAR, Color::rgba(0, 0, 0, 0)),
         (DIM, Color::rgba(0, 0, 0, 0x66)),
         (DROP, Color::rgb(0xD9, 0xF2, 0xD9)),
+        (SURFACE, Color::rgb(0xE6, 0xE6, 0xEA)),
     ])
 }
 

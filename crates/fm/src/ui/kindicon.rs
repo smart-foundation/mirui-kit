@@ -32,12 +32,12 @@ pub fn kind_icon(fm: model!(FmState), id: u32, size: i32) -> Entity {
 pub fn kind_icon_at(fm: model!(FmState), item: model!(ListItem), size: i32) -> Entity {
     ui! {
         Row (width: size, height: size) {
-            Icon (path: icons::FOLDER.clone(), color: Kind::Folder.tint(), width: size, height: size, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(fm.entry_id(item.index()), 0) } })
-            Icon (path: icons::DOCUMENT.clone(), color: Kind::Document.tint(), width: size, height: size, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(fm.entry_id(item.index()), 1) } })
-            Icon (path: icons::IMAGE.clone(), color: Kind::Image.tint(), width: size, height: size, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(fm.entry_id(item.index()), 2) } })
-            Icon (path: icons::CODE.clone(), color: Kind::Code.tint(), width: size, height: size, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(fm.entry_id(item.index()), 3) } })
-            Icon (path: icons::ARCHIVE.clone(), color: Kind::Archive.tint(), width: size, height: size, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(fm.entry_id(item.index()), 4) } })
-            Icon (path: icons::AUDIO.clone(), color: Kind::Audio.tint(), width: size, height: size, visible: ${ { let _ = fm.revision(); fm.entry_is_kind(fm.entry_id(item.index()), 5) } })
+            Icon (path: icons::FOLDER.clone(), color: Kind::Folder.tint(), width: size, height: size, visible: ${ { let _ = fm.listing_revision(); fm.entry_is_kind(fm.entry_id(item.index()), 0) } })
+            Icon (path: icons::DOCUMENT.clone(), color: Kind::Document.tint(), width: size, height: size, visible: ${ { let _ = fm.listing_revision(); fm.entry_is_kind(fm.entry_id(item.index()), 1) } })
+            Icon (path: icons::IMAGE.clone(), color: Kind::Image.tint(), width: size, height: size, visible: ${ { let _ = fm.listing_revision(); fm.entry_is_kind(fm.entry_id(item.index()), 2) } })
+            Icon (path: icons::CODE.clone(), color: Kind::Code.tint(), width: size, height: size, visible: ${ { let _ = fm.listing_revision(); fm.entry_is_kind(fm.entry_id(item.index()), 3) } })
+            Icon (path: icons::ARCHIVE.clone(), color: Kind::Archive.tint(), width: size, height: size, visible: ${ { let _ = fm.listing_revision(); fm.entry_is_kind(fm.entry_id(item.index()), 4) } })
+            Icon (path: icons::AUDIO.clone(), color: Kind::Audio.tint(), width: size, height: size, visible: ${ { let _ = fm.listing_revision(); fm.entry_is_kind(fm.entry_id(item.index()), 5) } })
         }
     }
 }

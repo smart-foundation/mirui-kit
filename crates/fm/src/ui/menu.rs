@@ -8,6 +8,7 @@ use mirui::prelude::*;
 use mirui::ui::widgets::{Button, Text};
 
 use crate::model::{DialogKind, FmState, FmStateHandle, Place};
+use crate::text;
 use crate::theme;
 use crate::ui::kit::{pad, pad_h, pad_v};
 
@@ -92,10 +93,10 @@ pub fn drag_badge(fm: model!(FmState)) -> Entity {
             visible: ${ fm.dragging().is_some() }
         ) {
             Text (
-                text: ${ { let _ = fm.revision(); fm.drag_label() } },
+                text: ${ { let _ = fm.dragging(); fm.drag_label() } },
                 width: Dimension::percent(100),
                 paragraph: mirui::ui::widgets::ParagraphStyle::label(),
-                font_size: 11,
+                font_size: text::SMALL,
                 text_color: ColorToken::OnPrimary
             )
         }
@@ -130,12 +131,12 @@ fn menu_row(fm: model!(FmState), item: u8, label: &'static str, shortcut: &'stat
                 Text (
                     text: label,
                     grow: 1.0,
-                    font_size: 12,
+                    font_size: text::SMALL,
                     text_color: ColorToken::OnSurface
                 )
                 Text (
                     text: shortcut,
-                    font_size: 11,
+                    font_size: text::SMALL,
                     text_color: ColorToken::OnSurfaceVariant
                 )
             }

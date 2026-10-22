@@ -257,7 +257,7 @@ pub const fn place_icon(place: Place) -> &'static mirui::render::path::Path {
         Place::Favourites => &icons::STAR,
         Place::Documents => &icons::DOCUMENT,
         Place::Downloads => &icons::DOWNLOAD,
-        Place::Projects => &icons::PROJECTS,
+        Place::Projects => &icons::LAYERS,
         Place::Trash => &icons::TRASH,
     }
 }

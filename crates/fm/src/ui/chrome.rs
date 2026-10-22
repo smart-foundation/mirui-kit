@@ -6,6 +6,7 @@ use mirui::ui::widgets::{Button, Icon, Placeholder, Text, TextEditing, TextInput
 use crate::data;
 use crate::icons;
 use crate::model::{DialogKind, FmState, ViewMode};
+use crate::text;
 use crate::theme;
 use crate::ui::kit::{pad, pad_h, pad_v};
 
@@ -28,13 +29,13 @@ pub fn toolbar(fm: model!(FmState)) -> Entity {
             Column (width: 240, height: 34, row_gap: 0, justify: JustifyContent::Center) {
                 Text (
                     text: ${ data::place_name(fm.place()) },
-                    font_size: 13,
+                    font_size: text::BODY,
                     height: 17,
                     text_color: ColorToken::OnSurface
                 )
                 Text (
                     text: "Users demo Cloud",
-                    font_size: 11,
+                    font_size: text::SMALL,
                     height: 15,
                     text_color: ColorToken::OnSurfaceVariant
                 )
@@ -121,7 +122,7 @@ fn palette_button(fm: model!(FmState)) -> Entity {
     ui! {
         Button (
             id: "toolbar_palette",
-            width: 96,
+            width: 104,
             height: 26,
             border_radius: 6,
             padding: pad_v(0),
@@ -139,7 +140,7 @@ fn palette_button(fm: model!(FmState)) -> Entity {
                 Text (
                     text: "Cmd K",
                     grow: 1.0,
-                    font_size: 11,
+                    font_size: text::SMALL,
                     text_color: ColorToken::OnSurfaceVariant
                 )
             }
@@ -155,7 +156,7 @@ fn new_folder_button(fm: model!(FmState)) -> Entity {
     ui! {
         Button (
             id: "toolbar_new_folder",
-            width: 96,
+            width: 118,
             height: 26,
             border_radius: 6,
             padding: pad_v(0),
@@ -173,7 +174,7 @@ fn new_folder_button(fm: model!(FmState)) -> Entity {
                 Text (
                     text: "New Folder",
                     grow: 1.0,
-                    font_size: 11,
+                    font_size: text::SMALL,
                     text_color: ColorToken::OnSurfaceVariant
                 )
             }
@@ -244,7 +245,13 @@ fn search_field(fm: model!(FmState)) -> Entity {
             padding: pad_h(6)
         ) {
             Icon (path: icons::SEARCH.clone(), color: ColorToken::OnSurfaceVariant, width: 13, height: 13)
-            TextInput (width: 156, height: 20) [
+            TextInput (
+                width: 156,
+                height: 20,
+                font_size: text::SMALL,
+                bg_color: ColorToken::Surface,
+                border_radius: 4
+            ) [
                 TextEditing::new(fm.document()),
                 Placeholder("Search"),
             ] on TextEditing::Changed {

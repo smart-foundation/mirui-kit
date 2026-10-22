@@ -10,15 +10,17 @@
 extern crate alloc;
 
 pub mod data;
+pub mod font;
 pub mod icons;
 pub mod model;
 pub mod sync;
+pub mod text;
 pub mod theme;
 pub mod ui;
 
 use mirui::app::{App, RendererFactory};
 use mirui::prelude::*;
-use mirui::render::font::{Font, FontManager, FontToken};
+use mirui::render::font::{FontManager, FontToken};
 
 /// The UI typeface, in mirui's MIRX asset container.
 pub const FONT_BYTES: &[u8] = include_bytes!("../../../assets/misans_ui.mirx");
@@ -32,17 +34,21 @@ pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) -> model:
     let state = app.add_model(model::FmState::new()).finish();
     state.recompute();
     app.add_system(sync::theme_sync::system(state.clone()));
-    app.add_system(sync::drop_target::system(state.clone()));
+    app.add_system(sync::drag_tracking::system(state.clone()));
     let root = app.spawn_root().id();
     app.compose(root, ui::shell(state.clone()));
     state
 }
 
 /// Register the typeface for every built-in font role.
+///
+/// The typeface is served through its signed distance field (see
+/// [`font`]), so every size comes from one scalable representation and the
+/// stems stay solid instead of being resampled from a bitmap.
 pub fn install_font<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) {
-    let font = Font::from_mirx(
+    let font = font::sdf_font(
         "MiSans UI",
-        14,
+        12,
         FONT_BYTES,
         &mirx::reader::PayloadLimits::HOST,
     )

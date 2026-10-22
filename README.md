@@ -5,11 +5,17 @@ A modern, Apple-inspired file manager built entirely on
 **`#![no_std]` + `alloc`**.
 
 The point of this repository is not the file manager itself — it is a *proof* that mirui can carry
-a real desktop-class application (custom chrome, vector icons, a virtualised list, context menus,
-modal sheets, a command palette, drag and drop, reactive state, theming) before those patterns
-get frozen into the OS app suite.
+a real desktop-class application (custom chrome, a vector icon set, a virtualised list, context
+menus, modal sheets, a command palette, drag and drop, reactive state, theming) before those
+patterns get frozen into the OS app suite.
 
 ![the file manager](artifacts/01-dark-icons.png)
+
+| | |
+|---|---|
+| ![context menu](artifacts/07-context-menu.png) | ![dialog](artifacts/08-dialog-new-folder.png) |
+| ![command palette](artifacts/10-command-palette.png) | ![inspector](artifacts/11-inspector.png) |
+| ![view options](artifacts/12-view-options.png) | ![drag and drop](artifacts/13-drag-and-drop.png) |
 
 ## What is in here
 
@@ -20,6 +26,7 @@ targets/desktop    std shell -> SDL2 window (interactive)
 targets/snapshot   std shell -> headless render -> PNG (visual regression)
 targets/bare       no_std shell -> bare-metal RISC-V image
 assets/            the UI typeface (MIRX container) + licences
+tools/             the SVG -> mirui path converter for the icon set
 ```
 
 `crates/fm` owns the entire UI:
@@ -28,7 +35,9 @@ assets/            the UI typeface (MIRX container) + licences
 |---|---|
 | `model` | The `#[model]` state: place, selection, view mode, palette, filter, history, drag, menu, sheet |
 | `data` | 2048 fake files, built at compile time, sorted and filtered without touching a disk |
-| `icons` | Hand-authored `path!()` vector assets on a 24x24 grid |
+| `icons` | The [Solar](https://solar-icons.dev) icon set, converted into `path!` literals |
+| `font` | A font provider that serves the typeface's exact-size rasters |
+| `text` | The type scale |
 | `theme` | The light and dark palettes, including custom `ColorToken`s |
 | `ui` | The chrome: toolbar, sidebar, content, inspector, status bar |
 | `ui/menu` | The context menu and the drag badge |
@@ -36,16 +45,16 @@ assets/            the UI typeface (MIRX container) + licences
 | `ui/palette` | The command palette |
 | `ui/inspector` | The info panel with a preview |
 | `ui/options` | The view options popover: icon size, hidden files, sort order |
-| `sync` | The systems that bridge the model and the app: palette, drop target |
+| `sync` | The systems that bridge the model and the app: palette, drag tracking |
 
 ## The features
 
 | | |
 |---|---|
 | **Finder-style shell** | Traffic lights, a unified toolbar, a translucent sidebar, an icon grid, a virtualised list, a status bar |
-| **Real interaction** | Clicking, long pressing, dragging, typing — all of it goes through mirui's hit testing and gesture recogniser |
-| **Context menu** | Long press a file: open, get info, rename, duplicate, move to another place, move to trash, put back |
-| **Modal sheets** | New folder, rename, get info, about, and a trash confirmation, each with its own text field |
+| **Real interaction** | Clicking, double clicking, right clicking, dragging, typing — all through mirui's hit testing |
+| **Context menu** | Right click a file: open, get info, rename, duplicate, move to another place, move to trash, put back |
+| **Modal sheets** | New folder, rename, get info, about and a trash confirmation, each with its own text field |
 | **Command palette** | `Cmd K`: fifteen commands, filtered as you type |
 | **Drag and drop** | Drag a file onto a folder or a place in the sidebar; the target lights up and the file moves |
 | **Controls** | Icon-size slider, hidden-files checkbox, sort segmented control, search field, view switcher, inspector toggle, theme toggle, progress bar, tab bar |
@@ -57,7 +66,7 @@ assets/            the UI typeface (MIRX container) + licences
 
 ```bash
 make build          # host build
-make test           # 30 unit + interaction tests
+make test           # 34 unit + interaction tests
 make clippy         # lint gate
 make snapshot       # writes artifacts/*.png
 make desktop        # interactive window
@@ -75,38 +84,69 @@ cd targets/bare && cargo build --target riscv64gc-unknown-none-elf
 ```
 
 The bare target is a **separate workspace** on purpose: the desktop target turns on mirui's `std`
-feature, and feature unification would otherwise drag `std` into the `no_std` binary.
+feature and cargo unifies features per workspace, which would drag `std` into the `no_std` binary.
+
+## The icons
+
+Every glyph is a [Solar](https://solar-icons.dev) icon in the **Bold** style, converted from the
+upstream SVG into a mirui `path!` literal by `tools/solar_to_mirui.py`: the vector data lives in the
+program image, so there is no image decoding, no texture atlas and no file system access at run
+time. The icons are drawn on Solar's 24x24 grid, which is also mirui's default icon view box.
+
+Solar Icons by 480 Design, licensed under CC BY 4.0 — see `assets/LICENSES/`.
+
+## The typeface
+
+`assets/misans_ui.mirx` is the MiSans UI typeface in mirui's MIRX asset container. It carries
+coverage rasters for 11, 14, 22 and 28 ppem plus a signed distance field for 15 and up.
+
+`crates/fm/src/font.rs` is a `FontProvider` that serves the **exact** coverage raster whenever the
+asset has one for the requested size — a coverage raster is a blit, so it is cheap, and at its own
+size it is as sharp as it can be. Sizes the asset does not have exactly fall back to its signed
+distance field, which scales smoothly but has to be resampled for every pixel, so the type scale
+sticks to the sizes that are baked:
+
+```rust
+pub const SMALL: u16 = 11;  // icon grid labels, status bar, inspector details
+pub const BODY: u16 = 14;   // list rows, sidebar labels, toolbar, menus, sheet bodies
+pub const TITLE: u16 = 22;  // a sheet title
+```
+
+`tests/typeface.rs` keeps every string the UI can display inside the font's coverage, so nothing
+renders as a silent gap.
 
 ## What the tests prove
 
 * `tests/data.rs` — the fake filesystem, the filter, the sorting, and the state transitions.
 * `tests/features.rs` — the menus, the sheets, the command palette, drag and drop, the file
   operations, the inspector and the options.
-* `tests/typeface.rs` — the typeface only carries a subset of ASCII; every string the UI can
-  display is checked against the font's coverage so nothing renders as a silent gap.
+* `tests/typeface.rs` — every string the UI can display is inside the font's coverage.
 * `tests/interaction.rs` — a scripted surface feeds real pointer events into the application, and
   the tests assert that tapping the theme button, a sidebar row, a file tile and the view switch
   actually change the state. Real hit testing, real handlers, real reactive updates.
 
-## Fonts
-
-`assets/misans_ui.mirx` is the MiSans UI typeface packaged in mirui's MIRX asset container
-(MiSans is free for commercial use — see `assets/LICENSES/`). mirui only loads fonts from MIRX
-containers; the built-in fallback is an 8x8 bitmap that is unusable for a real UI.
-
-The asset carries a **reduced character set** (` !#&,0-9:;?@A-Za-z`): no dash, slash, percent sign
-or brackets. That is why the chrome says `Users demo Cloud` instead of a path, and why folders
-have no size. `tests/typeface.rs` keeps that honest.
-
 ## Notes for the OS port
 
-* The application crate never touches the platform: it is a pure function of the state model and
-  the data table. A target supplies a `Surface`, a font and the input events.
-* Vector chrome is `path!()` literals in the program image — no image decoding, no texture atlas.
-* Selection lives in the state model keyed by file id, never in the recycled list cell.
-* mirui containers have **no intrinsic size**: every panel, sheet and grid needs an explicit
-  height, and a wrapping row cannot report how tall it became. The icon grid is therefore a fixed
-  number of columns whose height the model computes.
-* A composition argument is evaluated **once**, when the tree is built. Anything that changes has
-  to be read from the model inside the handler, not passed in.
-* `mirui` is pinned to `=0.51.0`: the DSL surface is still moving.
+These are the mirui behaviours that shaped the code. They are worth knowing before the same
+patterns are copied into the OS app suite.
+
+* **A container has no intrinsic size.** Every panel, sheet and grid needs an explicit height,
+  and a wrapping row cannot report how tall it became — the icon grid is a fixed number of columns
+  whose height the model computes.
+* **A composition argument is evaluated once**, when the tree is built. Anything that changes has
+  to be read from the model *inside* the handler, not passed in.
+* **A reactive binding should read a precise observation**, not a global counter: every binding
+  that reads a counter re-runs on every change of that counter, and each re-run of a binding that
+  touches a component dirties that widget.
+* **`Button.normal_color` and `Text.text` are expensive to re-bind**: their property writes the
+  component before it compares the value, so every re-run dirties the widget. `bg_color` compares
+  first and is cheap. A tile that binds its selection colour through `Button.normal_color` makes
+  every click repaint the whole grid.
+* **A text widget consumes drag gestures** for its own caret selection, and a press event is
+  delivered to the text rather than to the tile around it. A drag is therefore tracked from the
+  pointer cursor in a system, not from the drag gesture.
+* **The software backend caches no vector paths**: every scaled icon is re-rasterised on every
+  repaint, so a full grid of icons is the dominant cost of a redraw.
+* **`App::run` never blocks.** Without `FrameRateCapPlugin` the loop spins on a whole core and
+  the window stops responding to the compositor.
+* **`mirui` is pinned to `=0.51.0`**: the DSL surface is still moving.

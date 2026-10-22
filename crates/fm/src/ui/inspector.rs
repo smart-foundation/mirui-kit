@@ -7,6 +7,7 @@ use mirui::prelude::*;
 use mirui::ui::widgets::{Button, ProgressBar, TabBar, Text};
 
 use crate::model::FmState;
+use crate::text;
 use crate::theme;
 use crate::ui::kindicon::selected_icon;
 use crate::ui::kit::{pad, pad_v};
@@ -27,7 +28,7 @@ pub fn panel(fm: model!(FmState)) -> Entity {
                 Text (
                     text: "Inspector",
                     grow: 1.0,
-                    font_size: 12,
+                    font_size: text::SMALL,
                     text_color: ColorToken::OnSurfaceVariant
                 )
                 Button (
@@ -43,7 +44,7 @@ pub fn panel(fm: model!(FmState)) -> Entity {
                         width: Dimension::percent(100),
                         height: 20,
                         paragraph: mirui::ui::widgets::ParagraphStyle::label(),
-                        font_size: 11,
+                        font_size: text::SMALL,
                         text_color: ColorToken::OnSurfaceVariant
                     )
                 } on Tap {
@@ -81,9 +82,9 @@ fn preview(fm: model!(FmState)) -> Entity {
                 selected_icon (fm, 64)
             }
             Text (
-                text: ${ { let _ = fm.revision(); fm.info_name() } },
+                text: ${ { let _ = fm.selected(); let _ = fm.names_revision(); fm.info_name() } },
                 width: Dimension::percent(100),
-                font_size: 12,
+                font_size: text::SMALL,
                 text_color: ColorToken::OnSurface
             )
             detail (fm, "Kind", 1)
@@ -94,7 +95,7 @@ fn preview(fm: model!(FmState)) -> Entity {
             Text (
                 text: "Storage",
                 width: Dimension::percent(100),
-                font_size: 11,
+                font_size: text::SMALL,
                 text_color: ColorToken::OnSurfaceVariant
             )
             ProgressBar (
@@ -107,7 +108,7 @@ fn preview(fm: model!(FmState)) -> Entity {
             Text (
                 text: "128.4 GB available",
                 width: Dimension::percent(100),
-                font_size: 11,
+                font_size: text::SMALL,
                 text_color: ColorToken::OnSurfaceVariant
             )
         }
@@ -118,11 +119,11 @@ fn preview(fm: model!(FmState)) -> Entity {
 fn detail(fm: model!(FmState), label: &'static str, field: u8) -> Entity {
     ui! {
         Row (width: Dimension::percent(100), height: 18, column_gap: 8) {
-            Text (text: label, width: 74, font_size: 11, text_color: ColorToken::OnSurfaceVariant)
+            Text (text: label, width: 74, font_size: text::SMALL, text_color: ColorToken::OnSurfaceVariant)
             Text (
-                text: ${ { let _ = fm.revision(); fm.info_field(field) } },
+                text: ${ { let _ = fm.selected(); let _ = fm.listing_revision(); fm.info_field(field) } },
                 grow: 1.0,
-                font_size: 11,
+                font_size: text::SMALL,
                 text_color: ColorToken::OnSurface
             )
         }

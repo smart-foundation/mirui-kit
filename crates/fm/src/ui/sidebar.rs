@@ -8,6 +8,7 @@ use mirui::ui::widgets::{Icon, Text};
 use crate::data;
 use crate::icons;
 use crate::model::{DropTarget, FmState, Place};
+use crate::text;
 use crate::theme;
 use crate::ui::content::DropZone;
 use crate::ui::kit::pad;
@@ -26,7 +27,7 @@ pub fn sidebar(fm: model!(FmState)) -> Entity {
         ) {
             Text (
                 text: "PLACES",
-                font_size: 10,
+                font_size: text::SMALL,
                 text_color: ColorToken::OnSurfaceVariant,
                 padding: pad(0, 6, 4, 6)
             )
@@ -62,7 +63,7 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
             bg_color: ${ if fm.drop_target() == Some(DropTarget::Place(place)) { theme::DROP } else if fm.place() == place { theme::SELECTION } else { theme::CLEAR } }
         ) [
             HitTarget
-            DropZone { position: 0, folder: true, place: Some(place) }
+            DropZone { id: 0, folder: true, place: Some(place) }
         ] {
             Icon (
                 path: data::place_icon(place).clone(),
@@ -73,12 +74,12 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
             Text (
                 text: data::place_name(place),
                 grow: 1.0,
-                font_size: 13,
+                font_size: text::BODY,
                 text_color: ${ if fm.place() == place { ColorToken::Primary } else { ColorToken::OnSurface } }
             )
             Text (
                 text: data::place_count(place).to_string(),
-                font_size: 11,
+                font_size: text::SMALL,
                 text_color: ColorToken::OnSurfaceVariant
             )
         } on Tap {
