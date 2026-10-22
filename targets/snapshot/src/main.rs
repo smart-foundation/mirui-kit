@@ -32,6 +32,7 @@ fn main() {
     let backend = FramebufSurface::with_format(WIDTH, HEIGHT, ColorFormat::RGBA8888, capture);
     let mut app = App::new(backend);
     app.with_default_widgets().with_default_systems();
+    app.add_plugin(mirui::app::plugins::StdInstantClockPlugin);
     let state = fm::install(&mut app);
 
     shot(&mut app, "01-dark-icons.png");

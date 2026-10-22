@@ -85,6 +85,8 @@ fn app_with(
 ) {
     let mut app = App::new(ScriptedSurface::new(events));
     app.with_default_widgets().with_default_systems();
+    // The gesture recogniser needs a clock to recognise a long press.
+    app.add_plugin(mirui::app::plugins::StdInstantClockPlugin);
     let state = fm::install(&mut app);
     app.render().expect("first frame");
     (app, state)
@@ -177,6 +179,102 @@ fn menu_row_centre(
         (rect.x + rect.w / 2).to_int(),
         (rect.y + rect.h / 2).to_int(),
     )
+}
+
+#[test]
+fn holding_a_file_opens_the_context_menu() {
+    let (mut app, state) = app_with(Vec::new());
+    let id = state.entry_id(0);
+
+    // The centre of the first tile of the icon grid.
+    let query = app.world.query::<mirui::ui::ComputedRect>();
+    let mut tiles: Vec<mirui::types::Rect> = query
+        .iter()
+        .filter(|(_, rect)| rect.0.w.to_int() == 104 && rect.0.h.to_int() == 98)
+        .map(|(_, rect)| rect.0)
+        .collect();
+    tiles.sort_by_key(|rect| (rect.y.to_int(), rect.x.to_int()));
+    let tile = tiles[0];
+    let x = (tile.x + tile.w / 2).to_int();
+    let y = (tile.y + tile.h / 2).to_int();
+
+    app.backend.events = vec![InputEvent::PointerDown {
+        kind: PointerKind::Mouse,
+        id: 0,
+        x: Fixed::from_int(x),
+        y: Fixed::from_int(y),
+    }];
+    app.backend.cursor = 0;
+    app.tick();
+
+    // Hold still for longer than the long press threshold.
+    std::thread::sleep(std::time::Duration::from_millis(700));
+    app.tick();
+
+    assert!(state.menu_open(), "the long press opened the context menu");
+    assert_eq!(state.menu_target(), Some(id), "the menu is for the file");
+}
+
+#[test]
+fn dragging_a_file_onto_a_sidebar_place_moves_it() {
+    let (mut app, state) = app_with(Vec::new());
+    let id = state.entry_id(0);
+
+    // The centre of the first tile of the icon grid.
+    let query = app.world.query::<mirui::ui::ComputedRect>();
+    let mut tiles: Vec<mirui::types::Rect> = query
+        .iter()
+        .filter(|(_, rect)| rect.0.w.to_int() == 104 && rect.0.h.to_int() == 98)
+        .map(|(_, rect)| rect.0)
+        .collect();
+    tiles.sort_by_key(|rect| (rect.y.to_int(), rect.x.to_int()));
+    let tile = tiles[0];
+    let from_x = (tile.x + tile.w / 2).to_int();
+    let from_y = (tile.y + tile.h / 2).to_int();
+
+    // The "Projects" row of the sidebar.
+    let ids = app.world.resource::<mirui::ui::IdMap>().expect("ids");
+    let sidebar = ids.get("sidebar").expect("the sidebar");
+    let sidebar_rect = app
+        .world
+        .get::<mirui::ui::ComputedRect>(sidebar)
+        .expect("the sidebar rect")
+        .0;
+    let to_x = (sidebar_rect.x + sidebar_rect.w / 2).to_int();
+    let to_y = (sidebar_rect.y + Fixed::from_int(130)).to_int();
+
+    let mut events = vec![InputEvent::PointerDown {
+        kind: PointerKind::Mouse,
+        id: 0,
+        x: Fixed::from_int(from_x),
+        y: Fixed::from_int(from_y),
+    }];
+    for step in 1..=6 {
+        let x = from_x + (to_x - from_x) * step / 6;
+        let y = from_y + (to_y - from_y) * step / 6;
+        events.push(InputEvent::PointerMove {
+            kind: PointerKind::Mouse,
+            id: 0,
+            x: Fixed::from_int(x),
+            y: Fixed::from_int(y),
+        });
+    }
+    events.push(InputEvent::PointerUp {
+        kind: PointerKind::Mouse,
+        id: 0,
+        x: Fixed::from_int(to_x),
+        y: Fixed::from_int(to_y),
+    });
+
+    // One event per frame, the way a real pointer arrives.
+    for event in events {
+        app.backend.events = vec![event];
+        app.backend.cursor = 0;
+        app.tick();
+    }
+
+    assert_eq!(state.place_of(id), Place::Projects, "the file moved");
+    assert!(state.toast_visible());
 }
 
 #[test]

@@ -10,6 +10,8 @@ fn main() {
     let backend = SdlSurface::new("Files", WIDTH, HEIGHT);
     let mut app = App::new(backend);
     app.with_default_widgets().with_default_systems();
+    // The gesture recogniser needs a clock to recognise a long press.
+    app.add_plugin(mirui::app::plugins::StdInstantClockPlugin);
     fm::install(&mut app);
     app.run();
 }

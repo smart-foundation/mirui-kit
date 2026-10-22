@@ -109,12 +109,21 @@ fn cell(fm: model!(FmState), position: u32) -> Entity {
             }
         } on Tap {
             fm.select(id);
+        } on Tap(2) {
+            fm.select(id);
+            fm.open_dialog(crate::model::DialogKind::GetInfo);
         } on LongPress {
             fm.open_menu(id, event.x.to_int(), event.y.to_int());
         } on DragStart {
             fm.start_drag(id, event.x.to_int(), event.y.to_int());
         } on DragMove {
-            fm.drag_to(event.x.to_int(), event.y.to_int());
+            // A drag inside a scrolling area is claimed by the scroll, so the
+            // move is what reliably starts one.
+            if fm.dragging().is_none() {
+                fm.start_drag(id, event.x.to_int(), event.y.to_int());
+            } else {
+                fm.drag_to(event.x.to_int(), event.y.to_int());
+            }
         } on DragEnd {
             fm.end_drag();
         }

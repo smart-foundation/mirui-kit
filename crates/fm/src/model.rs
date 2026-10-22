@@ -372,6 +372,11 @@ impl FmState {
         }
     }
 
+    /// The file the open context menu belongs to.
+    pub fn menu_target(&self) -> Option<u32> {
+        self.menu
+    }
+
     /// Whether a context menu is open.
     pub fn menu_open(&self) -> bool {
         self.menu.is_some()
