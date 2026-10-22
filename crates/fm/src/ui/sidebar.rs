@@ -70,8 +70,8 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
             InteractionFeedback
             DropZone { id: 0, folder: true, place: Some(place) }
             HoverSurface {
-                hover: theme::MENU_HOVER.into(),
-                pressed: theme::MENU_HOVER.into(),
+                hover: theme::HOVER.into(),
+                pressed: theme::PRESSED.into(),
                 radius: Fixed::from_int(6)
             }
         ] {
