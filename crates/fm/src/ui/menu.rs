@@ -2,9 +2,8 @@
 //!
 //! A popup anchored to the file it belongs to. The menu is a plain layer in the
 //! window: a backdrop, and a panel placed at the recorded position. The
-//! backdrop ignores hits so a press outside the menu reaches whatever is
-//! underneath it (a tile, the chrome, ...), while the synchroniser dismisses
-//! the menu when the pointer is pressed outside the panel.
+//! backdrop consumes outside taps and dismisses the menu. Dismissing a menu
+//! never also activates the file or toolbar control underneath it.
 //!
 //! There are two menus. The file menu belongs to the file under the pointer,
 //! the background menu to the empty space around the files. The model decides
@@ -12,7 +11,6 @@
 
 use mirui::prelude::*;
 use mirui::ui::OffscreenRender;
-use mirui::ui::IgnoreHitTest;
 use mirui::ui::widgets::{Button, DropShadow, Icon, Text};
 
 use crate::icons;
@@ -58,12 +56,10 @@ pub fn menu_layer(fm: model!(FmState)) -> Entity {
                 height: Dimension::percent(100),
                 visible: ${ fm.menu_target().is_some() }
             ) [
-                // The backdrop covers the window but ignores hits, so a press
-                // outside the menu reaches whatever is underneath (a tile, the
-                // chrome, ...). The synchroniser dismisses the menu when the
-                // pointer is pressed outside the panel (crates/fm/src/sync.rs).
-                IgnoreHitTest
-            ]
+                HitTarget
+            ] on Tap {
+                fm.close_menu();
+            }
             Column (
                 id: "menu_panel",
                 position: Position::Absolute,
@@ -80,24 +76,25 @@ pub fn menu_layer(fm: model!(FmState)) -> Entity {
                 clip_children: true,
                 visible: ${ fm.menu_target().is_some() }
             ) [
+                HitTarget
                 OffscreenRender::new()
             ] {
                 // The model decides which menu is shown: the file menu belongs
                 // to the file under the pointer, the background menu to the
                 // empty space around the files.
                 if ${ matches!(fm.menu_target(), Some(MenuTarget::Item(_))) } {
-                    menu_row (fm, ITEM_OPEN, "Open", "Cmd O")
-                    menu_row (fm, ITEM_INFO, "Get Info", "Cmd I")
-                    menu_row (fm, ITEM_RENAME, "Rename", "Cmd R")
-                    menu_row (fm, ITEM_DUPLICATE, "Duplicate", "Cmd D")
+                    menu_row (fm, ITEM_OPEN, "Open", "")
+                    menu_row (fm, ITEM_INFO, "Get Info", "")
+                    menu_row (fm, ITEM_RENAME, "Rename", "")
+                    menu_row (fm, ITEM_DUPLICATE, "Duplicate", "")
                     separator ()
                     menu_row (fm, ITEM_PROJECTS, "Move to Projects", "")
                     menu_row (fm, ITEM_DOWNLOADS, "Move to Downloads", "")
                     separator ()
-                    menu_row (fm, ITEM_TRASH, "Move to Trash", "Cmd Delete")
+                    menu_row (fm, ITEM_TRASH, "Move to Trash", "")
                     menu_row (fm, ITEM_RESTORE, "Put Back", "")
                 } else {
-                    menu_row (fm, ITEM_NEW_FOLDER, "New Folder", "Cmd N")
+                    menu_row (fm, ITEM_NEW_FOLDER, "New Folder", "")
                     separator ()
                     menu_row (fm, ITEM_SORT_NAME, "Sort by Name", "")
                     menu_row (fm, ITEM_SORT_DATE, "Sort by Date", "")

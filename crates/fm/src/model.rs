@@ -143,11 +143,11 @@ pub enum Command {
 
 /// Every palette command: label, shortcut hint and what it does.
 pub const COMMANDS: [(&str, &str, Command); 17] = [
-    ("New Folder", "Cmd N", Command::NewFolder),
-    ("Toggle Icon or List View", "Cmd 1", Command::ToggleView),
-    ("Toggle Light or Dark", "Cmd T", Command::ToggleTheme),
-    ("Show or Hide Inspector", "Cmd I", Command::ToggleInspector),
-    ("Show or Hide Hidden Files", "Cmd H", Command::ToggleHidden),
+    ("New Folder", "", Command::NewFolder),
+    ("Toggle Icon or List View", "", Command::ToggleView),
+    ("Toggle Light or Dark", "", Command::ToggleTheme),
+    ("Show or Hide Inspector", "", Command::ToggleInspector),
+    ("Show or Hide Hidden Files", "", Command::ToggleHidden),
     ("Sort by Name", "", Command::SortByName),
     ("Sort by Date", "", Command::SortByDate),
     ("Sort by Size", "", Command::SortBySize),
@@ -158,7 +158,7 @@ pub const COMMANDS: [(&str, &str, Command); 17] = [
     ("Trash", "", Command::GoTrash),
     ("Take Screenshot", "Ctrl Shift S", Command::TakeScreenshot),
     ("About this Demo", "", Command::About),
-    ("Dismiss", "Esc", Command::Dismiss),
+    ("Dismiss", "", Command::Dismiss),
     ("Open Command Palette", "Ctrl P", Command::OpenPalette),
 ];
 
@@ -287,6 +287,9 @@ pub struct FmState {
     theme_applied: Option<bool>,
     /// The pointer event sequence the synchroniser has already seen.
     press_seq: u32,
+    /// Pointer ownership lasts until release, even after an overlay closes.
+    content_pointer_down: bool,
+    content_pointer_blocked: bool,
     /// The window size, in logical pixels.
     ///
     /// Observed so the icon grid reflows its column count when the window is
@@ -366,6 +369,8 @@ impl FmState {
             toast_id: 0,
             theme_applied: Some(true),
             press_seq: 0,
+            content_pointer_down: false,
+            content_pointer_blocked: false,
             viewport: (0, 0),
             notices: Vec::new(),
             notice_ages: Vec::new(),
@@ -1120,6 +1125,43 @@ impl FmState {
     /// Record the palette the theme system just installed.
     pub fn set_theme_applied(&mut self, dark: bool) {
         self.theme_applied = Some(dark);
+    }
+
+    /// Floating interactive layers own input ahead of the file listing.
+    pub fn has_input_overlay(&self) -> bool {
+        self.menu_open() || self.options_open || self.dialog.is_some() || self.palette
+    }
+
+    /// Whether the previous content-pointer sample was down.
+    pub fn content_pointer_down(&self) -> bool {
+        self.content_pointer_down
+    }
+
+    /// Update content pointer ownership. A blocked press stays blocked until
+    /// release: closing a popup must not transfer the held pointer to a file.
+    /// Returns whether content may process this sample.
+    pub fn update_content_pointer(&mut self, down: bool) -> bool {
+        let overlay = self.has_input_overlay();
+        if !down {
+            self.content_pointer_down = false;
+            self.content_pointer_blocked = false;
+            return !overlay;
+        }
+        self.content_pointer_down = true;
+        if overlay {
+            self.content_pointer_blocked = true;
+        }
+        !self.content_pointer_blocked
+    }
+
+    /// Cancel without executing a drop (unlike `end_drag`).
+    pub fn cancel_drag(&mut self) {
+        if self.dragging.is_some() || self.drop_target.is_some() || self.pressed.is_some() {
+            self.pressed = None;
+            self.dragging = None;
+            self.drop_target = None;
+            self.revision += 1;
+        }
     }
 
     /// The pointer event sequence the synchroniser has already seen.

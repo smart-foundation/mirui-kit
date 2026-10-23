@@ -155,3 +155,61 @@ fn the_grid_is_capped_but_the_list_is_not() {
     assert_eq!(state.shown(), state.total());
     assert_eq!(state.list_count(), state.total());
 }
+
+#[test]
+fn overlay_pointer_ownership_survives_dismissal_until_release() {
+    let mut app = App::headless(900, 560);
+    app.with_default_widgets();
+    let state = app.add_model(FmState::new()).finish();
+    state.set_options_open(true);
+    assert!(!state.update_content_pointer(true));
+    state.set_options_open(false);
+    assert!(
+        !state.update_content_pointer(true),
+        "held press leaked after dismissal"
+    );
+    assert!(state.update_content_pointer(false));
+    assert!(
+        state.update_content_pointer(true),
+        "new press should be available"
+    );
+}
+
+#[test]
+fn every_interactive_overlay_blocks_content_pointer_tracking() {
+    use fm::model::DialogKind;
+    for overlay in 0..4 {
+        let mut app = App::headless(900, 560);
+        app.with_default_widgets();
+        let state = app.add_model(FmState::new()).finish();
+        match overlay {
+            0 => state.open_background_menu(300, 180),
+            1 => state.set_options_open(true),
+            2 => state.open_dialog(DialogKind::NewFolder),
+            _ => state.open_palette(),
+        }
+        assert!(state.has_input_overlay());
+        assert!(!state.update_content_pointer(false));
+        assert!(!state.update_content_pointer(true));
+    }
+}
+
+#[test]
+fn cancelling_a_drag_never_executes_its_pending_drop() {
+    use fm::model::DropTarget;
+    let mut app = App::headless(900, 560);
+    app.with_default_widgets();
+    let state = app.add_model(FmState::new()).finish();
+    state.recompute();
+    let id = state.entry_id(0);
+    let original_place = state.place_of(id);
+    state.press_tile(id, 300, 180);
+    state.start_drag(id, 320, 200);
+    state.set_drop_target(Some(DropTarget::Place(Place::Projects)));
+    state.cancel_drag();
+    state.end_drag();
+    assert_eq!(state.place_of(id), original_place);
+    assert_eq!(state.pressed_tile(), None);
+    assert_eq!(state.dragging(), None);
+    assert_eq!(state.drop_target(), None);
+}

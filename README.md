@@ -1,5 +1,15 @@
 # mirui File Manager — a `no_std` validation suite
 
+> **Naledzi readiness:** this is currently a UI prototype with a simulated
+> filesystem, not a production OS file manager. The evidence-based audit,
+> initial input-isolation changes, outstanding blockers and validation gates
+> are tracked in [Naledzi readiness](docs/NALEDZI-READINESS.md).
+> The [full UX and app-kit audit](docs/ux-audit/README.md) contains 76 source-linked
+> findings, reusable-kit contracts and a prioritized validation roadmap.
+> The [Naledzi Studio showcase specification](docs/showcase/README.md) defines
+> six task-focused screens, overlay wireframes and shared-component acceptance gates.
+
+
 A modern, Apple-inspired file manager built entirely on
 [`mirui`](https://crates.io/crates/mirui) 0.51, with the application logic compiled as
 **`#![no_std]` + `alloc`**.

@@ -52,7 +52,9 @@ pub fn options_layer(fm: model!(FmState)) -> Entity {
                 padding: pad(12, 12, 12, 12),
                 row_gap: 12,
                 visible: ${ fm.options_open() }
-            ) {
+            ) [
+                HitTarget
+            ] {
                 Column (width: Dimension::percent(100), row_gap: 12) {
                     Text (
                         text: "View Options",

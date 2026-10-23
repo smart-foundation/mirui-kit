@@ -7,8 +7,8 @@
 //! A second system follows the pointer. While a file is held down it works
 //! out which folder is underneath it, so the file can be dropped there. The
 //! same system keeps the floating layers honest: it tells the model how big
-//! the window is, so the context menu can stay on screen, and it dismisses
-//! the menu when the pointer is pressed outside it.
+//! the window is, so the context menu can stay on screen. Overlay backdrops
+//! own dismissal; content tracking never bypasses them.
 //!
 //! The last system is a timer. It retires the notifications that have been
 //! on screen long enough, so a message never lingers.
@@ -45,10 +45,8 @@ pub fn theme_sync(state: model!(crate::model::FmState), commands: commands!()) {
 /// the tree.
 ///
 /// The system also reports the window size, so the model can keep the
-/// context menu on screen, and dismisses the menu when the pointer is
-/// pressed outside it. The backdrop of the menu is a hit target of its own,
-/// so a press outside the menu is swallowed by it; this rule is the
-/// fallback for a press that lands on the menu itself.
+/// context menu on screen. Overlay backdrops handle dismissal. Content
+/// tracking respects overlay ownership for the full pointer press.
 #[system]
 pub fn drag_tracking(
     cursor: res!(mirui::input::event::PointerCursor),
@@ -69,17 +67,14 @@ pub fn drag_tracking(
         state.set_viewport(size.0, size.1);
     }
 
-    // A new pointer sequence means the pointer was pressed or released. A
-    // press outside the open menu dismisses it. Remember whether a menu was
-    // open before it is dismissed, so the same press cannot also start
-    // dragging the content behind it.
-    let mut menu_was_open = false;
-    if cursor.event_seq != state.press_seq() {
-        state.note_press_seq(cursor.event_seq);
-        menu_was_open = state.menu_open();
-        if state.menu_open() && !state.menu_contains(x, y) {
-            state.close_menu();
-        }
+    // Sample ownership before any dismissal can close the overlay. Ownership
+    // survives dismissal for the entire press, not just this frame.
+    let pointer_started = cursor.down && !state.content_pointer_down();
+    let content_allowed = state.update_content_pointer(cursor.down);
+    if !content_allowed {
+        state.set_hovered(None);
+        state.cancel_drag();
+        return;
     }
 
     // The zone under the pointer: the file under the pointer, and the folder
@@ -116,9 +111,7 @@ pub fn drag_tracking(
     // The file under the pointer, whether the button is down or not: a right
     // click opens the menu of that file, not the menu of the selection. While
     // a menu is open the background stays unhovered.
-    if !state.menu_open() {
-        state.set_hovered(source);
-    }
+    state.set_hovered(source);
 
     if !cursor.down {
         // The pointer is up: there is nothing to drag. Clean up, but only
@@ -132,30 +125,29 @@ pub fn drag_tracking(
         return;
     }
 
-    // A press that dismisses an open menu must not also start dragging the
-    // content behind it.
-    let drag_blocked = menu_was_open && !state.menu_contains(x, y);
-    if !drag_blocked {
-        if state.dragging().is_none() {
-            match state.pressed_tile() {
-                // The pointer is down on a file: it becomes a drag once it has
-                // travelled far enough, even if it left the tile already.
-                Some(pressed) => {
-                    let (press_x, press_y) = state.press_position();
-                    if (x - press_x).abs() + (y - press_y).abs() >= DRAG_THRESHOLD {
-                        state.start_drag(pressed, x, y);
-                    }
-                }
-                None => {
-                    if let Some(id) = source {
-                        state.press_tile(id, x, y);
-                    }
+    if state.dragging().is_none() {
+        match state.pressed_tile() {
+            // The pointer is down on a file: it becomes a drag once it has
+            // travelled far enough, even if it left the tile already.
+            Some(pressed) => {
+                let (press_x, press_y) = state.press_position();
+                if (x - press_x).abs() + (y - press_y).abs() >= DRAG_THRESHOLD {
+                    state.start_drag(pressed, x, y);
                 }
             }
-        } else {
-            state.drag_to(x, y);
+            None => {
+                // Only a down transition may acquire a file. Moving a
+                // held pointer from blank space must not start a drag.
+                if pointer_started && let Some(id) = source {
+                    state.press_tile(id, x, y);
+                }
+            }
         }
+    } else {
+        state.drag_to(x, y);
+    }
 
+    if state.dragging().is_some() {
         state.set_drop_target(target);
     }
 }
