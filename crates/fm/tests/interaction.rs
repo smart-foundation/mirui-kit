@@ -276,15 +276,14 @@ fn first_tile_centre(app: &App<ScriptedSurface, mirui::render::SwRendererFactory
 }
 
 #[test]
-fn the_context_menu_does_not_swallow_a_tap_outside_it() {
+fn dismissing_the_context_menu_does_not_activate_the_file_behind_it() {
     let (mut app, state) = app_with(Vec::new());
     let id = state.entry_id(0);
     state.open_menu_for(id, 300, 180);
     app.render().expect("menu frame");
     assert!(state.menu_open(), "the menu did not open");
 
-    // The backdrop of the menu covers the window: the tap below it still
-    // has to reach the tile, and the menu has to go.
+    // Outside taps dismiss only; activating the file requires a new tap.
     let (x, y) = first_tile_centre(&app);
     app.backend.events = tap(x, y);
     app.backend.cursor = 0;
@@ -293,7 +292,35 @@ fn the_context_menu_does_not_swallow_a_tap_outside_it() {
     assert!(!state.menu_open(), "the menu was not dismissed");
     assert_eq!(
         state.selected(),
-        Some(state.entry_id(0)),
-        "the tap did not reach the tile"
+        None,
+        "the dismissal tap activated a file behind the menu"
     );
+}
+
+#[test]
+fn options_backdrop_dismisses_without_selecting_a_file() {
+    let (mut app, state) = app_with(Vec::new());
+    state.set_options_open(true);
+    app.render().expect("options frame");
+    let (x, y) = first_tile_centre(&app);
+    app.backend.events = tap(x, y);
+    app.backend.cursor = 0;
+    app.tick();
+    assert!(!state.options_open());
+    assert_eq!(state.selected(), None);
+    assert_eq!(state.dragging(), None);
+}
+
+#[test]
+fn opening_an_overlay_cancels_a_drag_without_moving_the_file() {
+    let (mut app, state) = app_with(Vec::new());
+    let id = state.entry_id(0);
+    let original = state.place_of(id);
+    state.start_drag(id, 320, 200);
+    state.set_drop_target(Some(fm::model::DropTarget::Place(Place::Projects)));
+    state.open_palette();
+    app.tick();
+    assert_eq!(state.dragging(), None);
+    assert_eq!(state.drop_target(), None);
+    assert_eq!(state.place_of(id), original);
 }

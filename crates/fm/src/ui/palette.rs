@@ -6,9 +6,10 @@
 
 use mirui::prelude::*;
 use mirui::render::font::FontManager;
-use mirui::ui::widgets::{Button, Placeholder, Text, TextEditing, TextInput};
+use mirui::ui::widgets::{Button, Icon, Placeholder, Text, TextEditing, TextInput};
 
-use crate::model::{COMMANDS, FmState};
+use crate::icons;
+use crate::model::{COMMANDS, Command, FmState};
 use crate::text;
 use crate::theme;
 use crate::ui::controls::{self, FieldFocus};
@@ -98,7 +99,7 @@ pub fn palette_layer(fm: model!(FmState)) -> Entity {
                     }
                     View (width: Dimension::percent(100), height: 1, bg_color: theme::SEPARATOR)
                     Scroll (width: Dimension::percent(100), grow: 1.0) {
-                        Column (width: Dimension::percent(100), height: 400, row_gap: 1) {
+                        Column (width: Dimension::percent(100), height: COMMANDS.len() as i32 * 27, row_gap: 1) {
                             command_rows (fm)
                         }
                     }
@@ -112,23 +113,10 @@ pub fn palette_layer(fm: model!(FmState)) -> Entity {
 #[compose]
 fn command_rows(fm: model!(FmState)) -> Entity {
     ui! {
-        Column (width: Dimension::percent(100), height: 400, row_gap: 1) {
-            command_row (fm, 0)
-            command_row (fm, 1)
-            command_row (fm, 2)
-            command_row (fm, 3)
-            command_row (fm, 4)
-            command_row (fm, 5)
-            command_row (fm, 6)
-            command_row (fm, 7)
-            command_row (fm, 8)
-            command_row (fm, 9)
-            command_row (fm, 10)
-            command_row (fm, 11)
-            command_row (fm, 12)
-            command_row (fm, 13)
-            command_row (fm, 14)
-            command_row (fm, 15)
+        Column (width: Dimension::percent(100), height: COMMANDS.len() as i32 * 27, row_gap: 1) {
+            walk (0..COMMANDS.len()).collect::<alloc::vec::Vec<usize>>() with index {
+                command_row (fm, index)
+            }
         }
     }
 }
@@ -163,11 +151,63 @@ fn command_row(fm: model!(FmState), index: usize) -> Entity {
                 column_gap: 10,
                 padding: pad_h(8)
             ) {
+                Icon (
+                    path: command_icon(command).clone(),
+                    color: ColorToken::OnSurfaceVariant,
+                    width: 16,
+                    height: 16
+                )
                 Text (text: label, grow: 1.0, font_size: text::SMALL, text_color: ColorToken::OnSurface)
                 Text (text: shortcut, font_size: text::SMALL, text_color: ColorToken::OnSurfaceVariant)
             }
         } on Tap {
             fm.run_command(command);
         }
+    }
+}
+
+/// Semantic icon for each command, independent of its translated label.
+/// Keep this match exhaustive so new commands require an explicit icon choice.
+fn command_icon(command: Command) -> &'static Path {
+    match command {
+        Command::OpenPalette => &icons::SEARCH,
+        Command::NewFolder => &icons::NEW_FOLDER,
+        Command::ToggleView => &icons::GRID,
+        Command::ToggleTheme => &icons::MOON,
+        Command::ToggleInspector => &icons::PANEL,
+        Command::ToggleHidden => &icons::FOLDER,
+        Command::SortByName | Command::SortByDate | Command::SortBySize => &icons::SORT,
+        Command::GoFavourites => &icons::STAR,
+        Command::GoDocuments => &icons::DOCUMENT,
+        Command::GoDownloads => &icons::DOWNLOAD,
+        Command::GoProjects => &icons::LAYERS,
+        Command::GoTrash => &icons::TRASH,
+        Command::TakeScreenshot => &icons::IMAGE,
+        Command::About => &icons::INFO,
+        Command::Dismiss => &icons::CLOSE,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_registered_command_has_a_semantic_icon() {
+        for &(_, _, command) in &COMMANDS {
+            let _ = command_icon(command);
+        }
+        assert!(core::ptr::eq(
+            command_icon(Command::NewFolder),
+            &icons::NEW_FOLDER
+        ));
+        assert!(core::ptr::eq(
+            command_icon(Command::GoTrash),
+            &icons::TRASH
+        ));
+        assert!(core::ptr::eq(
+            command_icon(Command::OpenPalette),
+            &icons::SEARCH
+        ));
     }
 }
