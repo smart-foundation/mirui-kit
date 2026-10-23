@@ -46,5 +46,7 @@ pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) -> model:
 fn install_views<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) {
     app.with_widget(ui::hover::hover_surface::view());
     app.with_widget(ui::hover::kind_icon::view());
+    app.with_widget(ui::controls::field_focus::view());
+    app.with_widget(ui::controls::check_box::view());
     app.with_widget(ui::scrollbar::scroll_bar::view());
 }

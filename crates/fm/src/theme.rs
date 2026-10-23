@@ -36,6 +36,24 @@ pub const MENU_HOVER: ColorToken = ColorToken::custom("menu_hover");
 pub const MENU_REST: ColorToken = ColorToken::custom("menu_rest");
 /// The thumb of a scroll bar.
 pub const SCROLLBAR: ColorToken = ColorToken::custom("scrollbar");
+/// The ring around the text field that has the focus.
+pub const FOCUS: ColorToken = ColorToken::custom("focus");
+/// The background of a small count badge.
+pub const BADGE: ColorToken = ColorToken::custom("badge");
+/// The text of a small count badge.
+pub const BADGE_TEXT: ColorToken = ColorToken::custom("badge_text");
+/// The base color of a loading skeleton placeholder.
+pub const SKELETON: ColorToken = ColorToken::custom("skeleton");
+/// The shimmer highlight of a loading skeleton placeholder.
+pub const SKELETON_SHIMMER: ColorToken = ColorToken::custom("skeleton_shimmer");
+/// The background of a segmented control.
+pub const SEGMENTED_BG: ColorToken = ColorToken::custom("segmented_bg");
+/// The selected segment of a segmented control.
+pub const SEGMENTED_SELECTED: ColorToken = ColorToken::custom("segmented_selected");
+/// The background of a tooltip bubble.
+pub const TOOLTIP_BG: ColorToken = ColorToken::custom("tooltip_bg");
+/// The text of a tooltip bubble.
+pub const TOOLTIP_TEXT: ColorToken = ColorToken::custom("tooltip_text");
 
 /// The dark palette.
 pub fn dark_theme() -> Theme {
@@ -64,6 +82,15 @@ pub fn dark_theme() -> Theme {
         (MENU_HOVER, Color::rgba(0x0A, 0x84, 0xFF, 0x4D)),
         (MENU_REST, Color::rgba(0, 0, 0, 0)),
         (SCROLLBAR, Color::rgba(0xFF, 0xFF, 0xFF, 0x57)),
+        (FOCUS, Color::rgb(0x0A, 0x84, 0xFF)),
+        (BADGE, Color::rgb(0x38, 0x38, 0x3A)),
+        (BADGE_TEXT, Color::rgb(0x98, 0x98, 0x9F)),
+        (SKELETON, Color::rgb(0x38, 0x38, 0x3A)),
+        (SKELETON_SHIMMER, Color::rgba(0xFF, 0xFF, 0xFF, 0x08)),
+        (SEGMENTED_BG, Color::rgb(0x2C, 0x2C, 0x2E)),
+        (SEGMENTED_SELECTED, Color::rgb(0x1C, 0x1C, 0x1E)),
+        (TOOLTIP_BG, Color::rgb(0x1C, 0x1C, 0x1E)),
+        (TOOLTIP_TEXT, Color::rgb(0x98, 0x98, 0x9F)),
     ])
 }
 
@@ -94,6 +121,15 @@ pub fn light_theme() -> Theme {
         (MENU_HOVER, Color::rgba(0x00, 0x7A, 0xFF, 0x29)),
         (MENU_REST, Color::rgba(0, 0, 0, 0)),
         (SCROLLBAR, Color::rgba(0, 0, 0, 0x42)),
+        (FOCUS, Color::rgb(0x00, 0x7A, 0xFF)),
+        (BADGE, Color::rgb(0xC6, 0xC6, 0xC8)),
+        (BADGE_TEXT, Color::rgb(0x6E, 0x6E, 0x73)),
+        (SKELETON, Color::rgb(0xE6, 0xE6, 0xEA)),
+        (SKELETON_SHIMMER, Color::rgba(0, 0, 0, 0x06)),
+        (SEGMENTED_BG, Color::rgb(0xF2, 0xF2, 0xF7)),
+        (SEGMENTED_SELECTED, Color::rgb(0xFF, 0xFF, 0xFF)),
+        (TOOLTIP_BG, Color::rgb(0x00, 0x00, 0x00)),
+        (TOOLTIP_TEXT, Color::rgb(0x6E, 0x6E, 0x73)),
     ])
 }
 

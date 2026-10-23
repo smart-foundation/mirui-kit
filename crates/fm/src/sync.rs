@@ -46,8 +46,9 @@ pub fn theme_sync(state: model!(crate::model::FmState), commands: commands!()) {
 ///
 /// The system also reports the window size, so the model can keep the
 /// context menu on screen, and dismisses the menu when the pointer is
-/// pressed outside it. The backdrop of the menu is not a hit target, so such
-/// a press reaches the widget underneath as well.
+/// pressed outside it. The backdrop of the menu is a hit target of its own,
+/// so a press outside the menu is swallowed by it; this rule is the
+/// fallback for a press that lands on the menu itself.
 #[system]
 pub fn drag_tracking(
     cursor: res!(mirui::input::event::PointerCursor),
@@ -69,9 +70,13 @@ pub fn drag_tracking(
     }
 
     // A new pointer sequence means the pointer was pressed or released. A
-    // press outside the open menu dismisses it.
+    // press outside the open menu dismisses it. Remember whether a menu was
+    // open before it is dismissed, so the same press cannot also start
+    // dragging the content behind it.
+    let mut menu_was_open = false;
     if cursor.event_seq != state.press_seq() {
         state.note_press_seq(cursor.event_seq);
+        menu_was_open = state.menu_open();
         if state.menu_open() && !state.menu_contains(x, y) {
             state.close_menu();
         }
@@ -109,8 +114,11 @@ pub fn drag_tracking(
     }
 
     // The file under the pointer, whether the button is down or not: a right
-    // click opens the menu of that file, not the menu of the selection.
-    state.set_hovered(source);
+    // click opens the menu of that file, not the menu of the selection. While
+    // a menu is open the background stays unhovered.
+    if !state.menu_open() {
+        state.set_hovered(source);
+    }
 
     if !cursor.down {
         // The pointer is up: there is nothing to drag. Clean up, but only
@@ -124,27 +132,32 @@ pub fn drag_tracking(
         return;
     }
 
-    if state.dragging().is_none() {
-        match state.pressed_tile() {
-            // The pointer is down on a file: it becomes a drag once it has
-            // travelled far enough, even if it left the tile already.
-            Some(pressed) => {
-                let (press_x, press_y) = state.press_position();
-                if (x - press_x).abs() + (y - press_y).abs() >= DRAG_THRESHOLD {
-                    state.start_drag(pressed, x, y);
+    // A press that dismisses an open menu must not also start dragging the
+    // content behind it.
+    let drag_blocked = menu_was_open && !state.menu_contains(x, y);
+    if !drag_blocked {
+        if state.dragging().is_none() {
+            match state.pressed_tile() {
+                // The pointer is down on a file: it becomes a drag once it has
+                // travelled far enough, even if it left the tile already.
+                Some(pressed) => {
+                    let (press_x, press_y) = state.press_position();
+                    if (x - press_x).abs() + (y - press_y).abs() >= DRAG_THRESHOLD {
+                        state.start_drag(pressed, x, y);
+                    }
+                }
+                None => {
+                    if let Some(id) = source {
+                        state.press_tile(id, x, y);
+                    }
                 }
             }
-            None => {
-                if let Some(id) = source {
-                    state.press_tile(id, x, y);
-                }
-            }
+        } else {
+            state.drag_to(x, y);
         }
-    } else {
-        state.drag_to(x, y);
-    }
 
-    state.set_drop_target(target);
+        state.set_drop_target(target);
+    }
 }
 
 /// Keeps the notifications from lingering.

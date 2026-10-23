@@ -198,26 +198,109 @@ already has the built-in provider we need: `mirui::render::font::Font::from_mirx
 - Idle CPU ~0% (`top`, and `PerfReportPlugin` tick cost).
 - Click-through after a toast; right-click menu still dismisses and stays on screen.
 - The typeface test's coverage assertions are the objective "crisp glyphs" gate.
+- **Critique review:** dispatch a critique agent to examine the user's screenshots of the running app + the codebase for all UX defects (input spacing, slider drag pass-through below popups, elevation/shadow correctness, premium UX baseline). Report concrete findings per screenshot.
+- **Shadow verification:** confirm `DropShadow`/`DropGlow` render on all elevated components (sheets, menu, toast, primary buttons, dropdowns) at runtime via `make shot` screenshots; confirm offscreen textures are requested for shadowed sources.
+
+## Premium elevation & aesthetics (new phase)
+
+**User directive: apply shadows/elevation to ALL elevated components — not just popups — macOS-like premium UX feel. No back-and-forth on which components get it.**
+
+mirui 0.51 exposes `DropShadow` (blur 4, offset (2,2), opacity 180, color `Shadow` token) and `DropGlow` (blur 8, color `Primary`, opacity 180) widgets in `mirui::ui::widgets::drop_shadow`. Both wrap a source entity via `#[depends_on(WidgetTexture)]` and need that source rendered to an offscreen texture (`OffscreenRender`).
+
+Scope of elevation (all of these get a shadow):
+- Sheets/dialog backdrops (popup layer)
+- Context menu backdrop + panel
+- Toast/notifications
+- Primary action buttons (`New Folder`, etc.) — elevated state
+- Dropdowns/popovers (view switcher, options, inspector)
+- Selected rows / active chips where they lift off the surface
+
+Values: subtle — blur ~8–12, offset (0, 2–4), low-opacity dark color (~60–100%). Skip pressed-state glow for v1 to avoid visual noise.
+
+## Critique review (COMPLETE)
+
+**Four subagent audit reports are written to `.kilo/plans/` and are the source of truth:**
+
+- `ux-audit-code.md` — code-reading audit (scrollbar, click-through, drag preview, layout, design system, timelessness)
+- `ux-audit-screenshots.md` — visual audit of user's running-app screenshots
+- `ux-direct-manipulation.md` — direct manipulation concepts (in-place editing, palette button, layouts, component richness)
+- `ux-clickthrough.md` — click-through / hover leakage / layering behind popups
+
+### Key audit findings (implementation backlog)
+
+**Scrollbar** (`ux-audit-code.md`): thumb is purely decorative — no `HitTarget`, no press/drag handling, no write-back to content offset. `content.rs` marks thumb container `IgnoreHitTest`. Fix: expose thumb as `HitTarget`, add drag → content-offset mapping via inverse of paint mapping (`Δ_content = Δ * content / travel`), clamp to `[0, max]`, remove `IgnoreHitTest` from thumb container in `content.rs`.
+
+**Click-through** (`ux-clickthrough.md`): menu backdrop already uses `IgnoreHitTest` so clicks pass through to items behind — GOOD. BUT: (a) hover leakage — `sync.rs:114` calls `state.set_hovered()` unconditionally during drag even with menu open, so background items get hovered under the menu; (b) dragging behind an open menu moves background content — `drag_tracking` doesn't check `state.menu_open()`. Fix: guard `set_hovered` with `!state.menu_open()`; suppress background activation/drag when a menu is open.
+
+**Drag preview** (`ux-audit-screenshots.md`): dragging a folder shows an abstract 190×26 blue text pill near the cursor — no icon, no shadow, no physical item. Toasts reuse the same pill, confusing drag with notification. Fix: drag preview = the actual item (icon + label, shadow, opacity, physically following cursor).
+
+**Text rendering** (`ux-audit-screenshots.md`): Inter is the sole typeface; crisp at exact ppem (1×) but soft/blurry at fractional HiDPI via SDF resample; 3-step scale SMALL 11 / BODY 14 / TITLE 22. Body text may need Medium weight instead of Regular at 11–14px.
+
+**Shadows/elevation** (`ux-audit-screenshots.md`): ZERO drop shadows anywhere — all popups/sheets/menus are flat panels with 1px border + dim backdrop only. Not macOS-premium. Fix: add `DropShadow` to sheets, menu, toast, primary buttons, dropdowns; `DropGlow` for pressed/focused state.
+
+**Missing components** (`ux-direct-manipulation.md`): no tooltip/badge/empty-state/skeleton/segmented-control tokens in `theme.rs`; `kit.rs` only has `pad*` helpers. View switcher and sidebar count are hand-rolled. Recommendation: add Tooltip, Badge, EmptyState, Skeleton, SegmentedControl to `kit.rs` plus theme tokens in `theme.rs`.
+
+**Layout** (`ux-direct-manipulation.md`): toolbar places 240px place column in middle of grow spacer (breaks nav/actions split); traffic lights in toolbar row not titlebar; sidebar 216px with tight `row_gap: 2` and plain-text count badge; grid fixed 8 columns / 104×98 tiles no responsive reflow. Command palette button exists but mislabeled "Ctrl P" while shortcuts use Cmd; no "open palette" command entry in `COMMANDS` (`model.rs:144-161`).
+
+**Direct manipulation** (`ux-direct-manipulation.md`): new folder opens a modal sheet instead of in-place editable highlight in the grid (macOS/Windows style). Proposal: append empty `CreatedFolder`, begin inline edit via focused `TextInput` replacing the tile's static `Text`.
+
+## Accessibility & design decisions (NON-NEGOTIABLE, user directives)
+
+- **Body text = Medium weight** at SMALL/BODY (11–14px). Inter Regular is too light; readable/accessible text beats thin/small. Re-bake or switch `text::SMALL`/`BODY` to `FontToken::Medium`.
+- **Active inputs get a clearly THICK focus outline** — apple-style, visible, not thin. Non-negotiable accessibility requirement. Implement in `crates/fm/src/ui/controls.rs` field focus ring (currently thin/hidden).
+- **Command palette = Ctrl P** (user is on GNOME/Linux, NOT Cmd). Revert `chrome.rs:145` "Cmd P" → "Ctrl P" and `model.rs` COMMANDS entry.
+- **Context menu items get icons** — every menu row shows its icon, not just text. UX-based.
+- **Window bigger than internal chrome on GNOME** — chrome should float in desktop mode, nicely rounded/modern, not square. Window chrome needs rounded corners and padding so it doesn't fill the whole window.
+- **Accessibility decisions override all aesthetic preferences** — readable text, visible focus indicators, sufficient touch targets.
+
+## Completed work (audits + implementation)
+
+### Font pipeline (done)
+- All 9 Inter weights baked as MIRX assets in `assets/fonts/` (tools/bake-fonts.sh + tools/patch-font-flags.py)
+- Custom SDF-only provider replaced with mirui's built-in `Font::from_mirx` (font.rs, lib.rs, Cargo.toml features)
+- Semantic tokens: Default→Regular, Medium→Medium, Heading→SemiBold; remaining 6 weights behind `weights-all`
+- Full charset (ASCII + Latin-1 + typographic), reduced-charset contract dropped
+- `tests/typeface.rs` rewritten — 9 tests, all pass
+- **Root cause fixed:** `patched-font-flags.py` clears GPOS/GSUB lookup flags mirui's shaper rejects (was crashing with `UnsupportedFeature "kern"`). All 9 weights rebaked with patched sources.
+
+### Desktop meltdown fixes (done)
+- `FrameRateCapPlugin` added — ends 100% CPU spin
+- Toast/menu backdrops → `IgnoreHitTest` — clicks pass through to items behind
+- Per-frame model writes reduced (sync.rs hover/drag guards)
+- `menu.rs` backdrop fixed (IgnoreHitTest + outside-press dismissal)
+- `history` capped
+
+### UX fixes (all implemented & verified)
+- Scrollbar draggability (scrollbar.rs + content.rs)
+- Click-through hover leakage (sync.rs set_hovered guard + drag suppression under open menu)
+- Drag preview = actual item icon+label card (menu.rs badge → physical card)
+- Shadows on all elevated components (sheets, menu, toast, primary buttons) via DropShadow + OffscreenRender
+- Missing components added: Badge, EmptyState, Skeleton, Tooltip, SegmentedControl (kit.rs + theme.rs)
+- Layout: place column left of grow spacer, traffic lights moved to titlebar, sidebar row gap 2→4, grid columns derived dynamically
+- In-place folder rename: inline editable highlight in grid instead of modal sheet (model.rs, content.rs, chrome.rs)
+
+### Audits complete (read-only, in `.kilo/plans/`)
+- `ux-audit-code.md`, `ux-audit-screenshots.md`, `ux-direct-manipulation.md`, `ux-clickthrough.md`
+
+## Remaining implementation work (accessibility-first)
+
+1. **Command palette button:** "Cmd P" → "Ctrl P" (chrome.rs:145) + register Cmd P command in model.rs COMMANDS (model.rs:144-161)
+2. **Context menu icons:** every menu row shows its icon (menu.rs menu_row ~lines 173-184)
+3. **Thick visible focus outline on active inputs:** `crates/fm/src/ui/controls.rs` FieldFocus ring — make it thick and visible, not thin
+4. **Body text Medium:** switch `text::SMALL`/`BODY` to `FontToken::Medium` (text.rs, font.rs tokens), re-bake Medium asset already exists
+5. **GNOME window sizing:** window bigger than internal chrome; chrome rounded/modern, not square — targets/desktop/src/main.rs window setup + chrome.rs toolbar
+6. **Re-verify:** cargo build -p fm, cargo test -p fm --test features --test typeface --test interaction, cargo clippy -p fm
 
 ## Risks / fallbacks
 
-- **Download blocked** -> stop and ask the user for the TTFs (their explicit instruction); do not
-  substitute a typeface.
-- **`icu` tool output vs mirx 0.51** -> already proven compatible (mirui 0.51 ships an asset baked
-  by `icu 0.11.1`, and ours is byte-identical to it); the new typeface test gates it anyway.
-- **`merge-fonts` reports `IncompatibleFaces`** -> `advance_source` compares hb-subset bytes
-  byte-for-byte; if hb-subset is not deterministic, bake all sizes from one subset pass by porting
-  upstream `font_bake.rs` into `tools/bake_font/` pinned to mirx 0.51.
-- **ROM** -> 3 embedded weights ~2.5 MB (9 assets ~7 MB). Levers if needed: A4 coverage for the 2x
-  band (halves it, `mirx-0.51.0/src/font/representation.rs:131-138` allows 1/2/4/8), or a
-  regular-only feature for the bare target.
-- **Inter's line box** -> line height = ascender - descender + line_gap scaled by the logical ppem
-  (`mirui-0.51.0/src/render/font/mirx.rs:400-409`); Inter is taller than MiSans, so fixed row
-  heights may need a nudge. Verify in the visual pass; the baked ladder covers 11-16 so a size
-  tweak needs no re-bake.
+- **Download blocked** -> stop and ask the user for the TTFs (their explicit instruction); do not substitute a typeface.
+- **`icu` tool output vs mirx 0.51** -> already proven compatible; typeface test gates it.
+- **`merge-fonts` reports `IncompatibleFaces`** -> bake all sizes from one subset pass via tools/bake_font/ pinned to mirx 0.51.
+- **ROM** -> 3 embedded weights ~2.5 MB. Levers: A4 coverage for 2x band, or regular-only feature for bare target.
+- **Inter's line box** -> taller than MiSans; fixed row heights may need a nudge. Baked ladder covers 11–16 so a size tweak needs no re-bake.
 
 ## Out of scope
 
-- Hinted/vector glyph rendering (mirx has no outline representation) and subpixel (LCD) AA.
-- A runtime font service (mirui's provider wants `&'static [u8]`).
-- Latin Extended-A / Greek / Cyrillic (fallback fonts, not Inter's job here).
+- Hinted/vector glyph rendering, subpixel AA.
+- Runtime font service (mirui wants `&'static [u8]`).
+- Latin Extended-A / Greek / Cyrillic.

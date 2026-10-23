@@ -5,7 +5,8 @@
 use mirui::prelude::*;
 
 use crate::model::FmState;
-use crate::ui::chrome::toolbar;
+use crate::theme;
+use crate::ui::chrome::{titlebar, toolbar};
 use crate::ui::content::area;
 use crate::ui::dialog::dialog_layer;
 use crate::ui::inspector::panel;
@@ -14,9 +15,11 @@ use crate::ui::options::options_layer;
 use crate::ui::palette::palette_layer;
 use crate::ui::sidebar::sidebar;
 use crate::ui::status::{bar, toast};
+use crate::ui::kit::pad;
 
 pub mod chrome;
 pub mod content;
+pub mod controls;
 pub mod dialog;
 pub mod hover;
 pub mod inspector;
@@ -38,7 +41,23 @@ pub fn shell(fm: model!(FmState)) -> Entity {
             height: Dimension::percent(100),
             bg_color: ColorToken::Surface
         ) {
-            toolbar (fm)
+            // The chrome floats in the window: padded in from the edges and
+            // centred so it never touches the window border on GNOME.
+            View (
+                width: Dimension::percent(100),
+                padding: pad(10, 24, 0, 24),
+                align: AlignItems::Center,
+            ) {
+                Column (
+                    width: Dimension::percent(100),
+                    row_gap: 0,
+                    bg_color: theme::TOOLBAR,
+                    border_radius: 12,
+                ) {
+                    titlebar ()
+                    toolbar (fm)
+                }
+            }
             Row (width: Dimension::percent(100), grow: 1.0) {
                 sidebar (fm)
                 area (fm)

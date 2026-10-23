@@ -13,9 +13,13 @@
 //! The window can also be photographed: `--shot <path>` (or the `MIRUI_SHOT`
 //! environment variable) writes the first frame to a PNG file and leaves the
 //! application running.
+//!
+//! The screenshot the application asks for is named after the wall clock, so
+//! every capture gets a file of its own: `artifacts/screenshot-2026-10-22-13-04-55.png`.
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use std::time::SystemTime;
 
 use mirui::app::App;
 use mirui::app::plugin::Plugin;
@@ -25,11 +29,14 @@ use mirui::surface::sdl::SdlSurface;
 
 use fm::model::{FmStateHandle, NoticeKind};
 
-const WIDTH: u16 = 1180;
-const HEIGHT: u16 = 720;
+#[path = "../../timestamp.rs"]
+mod timestamp;
 
-/// Where a screenshot is written when the shell is asked for one.
-const SCREENSHOT_PATH: &str = "artifacts/screenshot.png";
+const WIDTH: u16 = 1400;
+const HEIGHT: u16 = 900;
+
+/// The directory the captures are written to.
+const ARTIFACTS: &str = "artifacts";
 
 /// The position of a pending right click, in logical pixels.
 static RIGHT_CLICK_X: AtomicI32 = AtomicI32::new(-1);
@@ -163,6 +170,21 @@ fn shot_path() -> Option<PathBuf> {
         .map(PathBuf::from)
 }
 
+/// Where a screenshot is written when the shell is asked for one.
+///
+/// The name carries the wall clock, so a second capture never overwrites the
+/// first one.
+fn screenshot_path(time: SystemTime) -> PathBuf {
+    Path::new(ARTIFACTS).join(timestamp::capture_file("screenshot", time))
+}
+
+/// Make sure the directory the captures go into exists.
+fn ensure_artifacts() {
+    if let Err(error) = std::fs::create_dir_all(ARTIFACTS) {
+        eprintln!("desktop: {ARTIFACTS} was not created: {error}");
+    }
+}
+
 /// Write the current frame to a PNG file.
 ///
 /// The pixels are read back from the window itself, in the format the
@@ -264,6 +286,7 @@ fn main() {
     }
 
     let shot = shot_path();
+    ensure_artifacts();
 
     let backend = SdlSurface::new("Files", WIDTH, HEIGHT);
     let mut app = App::new(backend);
@@ -302,11 +325,13 @@ fn main() {
         // The capture happens before anything else changes: the sheet that is
         // open stays open and the selection stays where it is, so the file
         // holds the frame the user is looking at.
-        if capture(&mut app, Path::new(SCREENSHOT_PATH)) {
+        let path = screenshot_path(SystemTime::now());
+        if capture(&mut app, &path) {
+            // The notice names the file that was written, not a constant.
             state.notify(
                 NoticeKind::Success,
                 "Screenshot saved",
-                SCREENSHOT_PATH,
+                &path.display().to_string(),
             );
         }
     }

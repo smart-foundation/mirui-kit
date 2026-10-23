@@ -1,2 +1,6 @@
 /target
 /targets/bare/target
+
+# The captures of the running app carry the wall clock in their name, so
+# every one of them is a file of its own.
+artifacts/screenshot-*.png

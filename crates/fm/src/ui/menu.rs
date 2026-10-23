@@ -2,21 +2,24 @@
 //!
 //! A popup anchored to the file it belongs to. The menu is a plain layer in the
 //! window: a backdrop, and a panel placed at the recorded position. The
-//! backdrop is not a hit target, so a click outside the menu reaches the
-//! widget underneath it; the synchroniser dismisses the menu instead.
+//! backdrop ignores hits so a press outside the menu reaches whatever is
+//! underneath it (a tile, the chrome, ...), while the synchroniser dismisses
+//! the menu when the pointer is pressed outside the panel.
 //!
 //! There are two menus. The file menu belongs to the file under the pointer,
 //! the background menu to the empty space around the files. The model decides
 //! which one is shown: [`MenuTarget::Item`] or [`MenuTarget::Background`].
 
 use mirui::prelude::*;
+use mirui::ui::OffscreenRender;
 use mirui::ui::IgnoreHitTest;
-use mirui::ui::widgets::{Button, Text};
+use mirui::ui::widgets::{Button, DropShadow, Icon, Text};
 
+use crate::icons;
 use crate::model::{DialogKind, FmState, FmStateHandle, MenuTarget, Place, SortMode};
 use crate::text;
 use crate::theme;
-use crate::ui::hover::HoverSurface;
+use crate::ui::hover::{HoverSurface, KindIcon};
 use crate::ui::kit::{pad, pad_h, pad_v};
 
 /// The items the file menu can offer, as stable ids.
@@ -55,12 +58,14 @@ pub fn menu_layer(fm: model!(FmState)) -> Entity {
                 height: Dimension::percent(100),
                 visible: ${ fm.menu_target().is_some() }
             ) [
-                // The backdrop covers the window: it must not swallow the
-                // clicks that reach the content underneath it. The
-                // synchroniser dismisses the menu instead.
+                // The backdrop covers the window but ignores hits, so a press
+                // outside the menu reaches whatever is underneath (a tile, the
+                // chrome, ...). The synchroniser dismisses the menu when the
+                // pointer is pressed outside the panel (crates/fm/src/sync.rs).
                 IgnoreHitTest
             ]
             Column (
+                id: "menu_panel",
                 position: Position::Absolute,
                 left: ${ Dimension::px(fm.menu_x()) },
                 top: ${ Dimension::px(fm.menu_y()) },
@@ -74,7 +79,9 @@ pub fn menu_layer(fm: model!(FmState)) -> Entity {
                 row_gap: 1,
                 clip_children: true,
                 visible: ${ fm.menu_target().is_some() }
-            ) {
+            ) [
+                OffscreenRender::new()
+            ] {
                 // The model decides which menu is shown: the file menu belongs
                 // to the file under the pointer, the background menu to the
                 // empty space around the files.
@@ -99,34 +106,63 @@ pub fn menu_layer(fm: model!(FmState)) -> Entity {
                     menu_row (fm, ITEM_VIEW_OPTIONS, "View Options", "")
                 }
             }
+            View (
+                id: "menu_shadow",
+                position: Position::Absolute,
+                left: ${ Dimension::px(fm.menu_x()) },
+                top: ${ Dimension::px(fm.menu_y()) },
+                width: 214,
+                height: ${ fm.menu_height() }
+            ) [
+                DropShadow::new(id("menu_panel"))
+                    .with_blur_radius(Fixed::from_int(10))
+                    .with_offset(Fixed::ZERO, Fixed::from_int(3))
+                    .with_opacity(80)
+            ]
         }
     }
 }
 
 /// The badge that follows the pointer while a file is being dragged.
+///
+/// Shows the actual icon and label of the dragged item as a physical card
+/// under the pointer, instead of an abstract text pill.
 #[compose]
 pub fn drag_badge(fm: model!(FmState)) -> Entity {
+    let dragged = fm.dragging();
     ui! {
         View (
             position: Position::Absolute,
             left: ${ Dimension::px(fm.drag_x() + 12) },
             top: ${ Dimension::px(fm.drag_y() + 12) },
-            width: 190,
-            height: 26,
-            border_radius: 6,
-            bg_color: ColorToken::Primary,
-            padding: pad_v(0),
-            align: AlignItems::Center,
-            justify: JustifyContent::Center,
             visible: ${ fm.dragging().is_some() }
         ) {
-            Text (
-                text: ${ { let _ = fm.dragging(); fm.drag_label() } },
-                width: Dimension::percent(100),
-                paragraph: mirui::ui::widgets::ParagraphStyle::label(),
-                font_size: text::SMALL,
-                text_color: ColorToken::OnPrimary
-            )
+            View (
+                bg_color: ColorToken::Surface,
+                border_radius: 6,
+                border_width: 1,
+                border_color: theme::SEPARATOR,
+                padding: pad(8, 10, 8, 10),
+            ) {
+                Row (
+                    align: AlignItems::Center,
+                    column_gap: 8,
+                ) {
+                    View (width: 20, height: 20) [
+                        KindIcon {
+                            model: fm.clone(),
+                            index: 0,
+                            id: dragged,
+                            size: 20,
+                        }
+                    ]
+                    Text (
+                        text: ${ { let _ = fm.dragging(); fm.drag_label() } },
+                        font_size: text::SMALL,
+                        text_color: ColorToken::OnSurface,
+                    )
+                }
+            }
         }
     }
 }
@@ -135,6 +171,24 @@ pub fn drag_badge(fm: model!(FmState)) -> Entity {
 fn separator() -> Entity {
     ui! {
         View (width: Dimension::percent(100), height: 1, bg_color: theme::SEPARATOR)
+    }
+}
+
+/// The icon shown beside a menu item label.
+fn menu_icon(label: &'static str) -> &'static Path {
+    match label {
+        "Open" => &icons::DOCUMENT,
+        "Get Info" => &icons::INFO,
+        "Rename" => &icons::RENAME,
+        "Duplicate" => &icons::DUPLICATE,
+        "Move to Projects" => &icons::FOLDER,
+        "Move to Downloads" => &icons::FOLDER,
+        "Move to Trash" => &icons::TRASH,
+        "Put Back" => &icons::FOLDER,
+        "New Folder" => &icons::NEW_FOLDER,
+        "Sort by Name" | "Sort by Date" | "Sort by Size" => &icons::SORT,
+        "View Options" => &icons::GEAR,
+        _ => &icons::MORE,
     }
 }
 
@@ -168,6 +222,12 @@ fn menu_row(fm: model!(FmState), item: u8, label: &'static str, shortcut: &'stat
                 column_gap: 8,
                 padding: pad_h(8)
             ) {
+                Icon (
+                    path: menu_icon(label).clone(),
+                    color: ColorToken::OnSurfaceVariant,
+                    width: 14,
+                    height: 14
+                )
                 Text (
                     text: label,
                     grow: 1.0,

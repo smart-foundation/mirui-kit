@@ -2,8 +2,12 @@
 //!
 //! Renders a fixed set of states into `artifacts/*.png` so the UI can be
 //! reviewed — and diffed — without a window server.
+//!
+//! The screenshot the application asks for is named after the wall clock, so
+//! every capture gets a file of its own.
 
 use std::cell::RefCell;
+use std::time::SystemTime;
 
 use mirui::app::App;
 use mirui::prelude::*;
@@ -12,6 +16,9 @@ use mirui::surface::framebuf::FramebufSurface;
 use mirui::types::PhysicalRect;
 
 use fm::model::{FmStateHandle, NoticeKind, Place, ViewMode};
+
+#[path = "../../timestamp.rs"]
+mod timestamp;
 
 const WIDTH: u16 = 1180;
 const HEIGHT: u16 = 720;
@@ -153,12 +160,13 @@ fn serve_screenshot<B: Surface, F: RendererFactory<B>>(
             return;
         }
     };
-    write_pixels("screenshot.png", &pixels);
-    println!("  screenshot.png");
+    let name = timestamp::capture_file("screenshot", SystemTime::now());
+    write_pixels(&name, &pixels);
+    println!("  {name}");
     state.notify(
         NoticeKind::Success,
         "Screenshot saved",
-        "artifacts/screenshot.png",
+        &format!("artifacts/{name}"),
     );
 }
 

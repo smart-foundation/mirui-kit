@@ -1,18 +1,17 @@
 //! The sidebar: places, favourites and the current selection.
 
-use alloc::string::ToString;
-
 use mirui::prelude::*;
 use mirui::ui::widgets::{Icon, Text};
 
 use crate::data;
+use crate::font::MEDIUM;
 use crate::icons;
 use crate::model::{DropTarget, FmState, Place};
 use crate::text;
 use crate::theme;
 use crate::ui::content::DropZone;
 use crate::ui::hover::HoverSurface;
-use crate::ui::kit::pad;
+use crate::ui::kit::{badge, pad};
 
 /// The sidebar pane.
 #[compose]
@@ -24,10 +23,11 @@ pub fn sidebar(fm: model!(FmState)) -> Entity {
             height: Dimension::percent(100),
             bg_color: ColorToken::SurfaceVariant,
             padding: pad(10, 8, 10, 8),
-            row_gap: 2
+            row_gap: 4
         ) {
             Text (
                 text: "PLACES",
+                font: MEDIUM,
                 font_size: text::SMALL,
                 text_color: ColorToken::OnSurfaceVariant,
                 padding: pad(0, 6, 4, 6)
@@ -53,6 +53,7 @@ pub const fn place_id(place: Place) -> &'static str {
 /// One sidebar row.
 #[compose]
 fn place_row(fm: model!(FmState), place: Place) -> Entity {
+    let count = data::place_count(place) as u32;
     ui! {
         Row (
             width: Dimension::percent(100),
@@ -87,11 +88,7 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
                 font_size: text::BODY,
                 text_color: ${ if fm.place() == place { ColorToken::Primary } else { ColorToken::OnSurface } }
             )
-            Text (
-                text: data::place_count(place).to_string(),
-                font_size: text::SMALL,
-                text_color: ColorToken::OnSurfaceVariant
-            )
+            badge (count)
         } on Tap {
             fm.set_place(place);
         }

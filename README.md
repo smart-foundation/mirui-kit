@@ -107,14 +107,30 @@ Solar Icons by 480 Design, licensed under CC BY 4.0 — see `assets/LICENSES/`.
 
 ## The typeface
 
-`assets/misans_ui.mirx` is the MiSans UI typeface in mirui's MIRX asset container. It carries
-coverage rasters for 11, 14, 22 and 28 ppem plus a signed distance field for 15 and up.
+`assets/fonts/inter-*.mirx` are the Inter typeface (SIL OFL 1.1 — see
+`assets/LICENSES/inter.txt`), one MIRX asset per weight, baked by
+`tools/bake-fonts.sh` from the sources in `assets/fonts/src`. Each asset
+carries a coverage raster for every size the interface draws at — 11–16 ppem
+at 1x, 17–23 ppem at 1.5x, 22–32 ppem at 2x — plus a signed distance field
+for everything in between.
 
-`crates/fm/src/font.rs` is a `FontProvider` that serves the **exact** coverage raster whenever the
-asset has one for the requested size — a coverage raster is a blit, so it is cheap, and at its own
-size it is as sharp as it can be. Sizes the asset does not have exactly fall back to its signed
-distance field, which scales smoothly but has to be resampled for every pixel, so the type scale
-sticks to the sizes that are baked:
+A coverage raster is a blit, so it is cheap, and at its own size it is as
+sharp as it can be. `mirui` picks a representation by the output ppem — the
+logical size multiplied by the viewport scale — and accepts a coverage atlas
+only when its design ppem matches exactly, so type stays crisp at 1x, 1.5x
+and 2x instead of being resampled from a soft signed distance field.
+
+Weights are semantic tokens, not hardcoded styles, so the OS suite can theme
+them without touching widget code:
+
+| token | weight | used for |
+|---|---|---|
+| `FontToken::Default` | Inter Regular | body text, labels, menu rows |
+| `FontToken::Medium`  | Inter Medium | section headers, toolbar titles |
+| `FontToken::Heading` | Inter SemiBold | sheet and dialog titles |
+
+The remaining six weights (Thin … Black) are behind the `weights-all` cargo
+feature because each weight is around two megabytes of atlas.
 
 ```rust
 pub const SMALL: u16 = 11;  // icon grid labels, status bar, inspector details
@@ -122,8 +138,10 @@ pub const BODY: u16 = 14;   // list rows, sidebar labels, toolbar, menus, sheet 
 pub const TITLE: u16 = 22;  // a sheet title
 ```
 
-`tests/typeface.rs` keeps every string the UI can display inside the font's coverage, so nothing
-renders as a silent gap.
+`tests/typeface.rs` keeps every string the UI can display inside the font's
+coverage, so nothing renders as a silent gap, and asserts that `SMALL`,
+`BODY` and `TITLE` are served by a coverage atlas at their exact pixel size
+at 1x, 1.5x and 2x.
 
 ## What the tests prove
 

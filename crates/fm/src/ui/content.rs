@@ -14,15 +14,16 @@
 use alloc::vec::Vec;
 
 use mirui::prelude::*;
-use mirui::ui::widgets::{ParagraphStyle, Text};
+use mirui::render::font::FontManager;
+use mirui::ui::widgets::{ParagraphStyle, Placeholder, Text, TextEditing, TextInput};
 
 use crate::data::Kind;
-use crate::model::{DialogKind, DropTarget, FmState, GRID_COLUMNS, ViewMode};
+use crate::model::{DialogKind, DropTarget, FmState, TILE_HEIGHT, TILE_WIDTH, ViewMode};
 use crate::text;
 use crate::theme;
+use crate::ui::controls::{self, FieldFocus};
 use crate::ui::hover::{HoverSurface, KindIcon};
 use crate::ui::scrollbar::ScrollBar;
-use mirui::ui::IgnoreHitTest;
 use crate::ui::kit::{pad, pad_h, pad_v};
 
 /// The size of the icon of a list row.
@@ -77,7 +78,6 @@ pub fn area(fm: model!(FmState)) -> Entity {
                     width: 6,
                     height: @height { height }
                 ) [
-                    IgnoreHitTest
                     ScrollBar { target: id("grid_scroller"), vertical: true, thickness: 6 }
                 ]
             } else {
@@ -99,7 +99,6 @@ pub fn area(fm: model!(FmState)) -> Entity {
                     width: 6,
                     height: @height { height }
                 ) [
-                    IgnoreHitTest
                     ScrollBar { target: id("list_scroller"), vertical: true, thickness: 6 }
                 ]
             }
@@ -107,16 +106,17 @@ pub fn area(fm: model!(FmState)) -> Entity {
     }
 }
 
-/// The column positions of the icon grid.
-const COLUMN_INDEXES: [u32; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
-
 /// One row of tiles.
+///
+/// The column count is derived from the available width so the grid reflows
+/// as the window is resized instead of being locked to eight columns.
 #[compose]
 fn grid_row(fm: model!(FmState), row: u32) -> Entity {
+    let columns = fm.grid_columns();
     ui! {
-        Row (width: Dimension::percent(100), height: 98, column_gap: 6) {
-            walk COLUMN_INDEXES with column {
-                cell (fm, row * GRID_COLUMNS + column)
+        Row (width: Dimension::percent(100), height: TILE_HEIGHT, column_gap: 6) {
+            walk (0..columns).collect::<Vec<u32>>() with column {
+                cell (fm, row * columns + column)
             }
         }
     }
@@ -128,10 +128,12 @@ fn cell(fm: model!(FmState), position: u32) -> Entity {
     let id = fm.grid_entry(position);
     let kind = fm.entry_kind(id);
     let size = fm.icon_size() as i32;
+    let editing = fm.editing_folder_id() == Some(id);
+    let text_height = res!(FontManager).with(|fonts| controls::field_height(&fonts));
     ui! {
         View (
-            width: 104,
-            height: 98,
+            width: TILE_WIDTH,
+            height: TILE_HEIGHT,
             border_radius: 8,
             padding: pad_v(0),
             bg_color: ${ if fm.selected() == Some(id) { theme::SELECTION } else { theme::CLEAR } }
@@ -164,14 +166,42 @@ fn cell(fm: model!(FmState), position: u32) -> Entity {
                         size,
                     }
                 ]
-                Text (
-                    text: ${ { let _ = fm.names_revision(); fm.entry_title(id) } },
-                    width: Dimension::percent(100),
-                    font_size: text::SMALL,
-                    text_color: ColorToken::OnSurface,
-                    paragraph: ParagraphStyle::label()
-                )
-
+                if editing {
+                    TextInput (
+                        id: "inline_rename",
+                        width: Dimension::percent(100),
+                        height: text_height,
+                        font_size: text::SMALL,
+                        bg_color: ColorToken::SurfaceVariant,
+                        border_radius: 6,
+                        focus_border_color: ColorToken::SurfaceVariant
+                    ) [
+                        TextEditing::new(fm.edit_document()),
+                        Placeholder("untitled folder"),
+                        FieldFocus {
+                            color: theme::FOCUS.into(),
+                            radius: Fixed::from_int(8),
+                            width: Fixed::from_int(3),
+                        }
+                    ] on TextEditing::Changed {
+                        let text = fm.edit_text();
+                        fm.set_edit_text(&text);
+                    } on TextEditing::Submitted {
+                        fm.commit_inline_rename();
+                    } on FocusChanged {
+                        if !event.focused {
+                            fm.commit_inline_rename();
+                        }
+                    }
+                } else {
+                    Text (
+                        text: ${ { let _ = fm.names_revision(); fm.entry_title(id) } },
+                        width: Dimension::percent(100),
+                        font_size: text::SMALL,
+                        text_color: ColorToken::OnSurface,
+                        paragraph: ParagraphStyle::label()
+                    )
+                }
             }
         } on Tap {
             fm.select(id);

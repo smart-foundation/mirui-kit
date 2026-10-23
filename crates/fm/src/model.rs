@@ -122,6 +122,7 @@ pub enum DialogKind {
 /// A command offered by the command palette.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Command {
+    OpenPalette,
     NewFolder,
     ToggleView,
     ToggleTheme,
@@ -141,7 +142,7 @@ pub enum Command {
 }
 
 /// Every palette command: label, shortcut hint and what it does.
-pub const COMMANDS: [(&str, &str, Command); 16] = [
+pub const COMMANDS: [(&str, &str, Command); 17] = [
     ("New Folder", "Cmd N", Command::NewFolder),
     ("Toggle Icon or List View", "Cmd 1", Command::ToggleView),
     ("Toggle Light or Dark", "Cmd T", Command::ToggleTheme),
@@ -158,6 +159,7 @@ pub const COMMANDS: [(&str, &str, Command); 16] = [
     ("Take Screenshot", "Ctrl Shift S", Command::TakeScreenshot),
     ("About this Demo", "", Command::About),
     ("Dismiss", "Esc", Command::Dismiss),
+    ("Open Command Palette", "Ctrl P", Command::OpenPalette),
 ];
 
 /// Upper bound on files drawn in the icon grid. Five rows of eight tiles fit
@@ -177,6 +179,9 @@ pub const GRID_ROW_HEIGHT: i32 = 108;
 
 /// Height of one tile.
 pub const TILE_HEIGHT: i32 = 98;
+
+/// Width of one tile.
+pub const TILE_WIDTH: i32 = 104;
 
 /// How many rows the list view shows at most.
 pub const LIST_ROW_MAX: u32 = 48;
@@ -203,6 +208,8 @@ pub struct FmState {
     pub rename_document: model!(owned TextDocument),
     /// Backing document of the new folder field.
     pub folder_document: model!(owned TextDocument),
+    /// Backing document of the inline folder-name editor.
+    pub edit_document: model!(owned TextDocument),
     query: String,
     history: Vec<Place>,
     visible: Vec<u32>,
@@ -250,6 +257,9 @@ pub struct FmState {
     pub menu: Option<u32>,
     #[observe]
     pub dialog: Option<DialogKind>,
+    /// The folder whose name is being edited inline, if any.
+    #[observe]
+    pub editing_folder_id: Option<u32>,
     #[observe]
     pub palette: bool,
     #[observe]
@@ -278,7 +288,11 @@ pub struct FmState {
     /// The pointer event sequence the synchroniser has already seen.
     press_seq: u32,
     /// The window size, in logical pixels.
-    viewport: (i32, i32),
+    ///
+    /// Observed so the icon grid reflows its column count when the window is
+    /// resized.
+    #[observe]
+    pub viewport: (i32, i32),
     /// The notifications on screen, oldest first.
     notices: Vec<Notice>,
     /// How many timer ticks each notification has been on screen.
@@ -311,6 +325,7 @@ impl FmState {
             palette_document: TextDocument::new().into(),
             rename_document: TextDocument::new().into(),
             folder_document: TextDocument::new().into(),
+            edit_document: TextDocument::new().into(),
             query: String::new(),
             history: Vec::new(),
             visible: Vec::new(),
@@ -338,6 +353,7 @@ impl FmState {
             press_y: 0,
             menu: None,
             dialog: None,
+            editing_folder_id: None,
             palette: false,
             dragging: None,
             drop_target: None,
@@ -610,6 +626,16 @@ impl FmState {
         let _ = self.folder_document.set_text(text);
     }
 
+    /// The text of the inline folder-name editor.
+    pub fn edit_text(&self) -> String {
+        self.edit_document.read(|text| String::from(text))
+    }
+
+    /// Replace the text in the inline folder-name editor.
+    pub fn set_edit_text(&mut self, text: &str) {
+        let _ = self.edit_document.set_text(text);
+    }
+
     // --- command palette --------------------------------------------------
 
     /// Open the command palette.
@@ -667,6 +693,7 @@ impl FmState {
     pub fn run_command(&mut self, command: Command) {
         self.close_palette();
         match command {
+            Command::OpenPalette => self.open_palette(),
             Command::NewFolder => self.open_dialog(DialogKind::NewFolder),
             Command::ToggleView => {
                 let view = if self.view == ViewMode::Icons {
@@ -765,6 +792,59 @@ impl FmState {
         self.close_dialog();
         self.recompute();
         self.say("New folder created");
+    }
+
+    /// Append an empty folder to the current place and begin editing its name
+    /// inline (macOS/Windows style "create folder").
+    pub fn new_folder_inline(&mut self) {
+        let id = CREATED_BASE + self.created.len() as u32;
+        self.created.push(CreatedFolder {
+            id,
+            name: String::new(),
+            place: self.place,
+            day: 1,
+        });
+        self.names_revision += 1;
+        self.recompute();
+        self.start_inline_folder_rename(id);
+    }
+
+    /// Begin editing the name of a folder inline, pre-filling its current name.
+    pub fn start_inline_folder_rename(&mut self, folder_id: u32) {
+        self.editing_folder_id = Some(folder_id);
+        let _ = self.edit_document.set_text(&self.entry_title(folder_id));
+        self.revision += 1;
+    }
+
+    /// Commit the inline edit: name the folder, or drop an empty placeholder.
+    pub fn commit_inline_rename(&mut self) {
+        let Some(id) = self.editing_folder_id else { return };
+        let name = self.edit_text();
+        self.editing_folder_id = None;
+        let _ = self.edit_document.set_text("");
+        if name.trim().is_empty() {
+            self.created.retain(|f| f.id != id);
+            self.names_revision += 1;
+            self.recompute();
+            self.revision += 1;
+            return;
+        }
+        self.rename(id, &name);
+    }
+
+    /// Cancel the inline edit: remove a never-committed placeholder, or revert.
+    pub fn cancel_inline_rename(&mut self) {
+        let Some(id) = self.editing_folder_id else { return };
+        if id >= CREATED_BASE
+            && self.created.iter().any(|f| f.id == id && f.name.is_empty())
+        {
+            self.created.retain(|f| f.id != id);
+            self.names_revision += 1;
+        }
+        self.editing_folder_id = None;
+        let _ = self.edit_document.set_text("");
+        self.recompute();
+        self.revision += 1;
     }
 
     /// Move a file into another place.
@@ -1054,11 +1134,6 @@ impl FmState {
         self.press_seq = seq;
     }
 
-    /// The window size, in logical pixels.
-    pub fn viewport(&self) -> (i32, i32) {
-        self.viewport
-    }
-
     /// Record the window size, in logical pixels.
     pub fn set_viewport(&mut self, width: i32, height: i32) {
         self.viewport = (width, height);
@@ -1260,10 +1335,28 @@ impl FmState {
         self.visible.len().min(limit as usize) as u32
     }
 
+    /// How many tile columns fit in one row of the icon grid.
+    ///
+    /// Derived from the window width so the grid reflows as the window is
+    /// resized. Falls back to [`GRID_COLUMNS`] when the window size is not
+    /// known yet.
+    pub fn grid_columns(&self) -> u32 {
+        let (width, _) = self.viewport;
+        if width <= 0 {
+            return GRID_COLUMNS;
+        }
+        // The sidebar and the toolbar padding consume part of the window
+        // width; each tile column costs a tile plus the column gap.
+        let available = width.saturating_sub(216 + 2 * 16);
+        let pitch = TILE_WIDTH + 6;
+        let columns = available / pitch;
+        columns.clamp(4, GRID_COLUMNS as i32) as u32
+    }
+
     /// How many rows of tiles the icon grid has.
     pub fn grid_rows(&self) -> u32 {
         let count = self.grid_count();
-        count.div_ceil(GRID_COLUMNS)
+        count.div_ceil(self.grid_columns())
     }
 
     /// The row indexes of the icon grid.
@@ -1384,9 +1477,10 @@ impl FmState {
 
     /// A key that changes whenever the contents of a grid row change.
     pub fn grid_row_key(&self, row: u32) -> u64 {
+        let columns = self.grid_columns();
         let mut key = 0u64;
-        for column in 0..GRID_COLUMNS {
-            let id = self.grid_entry(row * GRID_COLUMNS + column);
+        for column in 0..columns {
+            let id = self.grid_entry(row * columns + column);
             key = key.wrapping_mul(31).wrapping_add(id as u64);
         }
         key

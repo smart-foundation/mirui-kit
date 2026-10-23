@@ -2,13 +2,17 @@
 //!
 //! A small panel anchored under the toolbar that holds the controls the file
 //! manager needs: icon size, hidden files and the sort order.
+//!
+//! The check box is the application's own: mirui's own is a filled rounded
+//! square without an outline and without a tick.
 
 use mirui::prelude::*;
-use mirui::ui::widgets::{Button, Checkbox, Slider, Text};
+use mirui::ui::widgets::{Button, Slider, Text};
 
 use crate::model::{FmState, SortMode};
 use crate::text;
 use crate::theme;
+use crate::ui::controls::CheckBox;
 use crate::ui::hover::HoverSurface;
 use crate::ui::kit::{pad, pad_v};
 
@@ -95,13 +99,17 @@ pub fn options_layer(fm: model!(FmState)) -> Entity {
                             radius: Fixed::from_int(4)
                         }
                     ] {
-                        Checkbox (
+                        View (
                             width: 16,
                             height: 16,
-                            checked: ${ fm.show_hidden() },
-                            checked_color: ColorToken::Primary,
-                            unchecked_color: ColorToken::Outline
-                        ) on Checkbox::Toggled {
+                            border_radius: 4
+                        ) [
+                            HitTarget
+                            CheckBox {
+                                model: fm.clone(),
+                                size: 16,
+                            }
+                        ] on Tap {
                             fm.toggle_hidden();
                         }
                         Text (text: "Show hidden files", font_size: text::SMALL, text_color: ColorToken::OnSurface)

@@ -5,17 +5,23 @@
 //! to the filter, so the list never has to be rebuilt.
 
 use mirui::prelude::*;
+use mirui::render::font::FontManager;
 use mirui::ui::widgets::{Button, Placeholder, Text, TextEditing, TextInput};
 
 use crate::model::{COMMANDS, FmState};
 use crate::text;
 use crate::theme;
+use crate::ui::controls::{self, FieldFocus};
 use crate::ui::hover::HoverSurface;
 use crate::ui::kit::{pad, pad_h, pad_v};
 
 /// The palette layer.
 #[compose]
 pub fn palette_layer(fm: model!(FmState)) -> Entity {
+    // The filter field is as tall as the line of type it holds: mirui lays
+    // the text of a field out from a fixed two pixel inset and never centres
+    // it, so the height follows the metrics of the typeface.
+    let text_height = res!(FontManager).with(|fonts| controls::field_height(&fonts));
     ui! {
         View (
             position: Position::Absolute,
@@ -66,14 +72,25 @@ pub fn palette_layer(fm: model!(FmState)) -> Entity {
                         padding: pad_h(8)
                     ) {
                         TextInput (
+                            id: "palette_filter",
                             width: Dimension::percent(100),
-                            height: 26,
+                            height: text_height,
                             font_size: text::SMALL,
                             bg_color: ColorToken::SurfaceVariant,
-                            border_radius: 6
+                            border_radius: 6,
+                            // mirui draws a square ring of its own when the
+                            // field has the focus. The ring is given the
+                            // colour of the field, so it cannot be seen: the
+                            // application draws its own, rounded.
+                            focus_border_color: ColorToken::SurfaceVariant
                         ) [
                             TextEditing::new(fm.palette_document()),
                             Placeholder("Type a command"),
+                            FieldFocus {
+                                color: theme::FOCUS.into(),
+                                radius: Fixed::from_int(8),
+                                width: Fixed::from_int(3),
+                            }
                         ] on TextEditing::Changed {
                             let text = fm.palette_text();
                             fm.set_palette_text(&text);
