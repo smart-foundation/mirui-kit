@@ -23,6 +23,9 @@ if status:
     full = "".join(lines)
     diagnostics = re.split(r"(?=^error(?:\[|:))", full, flags=re.M)
     text = "\n".join("\n".join(block.splitlines()[:18]) for block in diagnostics if block.startswith("error"))
+    failed_tests = full.find("\nfailures:\n")
+    if failed_tests >= 0:
+        text = full[failed_tests:failed_tests + 17000] + "\n" + text
     if not text:
         text = full[-18000:]
     if len(text) > 18000:
