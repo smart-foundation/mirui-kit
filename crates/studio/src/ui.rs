@@ -15,7 +15,7 @@ use mirui_kit::{
     layout::sidebar_toggle,
     scrollbar::ScrollBar,
     theme,
-    widgets::{action, field, number, text_size, toggle},
+    widgets::{action, action_with_intent, field, number, text_size, toggle},
 };
 use mirui_kit::{
     controls::{checkbox, choice_group, tree_view},
@@ -99,7 +99,7 @@ pub fn shell(state: model!(Studio)) -> Entity {
                             Column (width:${state.desktop_chrome().sidebar_width()},visible:${state.desktop_chrome().sidebar_visible()},height:Dimension::percent(100),padding:Padding::all(12),row_gap:4,bg_color:ColorToken::SurfaceVariant) {
                                 walk (0..6).collect::<alloc::vec::Vec<usize>>() with index {
                                     View (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(),state.actions().control_height())},border_radius:8,bg_color:${if state.route() as usize==index {theme::SELECTION} else {theme::CLEAR}}) [NavigationItem] {
-                                        mirui_kit::widgets::action_with_intent(state.actions(),COMMANDS[index].command as u16,COMMANDS[index].label.to_string(),COMMANDS[index].icon,false,(mirui_kit::style::Intent::Quiet))
+                                        action_with_intent(state.actions(),COMMANDS[index].command as u16,COMMANDS[index].label.to_string(),COMMANDS[index].icon,false,(mirui_kit::style::Intent::Quiet))
                                     }
                                 }
                                 View (grow:1.0)
