@@ -119,6 +119,10 @@ def main():
         parser.error('tolerance outside valid range')
     args.out.mkdir(parents=True, exist_ok=True)
     index = json.loads((args.captures/'index.json').read_text())
+    if index.get('schema') != 1 or not index.get('captures'):
+        raise ValueError('missing or empty native capture index')
+    if len({case['file'] for case in index['captures']}) != len(index['captures']):
+        raise ValueError('duplicate native capture filenames')
     results = []
     failed = False
     for case in index['captures']:
@@ -126,7 +130,9 @@ def main():
         if Path(name).name != name or not name.endswith('.png'):
             raise ValueError('unsafe capture filename')
         actual = args.captures/name
-        rgba(actual)  # validate even when no baseline exists
+        width, height, _ = rgba(actual)  # validate even when no baseline exists
+        if [width, height] != index['viewport']:
+            raise ValueError(f'capture does not match declared viewport: {name}')
         baseline = args.baseline/name
         if not baseline.exists():
             result = {'status': 'needs-review', 'reason': 'no explicitly approved baseline'}

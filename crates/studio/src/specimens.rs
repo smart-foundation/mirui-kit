@@ -66,7 +66,7 @@ pub fn specimen(fixture:model!(Fixture),state:model!(Studio),kind:Specimen,varia
                 Specimen::Checkbox=>{checkbox(state.actions(),state.demo_check(),10,"Include metadata".to_string(),false)}
                 Specimen::Switch=>{toggle(state.actions(),state.metadata(),10,"Include metadata")}
                 Specimen::Slider=>{number(state.actions(),state.quality(),10)}
-                Specimen::Group=>{choice_group(state.actions(),state.demo_choices(),10,false)}
+                Specimen::Group=>{choice_group(state.actions(),state.demo_choices(),10,false,false)}
                 Specimen::List=>{list_box(state.actions(),state.demo_options(),10,false)}
                 Specimen::Tree=>{tree_view(state.actions(),state.demo_hierarchy(),10,false)}
                 Specimen::Table=>{data_table(state.actions(),state.demo_table(),10,false)}
