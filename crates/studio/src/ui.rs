@@ -437,6 +437,7 @@ fn surface_link(state: model!(Studio), index: usize) -> Entity {
             | Surface::Move
     );
     ui! {
+        View (width:Dimension::percent(100)) {
         if available {
             action (
                 state.actions(),
@@ -453,6 +454,7 @@ fn surface_link(state: model!(Studio), index: usize) -> Entity {
                 font_size: ${ text_size(state.actions().text_scale(), font::BODY_SIZE) },
                 text_color: ColorToken::OnSurfaceVariant
             )
+        }
         }
     }
 }

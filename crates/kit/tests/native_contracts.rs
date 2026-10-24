@@ -56,3 +56,32 @@ fn unblocking_restores_preexisting_native_error_or_disabled_state() {
     InputAvailability::apply(&mut world,disabled,true);
     assert!(matches!(world.get::<UserState>(disabled),Some(UserState::Disabled)));
 }
+
+#[compose]
+fn panels(group:model!(ChoiceGroup))->Entity {
+    ui! {
+        Column (width:100,height:100) {
+            View (id:"first_panel",width:100,height:50) [mirui_kit::controls::TabPanel{group:group.clone(),item:1}]
+            View (id:"second_panel",width:100,height:50) [mirui_kit::controls::TabPanel{group:group.clone(),item:2}]
+        }
+    }
+}
+#[test]
+fn tab_panels_preserve_mounts_and_follow_explicit_activation() {
+    let mut app=App::headless(100,100);
+    app.with_default_widgets().with_default_systems();
+    mirui_kit::install(&mut app);
+    let group=app.add_model(ChoiceGroup::new(GroupKind::Single{required:true},Orientation::Horizontal,
+        vec![GroupItem{id:1,label:"One".into(),disabled:false},GroupItem{id:2,label:"Two".into(),disabled:false}]).unwrap()).finish();
+    let root=app.spawn_root().id();app.compose(root,panels(group.clone()));app.tick();
+    let first=app.world.find_by_id("first_panel").unwrap();
+    let second=app.world.find_by_id("second_panel").unwrap();
+    assert!(!app.world.has::<mirui::ui::Hidden>(first));
+    assert!(app.world.has::<mirui::ui::Hidden>(second));
+    group.navigate(mirui_kit::behavior::group::Move::Next,false);app.tick();
+    assert!(!app.world.has::<mirui::ui::Hidden>(first));
+    group.activate(2).unwrap();app.tick();
+    assert!(app.world.has::<mirui::ui::Hidden>(first));
+    assert!(!app.world.has::<mirui::ui::Hidden>(second));
+    assert!(app.world.is_alive(first));
+}

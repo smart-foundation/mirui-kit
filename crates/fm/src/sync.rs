@@ -261,6 +261,7 @@ pub fn field_focus(
     focus: res!(mut mirui::input::event::focus::FocusState),
     ids: res!(mirui::ui::IdMap),
     fields: query!(Entity, FieldScope),
+    restore_fields: query!(FieldScope),
     editors: query!(mirui::ui::widgets::TextEditing),
     disabled: query!(mirui_kit::availability::InputBlocked),
     commands: commands!(),
@@ -323,7 +324,7 @@ pub fn field_focus(
             let saved = memory.saved.take();
             focus
                 .focused
-                .filter(|&entity| fields.get(entity).is_some_and(|(_, scope)| scope.0 == 0))
+                .filter(|&entity| restore_fields.get(entity).is_some_and(|scope| scope.0 == 0))
                 .or_else(|| saved.filter(|&entity| editors.get(entity).is_some()))
         }
     } else {

@@ -34,6 +34,8 @@ fn arena_sources_expand_against_real_051_macros() {
     for file in [
         "crates/kit/src/widgets.rs",
         "crates/kit/src/controls.rs",
+        "crates/kit/src/button.rs",
+        "crates/kit/tests/native_contracts.rs",
         "crates/kit/src/feedback.rs",
         "crates/kit/src/forms.rs",
         "crates/kit/src/table.rs",

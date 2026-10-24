@@ -316,3 +316,27 @@ impl ChoiceGroupOwned {
         result
     }
 }
+
+/// Named content panel for a single-selection ChoiceGroup. The same controller
+/// drives a tab bar via choice_group(..., automatic_activation). In manual mode
+/// arrows move the active tab and Enter/Space activates it. Hidden panels stay
+/// mounted, preserving documents and application state.
+#[component]
+pub struct TabPanel {
+    pub group: model!(ChoiceGroup),
+    pub item: ItemId,
+}
+#[view(component=TabPanel, name="KitTabPanel", systems=[sync_panels::system()])]
+pub fn tab_panel() {}
+#[system]
+fn sync_panels(
+    panels: query!(Entity, TabPanel, optional mirui::ui::Hidden),
+    commands: commands!(),
+) {
+    for (entity,panel,hidden) in panels {
+        let visible = panel.group.selected(panel.item);
+        if visible == hidden.is_some() {
+            commands.set::<mirui::ui::property::prop::Visible>(entity,visible);
+        }
+    }
+}

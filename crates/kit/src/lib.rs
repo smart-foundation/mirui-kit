@@ -3,6 +3,7 @@
 extern crate alloc;
 pub mod availability;
 pub mod behavior;
+pub mod button;
 pub mod controls;
 pub mod editing_policy;
 pub mod feedback;
@@ -25,6 +26,8 @@ pub use widgets::{
 use mirui::prelude::*;
 /// Install assets and the shared component views once per App, after default widgets.
 pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) {
+    app.with_widget(button::availability::view());
+    app.with_widget(controls::tab_panel::view());
     field::install(app);
     theme::install(app);
     font::install(app);
