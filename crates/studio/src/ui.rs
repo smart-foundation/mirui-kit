@@ -40,6 +40,23 @@ fn command(state: model!(Studio), key: Command, overlay: bool) -> Entity {
         )
     }
 }
+/// Geometry markers shared by native presentation regression tests.
+#[component]
+pub struct NavigationItem;
+#[component]
+pub struct PreviewCard;
+
+/// Bounded task actions avoid turning every command into a full-width bar.
+/// The label and target grow with text scale; containing rows wrap natively.
+#[compose]
+fn compact_command(state: model!(Studio), key: Command, width: u16) -> Entity {
+    ui! {
+        View (width:${text_size(state.actions().text_scale(),width)},height:${text_size(state.actions().text_scale(),state.actions().control_height())}) {
+            command(state,key,false)
+        }
+    }
+}
+
 #[compose]
 fn heading(state: model!(Studio), title: &'static str, body: &'static str) -> Entity {
     ui! {
@@ -75,14 +92,14 @@ pub fn shell(state: model!(Studio)) -> Entity {
                         Row (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(),40)},padding:Padding::all(4),align:AlignItems::Center,column_gap:12,bg_color:theme::TOOLBAR) {
                             sidebar_toggle(state.desktop_chrome(),state.actions(),90,false)
                             Text ("NALEDZI / STUDIO",grow:1.0,font:font::SEMIBOLD,font_size:${text_size(state.actions().text_scale(), font::SECTION_SIZE)},text_color:ColorToken::OnSurface)
-                            View (width:196,height:40) { command(state,(Command::Palette),false) }
-                            View (width:160,height:40) { command(state,(Command::Help),false) }
+                            View (width:196,height:${text_size(state.actions().text_scale(),state.actions().control_height())}) { command(state,(Command::Palette),false) }
+                            View (width:160,height:${text_size(state.actions().text_scale(),state.actions().control_height())}) { command(state,(Command::Help),false) }
                         }
                         Row (width:Dimension::percent(100),grow:1.0) {
-                            Column (width:${state.desktop_chrome().sidebar_width()},visible:${state.desktop_chrome().sidebar_visible()},height:Dimension::percent(100),padding:Padding::all(12),row_gap:8,bg_color:ColorToken::SurfaceVariant) {
+                            Column (width:${state.desktop_chrome().sidebar_width()},visible:${state.desktop_chrome().sidebar_visible()},height:Dimension::percent(100),padding:Padding::all(12),row_gap:4,bg_color:ColorToken::SurfaceVariant) {
                                 walk (0..6).collect::<alloc::vec::Vec<usize>>() with index {
-                                    View (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(), 44)},padding:Padding::all(2),border_radius:10,bg_color:${if state.route() as usize==index {theme::SELECTION} else {ColorToken::SurfaceVariant}}) {
-                                        command(state,COMMANDS[index].command,false)
+                                    View (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(),state.actions().control_height())},border_radius:8,bg_color:${if state.route() as usize==index {theme::SELECTION} else {theme::CLEAR}}) [NavigationItem] {
+                                        mirui_kit::widgets::action_with_intent(state.actions(),COMMANDS[index].command as u16,COMMANDS[index].label.to_string(),COMMANDS[index].icon,false,(mirui_kit::style::Intent::Quiet))
                                     }
                                 }
                                 View (grow:1.0)
@@ -184,7 +201,7 @@ fn controls(state: model!(Studio)) -> Entity {
                 "Controls / Export preset",
                 "Validate a named preset and calculate a fixture summary. Nothing is encoded or written to disk."
             )
-            Row (width: Dimension::percent(100), column_gap: 24) {
+            Row (width: Dimension::percent(100), column_gap: 24, align:AlignItems::FlexStart) {
                 Column (grow: 1.0, row_gap: 14) {
                     Text (
                         "Preset name",
@@ -201,8 +218,10 @@ fn controls(state: model!(Studio)) -> Entity {
                     )
                     number (state.actions(), state.quality(), 101)
                     toggle (state.actions(), state.metadata(), 103, "Include sample metadata")
-                    command (state, (Command::Preview), false)
-                    command (state, (Command::SavePreset), false)
+                    Row (width:Dimension::percent(100),wrap:FlexWrap::Wrap,column_gap:8,row_gap:8) {
+                        compact_command(state,(Command::Preview),184)
+                        compact_command(state,(Command::SavePreset),218)
+                    }
                 }
                 Column (
                     width: 364,
@@ -210,7 +229,7 @@ fn controls(state: model!(Studio)) -> Entity {
                     row_gap: 16,
                     bg_color: ColorToken::SurfaceVariant,
                     border_radius: 12
-                ) {
+                ) [PreviewCard,mirui_kit::sizing::ContentFit] {
                     Text (
                         "PREVIEW CALCULATION",
                         font: font::SEMIBOLD,
@@ -517,7 +536,6 @@ fn foundations(state: model!(Studio)) -> Entity {
             }
             Column (
                 width: Dimension::percent(100),
-                height: 180,
                 padding: Padding::all(24),
                 row_gap: 16,
                 border_radius: 12,
@@ -531,7 +549,7 @@ fn foundations(state: model!(Studio)) -> Entity {
                         }
                     }
                 }
-            ) {
+            ) [mirui_kit::sizing::ContentFit] {
                 Text (
                     "Inter / A clear hierarchy",
                     font: font::SEMIBOLD,

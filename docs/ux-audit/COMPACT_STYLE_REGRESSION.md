@@ -34,3 +34,30 @@ restrained elevation and selected/default/hover/pressed/keyboard states reviewed
 together. The native slider's coupled paint/hit rectangle remains an upstream
 constraint. Screenshots must be inspected before accepting new visual baselines;
 none are automatically approved by this change.
+
+
+## Native verification — 2026-10-24
+
+Source revision `c30c56d`, Actions run
+[40104490897](https://github.com/smart-foundation/mirui-kit/actions/runs/40104490897)
+is successful: full workspace tests, native shared-kit contracts, Files pointer
+and overlay tests, shell geometry, no_std RISC-V, SDL compilation, syntax checks,
+six route captures and eight component capture shards. The final interaction
+helper now identifies actual `DropZone` file targets rather than same-height
+row containers; selection and overlay assertions were retained.
+
+Exact PNGs were recovered to `artifacts/studio/compact-review/` (ignored,
+regenerable), with `review.html` as an index. Reviewed all six Studio routes,
+the 1400×900 Files capture, and dark 100% button, field and numeric-entry
+resting specimens. Fifteen representative component PNGs were recovered in
+all; the remaining specimens and complete state matrix are not claimed reviewed.
+The 640/1180/1400 shell geometry is tested, but only the 1400 Files image was
+visually inspected in this pass.
+
+Observed: compact buttons and fields retain readable body type and restrained
+resting outlines; Files grid fills the pane and counts are inset. Studio is
+**not visually accepted**: the slider remains excessively thick, selected
+navigation wraps a button in an oversized blue backing, full-width commands
+flatten action hierarchy, preview panes waste space, and Collections/Surfaces
+still prioritize inventories over composed tasks. No visual baseline is approved
+and this run does not establish core framework parity or suite readiness.

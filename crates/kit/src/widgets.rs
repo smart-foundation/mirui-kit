@@ -184,6 +184,20 @@ pub fn action(
     icon: &'static Path,
     overlay: bool,
 ) -> Entity {
+    ui! { action_with_intent(actions,key,label,icon,overlay,(style::Intent::Neutral)) }
+}
+
+/// Shared action presentation, including quiet chrome/navigation actions.
+/// Input ownership, keyboard feedback and action dispatch are identical.
+#[compose]
+pub fn action_with_intent(
+    actions: model!(Actions),
+    key: u16,
+    label: String,
+    icon: &'static Path,
+    overlay: bool,
+    intent: style::Intent,
+) -> Entity {
     ui! {
         Button (
             size:ButtonSize::Custom,
@@ -191,10 +205,10 @@ pub fn action(
             min_width: 40,
             width: Dimension::percent(100),
             padding: Padding{left:8.into(),right:8.into(),top:4.into(),bottom:4.into()},
-            normal_color: ColorToken::SurfaceVariant,
+            normal_color: intent.background(),
             pressed_color: theme::PRESSED,
             border_radius: 8,
-            border_width: style::OUTLINE_WIDTH,
+            border_width: if intent==style::Intent::Quiet {0} else {style::OUTLINE_WIDTH},
             border_color: ColorToken::Outline
         ) [
             FocusRing {
@@ -209,12 +223,12 @@ pub fn action(
                 align: AlignItems::Center,
                 column_gap: 10
             ) {
-                Icon (path: icon.clone(), width: 18, height: 18, color: ColorToken::OnSurface)
+                Icon (path: icon.clone(), width: 18, height: 18, color: intent.foreground())
                 Text (
                     text: label.clone(),
                     font: font::MEDIUM,
                     font_size: ${ text_size(actions.text_scale(), font::BODY_SIZE) },
-                    text_color: ColorToken::OnSurface
+                    text_color: intent.foreground()
                 )
             }
         } on Tap { let _=actions.activate(key, overlay); } on Key(|event: event!(Key)| {

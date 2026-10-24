@@ -31,3 +31,46 @@ fn a_short_badge_hugs_its_content_instead_of_stretching_into_a_banner() {
         assert!(rect.w<bounds.w/2,"short badge unexpectedly filled the content column");
     }
 }
+
+#[test]
+fn showcase_navigation_has_one_compact_selection_surface() {
+    for scale in [100,150] {
+        let mut app=App::headless(1400,900);
+        app.with_default_widgets().with_default_systems();
+        let state=studio::install(&mut app);
+        state.actions().set_scale(scale);
+        for _ in 0..6 {app.tick();app.render().unwrap();}
+        let mut count=0;
+        for (entity,_) in app.world.query::<studio::ui::NavigationItem>().iter() {
+            let rect=app.world.get::<mirui::ui::ComputedRect>(entity).unwrap().0;
+            assert_eq!(rect.h,Fixed::from_int(mirui_kit::widgets::text_size(scale,32) as i32),"navigation backing must match its control, not add a padded second selection");
+            assert!(rect.w>Fixed::ZERO);
+            count+=1;
+        }
+        assert_eq!(count,6);
+    }
+}
+
+#[test]
+fn preview_card_hugs_content_and_task_actions_do_not_fill_the_form() {
+    use studio::commands::Command;
+    for scale in [100,150] {
+        let mut app=App::headless(1400,900);
+        app.with_default_widgets().with_default_systems();
+        let state=studio::install(&mut app);
+        state.actions().set_scale(scale);
+        state.actions().activate(Command::Controls as u16,false).unwrap();
+        for _ in 0..8 {app.tick();app.render().unwrap();}
+        let card=app.world.query::<studio::ui::PreviewCard>().iter().next().expect("preview card").0;
+        let rect=app.world.get::<mirui::ui::ComputedRect>(card).unwrap().0;
+        assert!(rect.h>Fixed::from_int(80),"preview content collapsed");
+        assert!(rect.h<Fixed::from_int(300),"short preview stretched into an empty panel");
+        for command in [Command::Preview,Command::SavePreset] {
+            let action=app.world.query::<mirui_kit::FocusItem>().iter().find(|(_,item)|item.order==command as u16).expect("task action").0;
+            let action=app.world.get::<mirui::ui::ComputedRect>(action).unwrap().0;
+            assert!(action.w>Fixed::from_int(100));
+            assert!(action.w<Fixed::from_int(400),"task action stretched across its form");
+            assert_eq!(action.h,Fixed::from_int(mirui_kit::widgets::text_size(scale,32) as i32));
+        }
+    }
+}
