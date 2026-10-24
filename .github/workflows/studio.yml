@@ -4,6 +4,11 @@ on:
     branches: [master, "arena/**"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      export_review:
+        description: Export exact native route PNGs through the Checks API for restricted reviewers
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -40,6 +45,24 @@ jobs:
       - name: Fresh route and overlay captures
         if: ${{ !cancelled() }}
         run: python3 tools/ci-check.py cargo run --locked -p studio-host --bin studio-snapshot -- --out artifacts/studio
+      - name: Export native route 1 review evidence
+        if: ${{ !cancelled() && inputs.export_review }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s01-*.png
+      - name: Export native route 2 review evidence
+        if: ${{ !cancelled() && inputs.export_review }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s02-*.png
+      - name: Export native route 3 review evidence
+        if: ${{ !cancelled() && inputs.export_review }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s03-*.png
+      - name: Export native route 4 review evidence
+        if: ${{ !cancelled() && inputs.export_review }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s04-*.png
+      - name: Export native route 5 review evidence
+        if: ${{ !cancelled() && inputs.export_review }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s05-*.png
+      - name: Export native route 6 review evidence
+        if: ${{ !cancelled() && inputs.export_review }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s06-*.png
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
