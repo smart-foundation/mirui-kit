@@ -297,11 +297,12 @@ pub fn number(actions: model!(Actions), number: model!(Number), key: u16) -> Ent
             ) on Slider::ValueChanged(|event: event!(mirui::ui::widgets::slider::ValueChanged)| {
                 number.set(event.new);
             })
-            Row (width: Dimension::percent(100), height: 40, column_gap: 8) {
+            Row (width: Dimension::percent(100), height: ${text_size(actions.text_scale(),actions.control_height())}, align:AlignItems::Center, column_gap: 8) {
                 Button (
                     "- 5",
                     width: 80,
-                    height: 40,
+                    height: ${text_size(actions.text_scale(),actions.control_height())},
+                    border_radius:style::RADIUS,
                     font: font::MEDIUM,
                     font_size: ${ text_size(actions.text_scale(), font::BODY_SIZE) },
                     border_width: style::OUTLINE_WIDTH,
@@ -329,7 +330,8 @@ pub fn number(actions: model!(Actions), number: model!(Number), key: u16) -> Ent
                 Button (
                     "+ 5",
                     width: 80,
-                    height: 40,
+                    height: ${text_size(actions.text_scale(),actions.control_height())},
+                    border_radius:style::RADIUS,
                     font: font::MEDIUM,
                     font_size: ${ text_size(actions.text_scale(), font::BODY_SIZE) },
                     border_width: style::OUTLINE_WIDTH,
@@ -373,7 +375,7 @@ pub fn toggle(
     ui! {
         Row (
             width: Dimension::percent(100),
-            height: 40,
+            height: ${text_size(actions.text_scale(),actions.control_height())},
             align: AlignItems::Center,
             column_gap: 12
         ) {
@@ -430,7 +432,7 @@ pub fn focus_ring(
     theme: res!(Theme),
     paint: paint!(),
 ) {
-    if !actions.focus_visible() || focus.focused != Some(node) {
+    if !actions.focus_visible || focus.focused != Some(node) {
         return;
     }
     paint.draw(&mirui::render::DrawCommand::Border {

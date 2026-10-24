@@ -71,8 +71,8 @@ pub fn frame(frame: component!(), theme: res!(Theme), paint: paint!()) {
         transform: paint.transform(),
         quad: paint.quad(),
         color: theme.resolve(crate::theme::FOCUS),
-        width: Fixed::from_int(3),
-        radius: Fixed::from_int(8),
+        width: Fixed::from_int(crate::style::FOCUS_WIDTH),
+        radius: Fixed::from_int(crate::style::RADIUS),
         opa: 255,
     });
 }
