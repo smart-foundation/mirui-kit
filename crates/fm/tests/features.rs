@@ -605,7 +605,7 @@ fn every_context_action_fits_inside_the_menu_panel() {
         let mut visible=false;
         for _ in 0..64 {
             let Some(node)=ancestor else {visible=true;break;};
-            if app.world.has::<mirui::ui::Hidden>(node) {break;}
+            if mirui::ui::branch::is_effectively_hidden(&app.world,node) {break;}
             ancestor=app.world.get::<mirui::ui::Parent>(node).map(|parent|parent.0);
         }
         if !visible {continue;}
