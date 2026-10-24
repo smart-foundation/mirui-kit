@@ -87,7 +87,7 @@ pub fn specimen(fixture:model!(Fixture),state:model!(Studio),kind:Specimen,varia
 
 pub fn install<B:Surface,F:RendererFactory<B>>(app:&mut App<B,F>,kind:Specimen,variant:&'static str,scale:u16,theme:&str)->FixtureHandle {
     mirui_kit::install(app);
-    let _=app.set_theme(theme);
+    match theme {"light"=>app.set_theme("light"),"dark"=>app.set_theme("dark"),_=>panic!("unknown specimen theme")}.expect("registered specimen theme");
     let fixture=app.add_model(Fixture::default()).finish();
     prepare(&fixture,kind,variant,scale);
     if variant=="focused" {mirui_kit::bind_actions(app,fixture.state().actions());}
