@@ -263,10 +263,12 @@ fn first_tile_centre(app: &App<ScriptedSurface, mirui::render::SwRendererFactory
         .world
         .query::<mirui::ui::ComputedRect>()
         .iter()
-        .filter(|(_, rect)| {
+        .filter(|(entity, rect)| {
             rect.0.x >= panel.x + panel.w
                 && rect.0.w > Fixed::ZERO
-                && rect.0.h == Fixed::from_int(98)
+                && rect.0.h == Fixed::from_int(fm::model::TILE_HEIGHT)
+                && app.world.get::<fm::ui::content::DropZone>(*entity)
+                    .is_some_and(|zone| zone.place.is_none())
         })
         .map(|(_, rect)| rect.0)
         .collect();
