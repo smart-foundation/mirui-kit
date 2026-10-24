@@ -1,6 +1,6 @@
+//! Reproducible fresh-App captures of all routes and real overlay entry flows.
 mod capture_png;
 use capture_png::write_png;
-//! Reproducible fresh-App captures of all routes and real overlay entry flows.
 use mirui::{
     prelude::*,
     render::texture::ColorFormat,
