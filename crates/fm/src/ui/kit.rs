@@ -36,28 +36,18 @@ pub const fn pad_v(v: i32) -> Padding {
     pad(v, 0, v, 0)
 }
 
+#[component]
+pub struct CountBadge;
+
 /// A small rounded pill that displays a count.
 #[compose]
 pub fn badge(count: u32) -> Entity {
-    ui! {
-        View (
-            width: Dimension::Auto,
-            height: 18,
-            border_radius: 9,
-            bg_color: theme::BADGE,
-            align: AlignItems::Center,
-            justify: JustifyContent::Center,
-            padding: pad_h(6),
-        ) [
-            HitTarget
-        ] {
-            Text (
-                text: ${ count.to_string() },
-                font_size: text::SMALL,
-                text_color: theme::BADGE_TEXT,
-            )
-        }
-    }
+    ui! {View (
+        width:Dimension::Content,height:18,shrink:0.0,
+        border_radius:9,bg_color:theme::BADGE,
+        align:AlignItems::Center,justify:JustifyContent::Center,padding:pad_h(6),
+        font_size:text::SMALL,text_color:theme::BADGE_TEXT
+    ) [Text::label(count.to_string()),CountBadge]}
 }
 
 /// A centered icon + label for empty grids.

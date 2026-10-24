@@ -47,6 +47,21 @@ jobs:
       - name: Fresh route and overlay captures
         if: ${{ !cancelled() }}
         run: python3 tools/ci-check.py cargo run --locked -p studio-host --bin studio-snapshot -- --out artifacts/studio
+      - name: Actual Files shell at narrow, desktop and inspector sizes
+        if: ${{ !cancelled() }}
+        run: python3 tools/ci-check.py cargo run --locked -p snapshot --bin files-layout-snapshot
+      - name: Exact Files app PNG evidence 1
+        if: ${{ !cancelled() && success() }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/files-layout/files-dark-1400x900.png 1
+      - name: Exact Files app PNG evidence 2
+        if: ${{ !cancelled() && success() }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/files-layout/files-dark-1400x900.png 2
+      - name: Exact Files app PNG evidence 3
+        if: ${{ !cancelled() && success() }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/files-layout/files-dark-1400x900.png 3
+      - name: Exact Files app PNG evidence 4
+        if: ${{ !cancelled() && success() }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/files-layout/files-dark-1400x900.png 4
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:

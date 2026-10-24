@@ -34,6 +34,7 @@ pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) -> model:
     sync::install_notifications(app, &state);
     app.add_system(sync::theme_sync::system(state.clone()));
     app.add_system(sync::drag_tracking::system(state.clone()));
+    app.add_system(sync::content_geometry::system(state.clone()));
     app.add_resource(sync::FieldFocusState::default());
     app.add_system(sync::field_focus::system(state.clone()));
     app.on_event(Key::EVENT, sync::escape::callback(state.clone()));

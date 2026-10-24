@@ -179,7 +179,7 @@ fn a_right_click_opens_the_context_menu() {
     let query = app.world.query::<mirui::ui::ComputedRect>();
     let mut tiles: Vec<mirui::types::Rect> = query
         .iter()
-        .filter(|(_, rect)| rect.0.w.to_int() == 104 && rect.0.h.to_int() == 98)
+        .filter(|(entity, rect)| rect.0.h.to_int() == fm::model::TILE_HEIGHT && app.world.get::<fm::ui::content::DropZone>(*entity).is_some_and(|zone|zone.place.is_none()))
         .map(|(_, rect)| rect.0)
         .collect();
     tiles.sort_by_key(|rect| (rect.y.to_int(), rect.x.to_int()));
@@ -218,7 +218,7 @@ fn dragging_a_file_onto_a_sidebar_place_moves_it() {
     let query = app.world.query::<mirui::ui::ComputedRect>();
     let mut tiles: Vec<mirui::types::Rect> = query
         .iter()
-        .filter(|(_, rect)| rect.0.w.to_int() == 104 && rect.0.h.to_int() == 98)
+        .filter(|(entity, rect)| rect.0.h.to_int() == fm::model::TILE_HEIGHT && app.world.get::<fm::ui::content::DropZone>(*entity).is_some_and(|zone|zone.place.is_none()))
         .map(|(_, rect)| rect.0)
         .collect();
     tiles.sort_by_key(|rect| (rect.y.to_int(), rect.x.to_int()));
@@ -228,14 +228,14 @@ fn dragging_a_file_onto_a_sidebar_place_moves_it() {
 
     // The "Projects" row of the sidebar.
     let ids = app.world.resource::<mirui::ui::IdMap>().expect("ids");
-    let sidebar = ids.get("sidebar").expect("the sidebar");
+    let sidebar = ids.get("place_projects").expect("the Projects row");
     let sidebar_rect = app
         .world
         .get::<mirui::ui::ComputedRect>(sidebar)
         .expect("the sidebar rect")
         .0;
     let to_x = (sidebar_rect.x + sidebar_rect.w / 2).to_int();
-    let to_y = (sidebar_rect.y + Fixed::from_int(130)).to_int();
+    let to_y = (sidebar_rect.y + sidebar_rect.h / 2).to_int();
 
     let mut events = vec![InputEvent::PointerDown {
         kind: PointerKind::Mouse,

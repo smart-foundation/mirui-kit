@@ -18,7 +18,7 @@ use mirui::render::font::FontManager;
 use mirui::ui::widgets::{ParagraphStyle, Placeholder, Text, TextEditing, TextInput};
 
 use crate::data::Kind;
-use crate::model::{DialogKind, DropTarget, FmState, TILE_HEIGHT, TILE_WIDTH, ViewMode};
+use crate::model::{DialogKind, DropTarget, FmState, TILE_HEIGHT, ViewMode};
 use crate::text;
 use crate::theme;
 use crate::ui::controls;
@@ -43,6 +43,9 @@ pub struct DropZone {
 
 impl mirui::ecs::Component for DropZone {}
 
+#[component]
+pub struct ContentViewport;
+
 /// The content pane.
 ///
 /// The scroller and its scroll bar live in the same branch, so the bar can
@@ -51,11 +54,12 @@ impl mirui::ecs::Component for DropZone {}
 pub fn area(fm: model!(FmState)) -> Entity {
     ui! {
         Column (
+            id: "files_content",
             container: true,
             grow: 1.0,
             shrink: 1.0,
             bg_color: ColorToken::Surface
-        ) {
+        ) [ContentViewport] {
             if ${ fm.view() == ViewMode::Icons } {
                 Scroll (
                     id: "grid_scroller",
@@ -70,7 +74,7 @@ pub fn area(fm: model!(FmState)) -> Entity {
                     ) {
                         // Keyed by a checksum of the row: any change to the
                         // listing rebuilds the rows whose files changed.
-                        walk ${ { let _ = fm.listing_revision(); if fm.view() == ViewMode::Icons { fm.grid_row_indexes() } else { Vec::new() } } } with row by fm.grid_row_key(row).wrapping_mul(1_000_003).wrapping_add(fm.icon_size() as u64) {
+                        walk ${ { let _ = fm.listing_revision(); let _ = fm.content_width(); let _ = fm.viewport(); if fm.view() == ViewMode::Icons { fm.grid_row_indexes() } else { Vec::new() } } } with row by fm.grid_row_key(row).wrapping_mul(1_000_003).wrapping_add(fm.icon_size() as u64) {
                             grid_row (fm, row)
                         }
                     }
@@ -120,7 +124,11 @@ fn grid_row(fm: model!(FmState), row: u32) -> Entity {
     ui! {
         Row (width: Dimension::percent(100), height: TILE_HEIGHT, column_gap: 6) {
             walk (0..columns).collect::<Vec<u32>>() with column {
-                cell (fm, row * columns + column)
+                if row * columns + column < fm.grid_count() {
+                    cell (fm, row * columns + column)
+                } else {
+                    View (width:0,grow:1.0,height:TILE_HEIGHT)
+                }
             }
         }
     }
@@ -136,7 +144,10 @@ fn cell(fm: model!(FmState), position: u32) -> Entity {
     let text_height = res!(FontManager).with(|fonts| controls::field_height(&fonts));
     ui! {
         View (
-            width: TILE_WIDTH,
+            width: 0,
+            grow: 1.0,
+            shrink: 1.0,
+            min_width: 0,
             height: TILE_HEIGHT,
             border_radius: 8,
             padding: pad_v(0),

@@ -6,7 +6,7 @@ use mirui::prelude::*;
 
 use crate::model::FmState;
 use crate::theme;
-use crate::ui::chrome::{titlebar, toolbar};
+use crate::ui::chrome::{sidebar_caption, toolbar};
 use crate::ui::content::area;
 use crate::ui::dialog::dialog_layer;
 use crate::ui::inspector::panel;
@@ -15,7 +15,6 @@ use crate::ui::options::options_layer;
 use crate::ui::palette::palette_layer;
 use crate::ui::sidebar::sidebar;
 use crate::ui::status::{bar, toast};
-use crate::ui::kit::pad;
 
 pub mod chrome;
 pub mod content;
@@ -41,32 +40,20 @@ pub fn shell(fm: model!(FmState)) -> Entity {
             height: Dimension::percent(100),
             bg_color: ColorToken::Surface
         ) {
-            // The chrome floats in the window: padded in from the edges and
-            // centred so it never touches the window border on GNOME.
-            View (
-                width: Dimension::percent(100),
-                id: "chrome_frame",
-                height: 84,
-                padding: pad(10, 24, 0, 24),
-                align: AlignItems::Center,
-            ) {
-                Column (
-                    width: Dimension::percent(100),
-                    height: 74,
-                    row_gap: 0,
-                    bg_color: theme::TOOLBAR,
-                    border_radius: 12,
-                ) {
-                    titlebar ()
-                    toolbar (fm)
+            Row (id:"chrome_frame",width:Dimension::percent(100),height:${{let _=fm.viewport();fm.header_height()}},bg_color:theme::TOOLBAR) {
+                sidebar_caption (fm)
+                toolbar (fm)
+            }
+            Row (id:"content_frame",width:Dimension::percent(100),grow:1.0) {
+                sidebar (fm)
+                Column (grow:1.0,shrink:1.0,height:Dimension::percent(100),min_width:0) {
+                    Row (width:Dimension::percent(100),grow:1.0) {
+                        area (fm)
+                        panel (fm)
+                    }
+                    bar (fm)
                 }
             }
-            Row (id:"content_frame",width: Dimension::percent(100), grow: 1.0) {
-                sidebar (fm)
-                area (fm)
-                panel (fm)
-            }
-            bar (fm)
             options_layer (fm)
             // The message sits below the menu: when both are on screen the
             // menu wins the hit test, so its dismissal is not swallowed.

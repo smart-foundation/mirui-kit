@@ -72,7 +72,7 @@ fn a_hovered_tile_is_visibly_different() {
     let query = app.world.query::<mirui::ui::ComputedRect>();
     let mut tiles: Vec<mirui::types::Rect> = query
         .iter()
-        .filter(|(_, rect)| rect.0.w.to_int() == 104 && rect.0.h.to_int() == 98)
+        .filter(|(entity, rect)| rect.0.h.to_int() == fm::model::TILE_HEIGHT && app.world.get::<fm::ui::content::DropZone>(*entity).is_some_and(|zone|zone.place.is_none()))
         .map(|(_, rect)| rect.0)
         .collect();
     tiles.sort_by_key(|rect| (rect.y.to_int(), rect.x.to_int()));

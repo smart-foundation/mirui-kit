@@ -375,3 +375,12 @@ pub fn escape(
     }
     true
 }
+
+/// Grid reflow follows the real pane, including inspector and sidebar changes.
+#[system]
+pub fn content_geometry(rows:query!(crate::ui::content::ContentViewport,mirui::ui::ComputedRect),state:model!(crate::model::FmState)) {
+    for (_,rect) in rows {
+        let width=rect.0.w.to_int();
+        if width>0 && state.content_width()!=width {state.set_content_width(width);}
+    }
+}

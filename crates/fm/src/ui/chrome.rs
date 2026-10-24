@@ -18,85 +18,51 @@ use mirui::ui::clipboard::ClipboardFinished;
 use mirui_kit::field::{FieldContent, FieldFrame, focus as field_focus};
 use mirui_kit::selection::clipboard_finished;
 
-/// The unified toolbar.
+/// Sidebar-aligned, non-scrolling caption cap. Actual window controls belong
+/// to the host; do not draw nonfunctional traffic lights inside a decorated OS window.
 #[compose]
-pub fn toolbar(fm: model!(FmState)) -> Entity {
-    ui! {
-        Row (
-            width: Dimension::percent(100),
-            height: 52,
-            bg_color: theme::TOOLBAR,
-            align: AlignItems::Center,
-            column_gap: 8,
-            padding: pad(0, 12, 0, 12),
-            border_radius: 12
-        ) {
+pub fn sidebar_caption(fm:model!(FmState))->Entity {
+    ui! {Column (id:"sidebar_caption",width:216,shrink:0.0,height:Dimension::percent(100),bg_color:ColorToken::SurfaceVariant) {
+        Row (width:Dimension::percent(100),height:56,padding:pad_h(12),align:AlignItems::Center,column_gap:8) {
+            Text ("Files",width:0,grow:1.0,font:MEDIUM,font_size:text::BODY,text_color:ColorToken::OnSurface)
+            Button (id:"sidebar_toggle",width:80,height:32,font:MEDIUM,font_size:text::BODY,normal_color:theme::CLEAR,pressed_color:theme::SELECTION,border_radius:6) [Text::label("Sidebar"),Focusable] on Tap {fm.toggle_sidebar();} on Key(|event:event!(Key)| {
+                if event.pressed && event.repeat!=Some(true) && (event.code==13 || event.physical==Some(PhysicalKey::Space)) {fm.toggle_sidebar();return true;} false
+            })
+        }
+    }}
+}
+
+/// Navigation and commands occupy one row on desktop widths. Narrow windows
+/// retain search and view controls on a second row, with all other commands
+/// available through the explicitly labelled Actions palette.
+#[compose]
+pub fn toolbar(fm:model!(FmState))->Entity {
+    ui! {Column (id:"files_toolbar",grow:1.0,shrink:1.0,min_width:0,height:Dimension::percent(100),bg_color:theme::TOOLBAR) {
+        Row (width:Dimension::percent(100),height:56,align:AlignItems::Center,column_gap:8,padding:pad_h(12)) {
             back_button (fm)
             forward_button (fm)
-            Column (width: 240, height: 34, row_gap: 0, justify: JustifyContent::Center) {
-                Text (
-                    text: ${ data::place_name(fm.place()) },
-                    font: MEDIUM,
-                    font_size: text::BODY,
-                    height: 17,
-                    text_color: ColorToken::OnSurface
-                )
-                Text (
-                    text: "/Users/demo/Cloud",
-                    font_size: text::SMALL,
-                    height: 15,
-                    text_color: ColorToken::OnSurfaceVariant
-                )
+            Column (width:0,grow:1.0,shrink:1.0,min_width:0,height:34,row_gap:0,justify:JustifyContent::Center) {
+                Text (text:${data::place_name(fm.place())},width:Dimension::percent(100),font:MEDIUM,font_size:text::BODY,height:17,text_color:ColorToken::OnSurface)
+                Text ("/Users/demo/Cloud",width:Dimension::percent(100),font_size:text::SMALL,height:15,text_color:ColorToken::OnSurfaceVariant)
             }
-            View (grow: 1.0)
-            palette_button (fm)
-            new_folder_button (fm)
-            segmented_control (fm)
-            search_field (fm)
+            if ${{let _=fm.viewport();!fm.compact_toolbar()}} {
+                palette_button (fm)
+                new_folder_button (fm)
+                segmented_control (fm)
+                search_field (fm,false)
+                inspector_button (fm)
+                theme_button (fm)
+            }
             options_button (fm)
-            inspector_button (fm)
-            theme_button (fm)
         }
-    }
-}
-
-/// The window titlebar: the traffic lights live here, outside the content
-/// toolbar, so the toolbar keeps a clean nav/actions split (place column left
-/// of the grow spacer, actions to its right).
-#[compose]
-pub fn titlebar() -> Entity {
-    ui! {
-        Row (
-            width: Dimension::percent(100),
-            height: 22,
-            bg_color: theme::TOOLBAR,
-            align: AlignItems::Center,
-            column_gap: 8,
-            padding: pad(0, 12, 0, 12),
-            border_radius: 12
-        ) {
-            traffic_lights ()
-            View (grow: 1.0)
-            Text (
-                text: "Files",
-                font: MEDIUM,
-                font_size: text::BODY,
-                text_color: ColorToken::OnSurface
-            )
+        if ${{let _=fm.viewport();fm.compact_toolbar()}} {
+            Row (id:"compact_commands",width:Dimension::percent(100),height:48,align:AlignItems::Center,column_gap:8,padding:pad_h(12)) {
+                search_field (fm,true)
+                segmented_control (fm)
+                Button (id:"compact_actions",width:72,height:32,font:MEDIUM,font_size:text::BODY,normal_color:theme::CLEAR,pressed_color:theme::SELECTION,border_radius:6) [Text::label("Actions"),Focusable] on Tap {fm.open_palette();}
+            }
         }
-    }
-}
-
-/// The three window buttons.
-#[compose]
-fn traffic_lights() -> Entity {
-    ui! {
-        Row (width: 66, height: 20, column_gap: 8, align: AlignItems::Center) {
-            View (width: 12, height: 12, border_radius: 6, bg_color: theme::TRAFFIC_RED)
-            View (width: 12, height: 12, border_radius: 6, bg_color: theme::TRAFFIC_YELLOW)
-            View (width: 12, height: 12, border_radius: 6, bg_color: theme::TRAFFIC_GREEN)
-        }
-    }
+    }}
 }
 
 /// The back chevron, live only when there is history.
@@ -252,12 +218,15 @@ fn new_folder_button(fm: model!(FmState)) -> Entity {
 ///
 /// The search field owns its whole 40px hit area, not just the text line.
 #[compose]
-fn search_field(fm: model!(FmState)) -> Entity {
+fn search_field(fm: model!(FmState), flexible:bool) -> Entity {
     let text_height = res!(FontManager).with(|fonts| controls::field_height(&fonts));
     ui! {
         Row (
             id: "toolbar_search_frame",
-            width: 224,
+            width: if flexible {0} else {224},
+            grow: if flexible {1.0} else {0.0},
+            shrink: 1.0,
+            min_width: 0,
             height: 40,
             padding: pad_h(10),
             column_gap: 8,

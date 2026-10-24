@@ -296,6 +296,11 @@ pub struct FmState {
     /// resized.
     #[observe]
     pub viewport: (i32, i32),
+    #[observe]
+    pub sidebar_visible: bool,
+    /// Measured content pane, excluding the sidebar and inspector.
+    #[observe]
+    pub content_width: i32,
     /// The notifications on screen, oldest first.
     notices: Vec<Notice>,
     /// How many timer ticks each notification has been on screen.
@@ -372,6 +377,8 @@ impl FmState {
             content_pointer_down: false,
             content_pointer_blocked: false,
             viewport: (0, 0),
+            sidebar_visible: true,
+            content_width: 0,
             notices: Vec::new(),
             notice_ages: Vec::new(),
             notice_count: 0,
@@ -1197,6 +1204,11 @@ impl FmState {
         self.viewport = (width, height);
     }
 
+    pub fn toggle_sidebar(&mut self) { self.sidebar_visible = !self.sidebar_visible; }
+    pub fn set_content_width(&mut self, width: i32) { self.content_width = width.max(0); }
+    pub fn compact_toolbar(&self) -> bool { self.viewport.0 > 0 && self.viewport.0 < 1180 }
+    pub fn header_height(&self) -> i32 { if self.compact_toolbar() {104} else {56} }
+
     /// Whether a point falls inside the open context menu.
     pub fn menu_contains(&self, x: i32, y: i32) -> bool {
         x >= self.menu_x
@@ -1399,16 +1411,15 @@ impl FmState {
     /// resized. Falls back to [`GRID_COLUMNS`] when the window size is not
     /// known yet.
     pub fn grid_columns(&self) -> u32 {
-        let (width, _) = self.viewport;
-        if width <= 0 {
-            return GRID_COLUMNS;
-        }
-        // The sidebar and the toolbar padding consume part of the window
-        // width; each tile column costs a tile plus the column gap.
-        let available = width.saturating_sub(216 + 2 * 16);
-        let pitch = TILE_WIDTH + 6;
-        let columns = available / pitch;
-        columns.clamp(4, GRID_COLUMNS as i32) as u32
+        if self.content_width <= 0 && self.viewport.0 <= 0 { return GRID_COLUMNS; }
+        let pane = if self.content_width > 0 { self.content_width } else {
+            self.viewport.0.saturating_sub(if self.sidebar_visible {216} else {0})
+                .saturating_sub(if self.inspector {236} else {0})
+        };
+        // Both insets and the n-1 gaps must fit. Eight was a fallback, not
+        // a maximum; allow one column in genuinely narrow content panes.
+        let available = pane.saturating_sub(32).max(0);
+        ((available + 6) / (TILE_WIDTH + 6)).clamp(1, 64) as u32
     }
 
     /// How many rows of tiles the icon grid has.

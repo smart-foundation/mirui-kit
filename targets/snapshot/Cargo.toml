@@ -1,5 +1,6 @@
 [package]
 name = "snapshot"
+default-run = "snapshot"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,3 +12,7 @@ fm = { workspace = true }
 mirui = { workspace = true, default-features = false, features = ["std"] }
 png = "0.18"
 sdl2-link = { workspace = true }
+
+[[bin]]
+name = "files-layout-snapshot"
+path = "src/layout.rs"

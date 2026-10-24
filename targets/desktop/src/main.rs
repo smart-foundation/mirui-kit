@@ -170,6 +170,24 @@ fn shot_path() -> Option<PathBuf> {
         .map(PathBuf::from)
 }
 
+/// Initial logical size is configurable even while the pinned SDL backend
+/// lacks a complete resize/buffer-reallocation path. Do not merely mark the
+/// native window resizable while leaving its framebuffer fixed.
+fn initial_size() -> (u16,u16) {
+    let mut size=(WIDTH,HEIGHT);
+    let mut args=std::env::args().skip(1);
+    while let Some(arg)=args.next() {
+        match arg.as_str() {
+            "--width"=>size.0=args.next().expect("--width needs pixels").parse().expect("integer width"),
+            "--height"=>size.1=args.next().expect("--height needs pixels").parse().expect("integer height"),
+            "--shot"=>{let _=args.next();},
+            _=>{},
+        }
+    }
+    assert!((480..=3840).contains(&size.0) && (360..=2160).contains(&size.1),"supported initial size: 480..3840 by 360..2160 logical pixels");
+    size
+}
+
 /// Where a screenshot is written when the shell is asked for one.
 ///
 /// The name carries the wall clock, so a second capture never overwrites the
@@ -288,7 +306,8 @@ fn main() {
     let shot = shot_path();
     ensure_artifacts();
 
-    let backend = SdlSurface::new("Files", WIDTH, HEIGHT);
+    let (width,height)=initial_size();
+    let backend = SdlSurface::new("Files", width, height);
     let mut app = App::new(backend);
     app.with_default_widgets().with_default_systems();
     // The gesture recogniser needs a clock to recognise a long press.

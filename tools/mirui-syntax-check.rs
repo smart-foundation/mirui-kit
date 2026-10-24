@@ -61,6 +61,11 @@ fn arena_sources_expand_against_real_051_macros() {
         "crates/kit/src/scrollbar.rs",
         "crates/studio/src/model.rs",
         "crates/studio/src/ui.rs",
+        "crates/fm/src/ui/mod.rs",
+        "crates/fm/src/ui/chrome.rs",
+        "crates/fm/src/ui/sidebar.rs",
+        "crates/fm/src/ui/kit.rs",
+        "crates/fm/src/ui/content.rs",
         "crates/studio/src/specimens.rs",
         "crates/studio/src/lib.rs",
     ] {

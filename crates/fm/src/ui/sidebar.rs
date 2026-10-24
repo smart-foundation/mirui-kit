@@ -20,6 +20,8 @@ pub fn sidebar(fm: model!(FmState)) -> Entity {
         Column (
             id: "sidebar",
             width: 216,
+            shrink: 0.0,
+            visible: ${fm.sidebar_visible()},
             height: Dimension::percent(100),
             bg_color: ColorToken::SurfaceVariant,
             padding: pad(10, 8, 10, 8),
@@ -57,7 +59,8 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
     ui! {
         Row (
             width: Dimension::percent(100),
-            height: 28,
+            id: place_id(place),
+            height: 32,
             border_radius: 6,
             align: AlignItems::Center,
             column_gap: 8,
@@ -84,7 +87,10 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
             )
             Text (
                 text: data::place_name(place),
+                width: 0,
                 grow: 1.0,
+                shrink: 1.0,
+                min_width: 0,
                 font_size: text::BODY,
                 text_color: ${ if fm.place() == place { ColorToken::Primary } else { ColorToken::OnSurface } }
             )
