@@ -27,7 +27,9 @@ impl Severity {
 pub struct BadgeSurface;
 #[compose]
 pub fn badge(actions: model!(Actions), label: String) -> Entity {
-    ui! {View (width:Dimension::Content,padding:Padding::all(4),bg_color:theme::BADGE,border_radius:style::RADIUS) [BadgeSurface] {Text (text:label.clone(),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::CAPTION_SIZE)},text_color:theme::BADGE_TEXT)}}
+    // Put native text on the surface itself so Content has intrinsic metrics.
+    // An unmeasured View around a child Text has no native content width.
+    ui! {View (width:Dimension::Content,padding:Padding::all(4),bg_color:theme::BADGE,border_radius:style::RADIUS,font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::CAPTION_SIZE)},text_color:theme::BADGE_TEXT) [Text::label(label.clone()),BadgeSurface]}
 }
 #[compose]
 pub fn alert(
