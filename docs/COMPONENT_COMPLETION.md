@@ -223,7 +223,7 @@ existing Panel layout:
 SplitPane (
     width: Dimension::percent(100), height: Dimension::percent(100),
     state: Some(split_state.clone()), actions: Some(actions.clone()),
-    key: 350, overlay: false
+    key: 350u16, overlay: false
 ) {
     @first { /* application-owned navigation */ }
     @second { /* application-owned content */ }

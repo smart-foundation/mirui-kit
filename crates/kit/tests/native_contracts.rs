@@ -367,7 +367,7 @@ fn native_split_panes_preserve_slots_bound_geometry_and_accept_keyboard_and_drag
     let mut app=support::app_with_size(600,400);
     let actions=app.add_model(Actions::default()).finish();
     let state=app.add_model(SplitState::new(Axis::Horizontal,200,100,120)).finish();
-    let root=app.spawn_root().id();app.compose(root,split_fixture(actions,state.clone()));
+    let root=app.spawn_root().id();app.compose(root,split_fixture(actions.clone(),state.clone()));
     for _ in 0..4 {app.tick();app.render().unwrap();}
     let first=app.world.find_by_id("split_first_content").unwrap();
     let second=app.world.find_by_id("split_second_content").unwrap();
@@ -394,6 +394,18 @@ fn native_split_panes_preserve_slots_bound_geometry_and_accept_keyboard_and_drag
     assert!(app.world.has::<InputBlocked>(divider));
     let before=state.sizes().first;app.backend.events.push_back(key(PhysicalKey::Home));app.tick();
     assert_eq!(state.sizes().first,before);
+    state.set_disabled(false);actions.set_modal(true);app.tick();app.render().unwrap();
+    assert!(app.world.has::<InputBlocked>(divider),"modal layer blocks the background divider");
+    app.backend.events.push_back(key(PhysicalKey::Home));app.tick();
+    assert_eq!(state.sizes().first,before);
+    actions.set_modal(false);app.tick();app.render().unwrap();
+    assert!(!app.world.has::<InputBlocked>(divider));
+    let viewport=app.world.find_by_id("split_viewport").unwrap();
+    mirui::ui::property::apply_to_world::<mirui::ui::property::prop::Width>(&mut app.world,viewport,Dimension::px(200));
+    for _ in 0..4 {app.tick();app.render().unwrap();}
+    assert!(state.sizes().constrained);
+    assert_eq!(rect(&app,first).w+rect(&app,divider).w+rect(&app,second).w,Fixed::from_int(200));
+    assert_eq!(app.world.find_by_id("split_second_content"),Some(second));
 }
 #[test]
 fn vertical_split_with_impossible_minima_stays_inside_the_viewport() {
@@ -401,7 +413,7 @@ fn vertical_split_with_impossible_minima_stays_inside_the_viewport() {
     let mut app=support::app_with_size(600,400);
     let actions=app.add_model(Actions::default()).finish();
     let state=app.add_model(SplitState::new(Axis::Vertical,200,200,300)).finish();
-    let root=app.spawn_root().id();app.compose(root,split_fixture(actions,state.clone()));
+    let root=app.spawn_root().id();app.compose(root,split_fixture(actions.clone(),state.clone()));
     for _ in 0..4 {app.tick();app.render().unwrap();}
     let height=|node|app.world.get::<mirui::ui::ComputedRect>(node).unwrap().0.h;
     let first=app.world.find_by_id("split_first_content").unwrap();

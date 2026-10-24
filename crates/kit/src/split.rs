@@ -53,12 +53,12 @@ pub struct SplitDrag {pointer:Fixed,first:u32}
 // Native slotted compositions keep both application-owned subtrees mounted.
 ui!(compose SplitPane (state:Option<SplitStateHandle>,actions:Option<ActionsHandle>,key:u16,overlay:bool) {
     View (width:Dimension::percent(100),height:Dimension::percent(100)) [SplitRoot{state:state.clone().expect("SplitPane requires state")}] {
-        View [SplitPart{part:Part::First}] {@@first}
+        View [SplitPart{part:Part::First},crate::layout::FillSlot] {@@first}
         View (bg_color:ColorToken::Outline,border_width:style::FOCUS_WIDTH,border_color:theme::CLEAR,border_radius:style::RADIUS) [
             SplitPart{part:Part::Divider},SplitDivider{state:state.clone().expect("SplitPane requires state"),actions:actions.clone().expect("SplitPane requires actions"),overlay},
             Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone().expect("SplitPane requires actions")}
         ] on FocusChanged(focused::callback())
-        View [SplitPart{part:Part::Second}] {@@second}
+        View [SplitPart{part:Part::Second},crate::layout::FillSlot] {@@second}
     }
 });
 

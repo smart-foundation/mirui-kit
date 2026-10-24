@@ -40,4 +40,76 @@ pub fn install<B:Surface,F:RendererFactory<B>>(app:&mut App<B,F>) {
     app.with_widget(Panel::__view());
     app.with_widget(ToolbarLayout::__view());
     app.with_widget(AppFrame::__view());
+    app.with_widget(DesktopFrame::__view());
+    app.with_widget(fill_slot::view());
 }
+
+/// Fill the native Auto host created by a named slot. Use only for slots whose
+/// parent has definite geometry, not intrinsic toolbar action groups.
+#[component]
+pub struct FillSlot;
+#[view(component=FillSlot,name="KitFillSlot",systems=[fill_slots::system()])]
+pub fn fill_slot() {}
+#[system(order=PreRender)]
+fn fill_slots(nodes:query!(Entity,FillSlot),commands:commands!()) {
+    for (node,_) in nodes {commands.set::<FillSlotBounds>(node,());}
+}
+struct FillSlotBounds;
+impl mirui::ui::property::Property for FillSlotBounds {
+    type Value=();
+    fn apply(world:&mut mirui::ecs::World,node:Entity,_:())->mirui::ui::property::PropertyChange {
+        use mirui::ui::{Children,Style,dirty::Dirty,property::PropertyChange};
+        let hosts=world.get::<Children>(node).map(|c|c.0.clone()).unwrap_or_default();
+        let mut changed=false;
+        for host in hosts {
+            let mut style=world.get::<Style>(host).cloned().unwrap_or_default();
+            if style.layout.width!=Dimension::percent(100) || style.layout.height!=Dimension::percent(100) {
+                style.layout.width=Dimension::percent(100);style.layout.height=Dimension::percent(100);
+                world.insert(host,style);world.insert(host,Dirty);changed=true;
+            }
+        }
+        if changed {PropertyChange::Layout} else {PropertyChange::Unchanged}
+    }
+}
+
+#[model]
+pub struct DesktopChrome {
+    #[observe]
+    pub sidebar_visible:bool,
+    #[observe]
+    pub sidebar_width:i32,
+}
+impl Default for DesktopChrome {
+    fn default()->Self {Self {sidebar_visible:true,sidebar_width:224}}
+}
+#[model]
+impl DesktopChrome {
+    pub fn toggle_sidebar(&mut self) {self.sidebar_visible=!self.sidebar_visible;}
+    pub fn show_sidebar(&mut self,visible:bool) {self.sidebar_visible=visible;}
+    pub fn resize_sidebar(&mut self,width:i32) {self.sidebar_width=width.clamp(144,480);}
+}
+/// Compact desktop chrome, not a second window manager. The host supplies real
+/// caption controls; no decorative traffic lights pretend to close a window.
+/// Controls and toggle stay mounted outside scrolling navigation. Model-backed
+/// visibility preserves the sidebar subtree and its selection when collapsed.
+/// Caller supplies a definite viewport and an initialized chrome model.
+ui!(compose DesktopFrame (chrome:Option<DesktopChromeHandle>,caption_width:i32,controls_width:i32,toggle_width:i32,titlebar_height:i32,toolbar_height:i32,status_height:i32) {
+    Column (width:Dimension::percent(100),height:Dimension::percent(100),bg_color:ColorToken::Surface) {
+        Row (width:Dimension::percent(100),height:titlebar_height.max(32),align:AlignItems::Center,bg_color:ColorToken::SurfaceVariant) {
+            Row (width:${ {let model=chrome.as_ref().expect("DesktopFrame requires chrome");if model.sidebar_visible() {model.sidebar_width().max(caption_width)} else {caption_width.max(0)}} },height:Dimension::percent(100),align:AlignItems::Center,column_gap:style::GAP,padding:Padding::all(style::GAP)) {
+                View (width:controls_width.max(0),height:Dimension::percent(100)) [FillSlot] {@@window_controls}
+                View (width:toggle_width.max(0),height:Dimension::percent(100)) [FillSlot] {@@sidebar_toggle}
+            }
+            View (grow:1.0,height:Dimension::percent(100)) [FillSlot] {@@titlebar}
+        }
+        Row (width:Dimension::percent(100),grow:1.0) {
+            Column (width:${ {let model=chrome.as_ref().expect("DesktopFrame requires chrome");if model.sidebar_visible() {model.sidebar_width()} else {0}} },height:Dimension::percent(100),visible:${chrome.as_ref().expect("DesktopFrame requires chrome").sidebar_visible()},bg_color:ColorToken::SurfaceVariant) [FillSlot] {@@sidebar}
+            Column (grow:1.0,height:Dimension::percent(100)) {
+                View (width:Dimension::percent(100),height:toolbar_height.max(0)) [FillSlot] {@@toolbar}
+                View (width:Dimension::percent(100),grow:1.0) [FillSlot] {@@content}
+                View (width:Dimension::percent(100),height:status_height.max(0)) [FillSlot] {@@status}
+            }
+        }
+        View (position:Position::Absolute,left:0,top:0,width:Dimension::percent(100),height:Dimension::percent(100)) [FillSlot] {@@overlays}
+    }
+});
