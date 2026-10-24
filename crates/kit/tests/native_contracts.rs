@@ -273,3 +273,14 @@ fn calendar_pointer_and_keyboard_commit_real_dates_and_respect_disabled_state() 
     calendar.set_disabled(true);app.tick();app.render().unwrap();support::tap(&mut app,node);
     assert_eq!(calendar.selection(),Some((second,second)));
 }
+
+#[test]
+fn shared_action_channel_reports_rejection_without_reordering_or_overwriting() {
+    use mirui_kit::widgets::ActionError;
+    let mut app=App::headless(100,100);let actions=app.add_model(Actions::default()).finish();
+    assert_eq!(actions.activate(90,true),Err(ActionError::WrongLayer));
+    for id in 0..32 {actions.activate(id,false).unwrap();}
+    assert_eq!(actions.activate(99,false),Err(ActionError::Backpressured));
+    assert_eq!(actions.take(),(0..32).map(|id|(id,false)).collect::<Vec<_>>());
+    actions.activate(99,false).unwrap();assert_eq!(actions.take(),[(99,false)]);
+}

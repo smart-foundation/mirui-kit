@@ -11,6 +11,9 @@ use mirui::ui::{
     },
 };
 
+#[derive(Clone,Copy,Debug,PartialEq,Eq)]
+pub enum ActionError {WrongLayer,Backpressured}
+
 /// Bounded per-instance action channel, with explicit overlay ownership.
 #[model]
 #[derive(Default)]
@@ -29,10 +32,10 @@ pub struct Actions {
 }
 #[model]
 impl Actions {
-    pub fn activate(&mut self, id: u16, overlay: bool) {
-        if overlay == self.modal && self.pending.len() < 32 {
-            self.pending.push((id, overlay));
-        }
+    pub fn activate(&mut self, id: u16, overlay: bool) -> Result<(),ActionError> {
+        if overlay!=self.modal {return Err(ActionError::WrongLayer);}
+        if self.pending.len()>=32 {return Err(ActionError::Backpressured);}
+        self.pending.push((id,overlay));Ok(())
     }
     pub fn applied_layer(&self) -> Option<bool> {
         self.applied_layer
@@ -201,11 +204,11 @@ pub fn action(
                     text_color: ColorToken::OnSurface
                 )
             }
-        } on Tap { actions.activate(key, overlay); } on Key(|event: event!(Key)| {
+        } on Tap { let _=actions.activate(key, overlay); } on Key(|event: event!(Key)| {
             if event.pressed && event.repeat != Some(true)
                 && (event.code == 13 || event.physical == Some(PhysicalKey::Space))
             {
-                actions.activate(key, overlay);
+                let _=actions.activate(key, overlay);
                 return true;
             }
             false
@@ -259,7 +262,7 @@ pub fn field(
                 FocusItem { overlay, order: key },
             ] on TextEditing::Submitted {
                 if submit != 0 {
-                    actions.activate(submit, overlay);
+                    let _=actions.activate(submit, overlay);
                 }
             } on FocusChanged(|event: event!(FocusChanged)| {
                 actions.focus(key, event.focused);
