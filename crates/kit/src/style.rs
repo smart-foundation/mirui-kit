@@ -51,3 +51,12 @@ impl Intent {
 pub const RADIUS: i32 = 6;
 pub const GAP: i32 = 8;
 pub const FOCUS_WIDTH: i32 = 2;
+
+/// Compact desktop menu geometry, shared by placement and row composition.
+pub const MENU_ROW_HEIGHT: i32 = 32;
+pub const MENU_INSET: i32 = 4;
+pub const MENU_GAP: i32 = 1;
+pub const fn menu_height(items: i32, separators: i32) -> i32 {
+    let nodes = items + separators;
+    items * MENU_ROW_HEIGHT + separators + (if nodes > 0 {nodes - 1} else {0}) * MENU_GAP + 2 * MENU_INSET + 2
+}

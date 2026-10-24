@@ -14,6 +14,7 @@ use mirui::ui::OffscreenRender;
 use mirui::ui::widgets::{Button, DropShadow, Icon, Text};
 
 use crate::icons;
+use mirui_kit::style;
 use crate::model::{DialogKind, FmState, FmStateHandle, MenuTarget, Place, SortMode};
 use crate::text;
 use crate::theme;
@@ -71,8 +72,8 @@ pub fn menu_layer(fm: model!(FmState)) -> Entity {
                 bg_color: ColorToken::Surface,
                 border_color: theme::SEPARATOR,
                 border_width: 1,
-                padding: pad(4, 4, 4, 4),
-                row_gap: 1,
+                padding: Padding::all(style::MENU_INSET),
+                row_gap: style::MENU_GAP,
                 clip_children: true,
                 visible: ${ fm.menu_target().is_some() }
             ) [
@@ -155,7 +156,8 @@ pub fn drag_badge(fm: model!(FmState)) -> Entity {
                     ]
                     Text (
                         text: ${ { let _ = fm.dragging(); fm.drag_label() } },
-                        font_size: text::SMALL,
+                        font: crate::font::MEDIUM,
+                    font_size: crate::font::BODY_SIZE,
                         text_color: ColorToken::OnSurface,
                     )
                 }
@@ -189,6 +191,9 @@ fn menu_icon(label: &'static str) -> &'static Path {
     }
 }
 
+#[component]
+pub struct MenuRow { pub item: u8 }
+
 /// One row of a menu.
 ///
 /// The row rests in the colour of the panel, so it is invisible until the
@@ -200,12 +205,13 @@ fn menu_row(fm: model!(FmState), item: u8, label: &'static str, shortcut: &'stat
     ui! {
         Button (
             width: Dimension::percent(100),
-            height: 24,
+            height: style::MENU_ROW_HEIGHT,
             border_radius: 5,
             padding: pad_v(0),
             normal_color: ColorToken::Surface,
             pressed_color: theme::SELECTION
         ) [
+            MenuRow {item},
             HoverSurface {
                 hover: theme::MENU_HOVER.into(),
                 pressed: theme::MENU_HOVER.into(),
@@ -214,7 +220,7 @@ fn menu_row(fm: model!(FmState), item: u8, label: &'static str, shortcut: &'stat
         ] {
             Row (
                 width: Dimension::percent(100),
-                height: 24,
+                height: style::MENU_ROW_HEIGHT,
                 align: AlignItems::Center,
                 column_gap: 8,
                 padding: pad_h(8)
@@ -222,18 +228,20 @@ fn menu_row(fm: model!(FmState), item: u8, label: &'static str, shortcut: &'stat
                 Icon (
                     path: menu_icon(label).clone(),
                     color: ColorToken::OnSurfaceVariant,
-                    width: 14,
-                    height: 14
+                    width: 16,
+                    height: 16
                 )
                 Text (
                     text: label,
                     grow: 1.0,
-                    font_size: text::SMALL,
+                    font: crate::font::MEDIUM,
+                    font_size: crate::font::BODY_SIZE,
                     text_color: ColorToken::OnSurface
                 )
                 Text (
                     text: shortcut,
-                    font_size: text::SMALL,
+                    font: crate::font::MEDIUM,
+                    font_size: crate::font::BODY_SIZE,
                     text_color: ColorToken::OnSurfaceVariant
                 )
             }

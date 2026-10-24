@@ -26,13 +26,13 @@ pub const HISTORY_MAX: usize = 32;
 pub const MENU_WIDTH: i32 = 214;
 
 /// The height of the context menu panel, in logical pixels.
-pub const MENU_HEIGHT: i32 = 214;
+pub const MENU_HEIGHT: i32 = mirui_kit::style::menu_height(8, 2);
 
 /// The height of the background context menu panel, in logical pixels.
 ///
 /// The background menu has fewer rows than the file menu, so its panel is
 /// shorter.
-pub const MENU_BACKGROUND_HEIGHT: i32 = 136;
+pub const MENU_BACKGROUND_HEIGHT: i32 = mirui_kit::style::menu_height(5, 2);
 
 /// How many notifications are on screen at once.
 ///

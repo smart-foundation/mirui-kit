@@ -4,6 +4,7 @@ extern crate alloc;
 pub mod availability;
 pub mod behavior;
 pub mod button;
+pub mod choices;
 pub mod controls;
 pub mod editing_policy;
 pub mod feedback;
