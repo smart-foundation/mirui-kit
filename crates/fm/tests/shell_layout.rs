@@ -25,7 +25,8 @@ fn native_shell_counts_and_controls_fit_at_real_window_sizes() {
         assert_eq!(sidebar.y,cap.h);
         assert_eq!(sidebar.y+sidebar.h,Fixed::from_int(height.into()));
         for place in [Place::Favourites,Place::Documents,Place::Downloads,Place::Projects,Place::Trash] {
-            let row=rect(fm::ui::sidebar::place_id(place));
+            let entity=app.world.query::<fm::ui::sidebar::PlaceRow>().iter().find(|(_,row)|row.place==place).expect("place row").0;
+            let row=app.world.get::<mirui::ui::ComputedRect>(entity).unwrap().0;
             assert!(row.x>=sidebar.x+Fixed::from_int(8));
             assert!(row.x+row.w<=sidebar.x+sidebar.w-Fixed::from_int(8));
         }

@@ -52,6 +52,9 @@ pub const fn place_id(place: Place) -> &'static str {
     }
 }
 
+#[component]
+pub struct PlaceRow {pub place:Place}
+
 /// One sidebar row.
 #[compose]
 fn place_row(fm: model!(FmState), place: Place) -> Entity {
@@ -59,7 +62,6 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
     ui! {
         Row (
             width: Dimension::percent(100),
-            id: place_id(place),
             height: 32,
             border_radius: 6,
             align: AlignItems::Center,
@@ -70,6 +72,7 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
             // hovered widget.
             bg_color: ${ if fm.drop_target() == Some(DropTarget::Place(place)) { theme::DROP } else if fm.place() == place { theme::SELECTION } else { ColorToken::SurfaceVariant } }
         ) [
+            PlaceRow {place},
             HitTarget
             InteractionFeedback
             DropZone { id: 0, folder: true, place: Some(place) }

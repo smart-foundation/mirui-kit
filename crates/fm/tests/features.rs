@@ -227,8 +227,8 @@ fn dragging_a_file_onto_a_sidebar_place_moves_it() {
     let from_y = (tile.y + Fixed::from_int(8)).to_int();
 
     // The "Projects" row of the sidebar.
-    let ids = app.world.resource::<mirui::ui::IdMap>().expect("ids");
-    let sidebar = ids.get("place_projects").expect("the Projects row");
+    let sidebar = app.world.query::<fm::ui::sidebar::PlaceRow>().iter()
+        .find(|(_,row)|row.place==Place::Projects).expect("the Projects row").0;
     let sidebar_rect = app
         .world
         .get::<mirui::ui::ComputedRect>(sidebar)

@@ -12,7 +12,7 @@ use crate::model::FmState;
 use crate::text;
 use crate::theme;
 use crate::ui::controls;
-use crate::ui::kit::{pad, pad_h, pad_v, segmented_control};
+use crate::ui::kit::{pad_h, pad_v, segmented_control};
 use mirui::input::event::focus::PointerFocus;
 use mirui::ui::clipboard::ClipboardFinished;
 use mirui_kit::field::{FieldContent, FieldFrame, focus as field_focus};
