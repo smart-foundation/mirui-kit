@@ -191,3 +191,35 @@ fn disabled_options_skip_real_pointer_activation_and_navigation_selects_on_space
     }
     assert!(list.focused(3));assert_eq!(list.selected_ids(),[1,3]);
 }
+
+#[compose]
+fn conditional_focus(toggle:model!(mirui_kit::Toggle))->Entity {
+    use mirui_kit::FocusItem;
+    ui! {Column (width:200,height:160) {
+        View (id:"always_focus",width:200,height:40) [Focusable,FocusItem{overlay:false,order:1}]
+        if ${toggle.checked()} {
+            View (id:"conditional_focus",width:200,height:40) [Focusable,FocusItem{overlay:false,order:2}]
+        } else {
+            View (id:"alternate_focus",width:200,height:40) [Focusable,FocusItem{overlay:false,order:3}]
+        }
+    }}
+}
+#[test]
+fn tab_skips_retained_but_unselected_native_conditional_branches() {
+    let mut app=support::app();
+    let actions=app.add_model(Actions::default()).finish();
+    let toggle=app.add_model(mirui_kit::Toggle::default()).finish();
+    mirui_kit::bind_actions(&mut app,actions);
+    let root=app.spawn_root().id();app.compose(root,conditional_focus(toggle.clone()));app.tick();app.render().unwrap();
+    let always=app.world.find_by_id("always_focus").unwrap();
+    let alternate=app.world.find_by_id("alternate_focus").unwrap();
+    let conditional=app.world.find_by_id("conditional_focus").unwrap();
+    assert_eq!(app.world.resource::<mirui::input::event::focus::FocusState>().unwrap().focused,Some(always));
+    let tab=mirui::surface::InputEvent::Key{physical:Some(PhysicalKey::Tab),code:9,pressed:true,modifiers:Some(Default::default()),repeat:Some(false)};
+    app.backend.events.push_back(tab.clone());app.tick();
+    assert_eq!(app.world.resource::<mirui::input::event::focus::FocusState>().unwrap().focused,Some(alternate));
+    toggle.set(true);app.tick();app.render().unwrap();
+    app.world.resource_mut::<mirui::input::event::focus::FocusState>().unwrap().focused=Some(always);
+    app.backend.events.push_back(tab);app.tick();
+    assert_eq!(app.world.resource::<mirui::input::event::focus::FocusState>().unwrap().focused,Some(conditional));
+}
