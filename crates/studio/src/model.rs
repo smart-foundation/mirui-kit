@@ -63,6 +63,7 @@ use studio_core::{Error, Route, Session, Surface, Theme};
 
 #[model]
 pub struct Studio {
+    pub desktop_chrome:model!(owned mirui_kit::layout::DesktopChrome),
     pub demo_split: model!(owned mirui_kit::split::SplitState),
     pub demo_calendar: model!(owned mirui_kit::calendar::Calendar),
     pub demo_options: model!(owned mirui_kit::choices::ChoiceList),
@@ -106,6 +107,7 @@ impl Default for Studio {
         let core = Session::default();
         Self {
             actions: Actions::default().into(),
+            desktop_chrome: mirui_kit::layout::DesktopChrome{sidebar_visible:true,sidebar_width:184}.into(),
             demo_choices: example_choices().into(),
             demo_split: mirui_kit::split::SplitState::new(mirui_kit::split::Axis::Horizontal,240,120,160).into(),
             demo_calendar: {

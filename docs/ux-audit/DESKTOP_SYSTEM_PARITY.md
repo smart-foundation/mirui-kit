@@ -161,3 +161,16 @@ protocol-backed window chrome or that the entire parity surface is finished.
 
 **The core is still incomplete.** Research, green CI and a larger catalog must
 never be substituted for completion of the families and interactions above.
+
+
+### Live compact-shell implementation
+
+Studio now uses the shared `layout::sidebar_toggle` and a per-window
+`DesktopChrome` model. Hiding the sidebar preserves its mounted navigation;
+its toggle stays in the non-scrolling header. Header height is 48 logical pixels
+at default text scale, scales with text, and retains the title, palette and Help.
+The status/notice region is now inside the content column. The separate
+DesktopFrame caption slots are available for real host controls; this does not
+turn the older Files dots into functioning window controls. The shared toggle
+uses a visible label until tooltip/host-semantics integration can support an
+icon-only replacement without losing discoverability.

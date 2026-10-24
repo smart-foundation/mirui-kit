@@ -9,6 +9,13 @@ more components. It evaluates whether people can understand and complete tasks,
 whether the UI tells the truth, and whether developers can reuse correct behavior
 without copying file-manager internals.
 
+## Latest desktop-system review
+
+[Desktop parity, compact chrome and Smart Protocol](DESKTOP_SYSTEM_PARITY.md)
+extends the audit against GPUI Kit, shadcn, Material Expressive and Apple HIG.
+It directly answers the sidebar/window-controls question and records actual
+source defects and host-integration limits.
+
 ## Current component coverage verdict
 
 The kit is **not OS-suite ready**. The updated [actual component catalog](../COMPONENT_CATALOG.md)

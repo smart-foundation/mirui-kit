@@ -12,6 +12,7 @@ use mirui::ui::{
 use mirui_kit::{
     InputGate, font, icons,
     split::SplitPane,
+    layout::sidebar_toggle,
     scrollbar::ScrollBar,
     theme,
     widgets::{action, field, number, text_size, toggle},
@@ -71,13 +72,14 @@ pub fn shell(state: model!(Studio)) -> Entity {
                 ]
                 Column (id:"studio_window",width:1180,height:720,bg_color:ColorToken::Surface,border_radius:14) [OffscreenRender::new()] {
                     Column (width:Dimension::percent(100),grow:1.0) [InputGate { actions:state.actions(), overlay:false }] {
-                        Row (width:Dimension::percent(100),height:64,padding:Padding::all(12),align:AlignItems::Center,column_gap:16,bg_color:theme::TOOLBAR) {
+                        Row (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(),48)},padding:Padding::all(4),align:AlignItems::Center,column_gap:12,bg_color:theme::TOOLBAR) {
+                            sidebar_toggle(state.desktop_chrome(),state.actions(),90,false)
                             Text ("NALEDZI / STUDIO",grow:1.0,font:font::SEMIBOLD,font_size:${text_size(state.actions().text_scale(), font::SECTION_SIZE)},text_color:ColorToken::OnSurface)
                             View (width:196,height:40) { command(state,(Command::Palette),false) }
                             View (width:160,height:40) { command(state,(Command::Help),false) }
                         }
                         Row (width:Dimension::percent(100),grow:1.0) {
-                            Column (width:184,height:Dimension::percent(100),padding:Padding::all(12),row_gap:8,bg_color:ColorToken::SurfaceVariant) {
+                            Column (width:${state.desktop_chrome().sidebar_width()},visible:${state.desktop_chrome().sidebar_visible()},height:Dimension::percent(100),padding:Padding::all(12),row_gap:8,bg_color:ColorToken::SurfaceVariant) {
                                 walk (0..6).collect::<alloc::vec::Vec<usize>>() with index {
                                     View (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(), 44)},padding:Padding::all(2),border_radius:10,bg_color:${if state.route() as usize==index {theme::SELECTION} else {ColorToken::SurfaceVariant}}) {
                                         command(state,COMMANDS[index].command,false)
@@ -86,7 +88,8 @@ pub fn shell(state: model!(Studio)) -> Entity {
                                 View (grow:1.0)
                                 Text ("MIRUI 0.51\nSESSION FIXTURES",font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(), font::CAPTION_SIZE)},text_color:ColorToken::OnSurfaceVariant)
                             }
-                            View (grow:1.0,height:Dimension::percent(100)) {
+                            Column (grow:1.0,height:Dimension::percent(100)) {
+                              View (width:Dimension::percent(100),grow:1.0) {
                                 Scroll (id:"studio_main_scroll",width:Dimension::percent(100),height:Dimension::percent(100),padding:Padding::all(24)) {
                                     Column (width:Dimension::percent(100),row_gap:20) [mirui_kit::sizing::ContentFit] {
                                         if ${state.route()==Route::Overview} { overview(state) }
@@ -99,9 +102,10 @@ pub fn shell(state: model!(Studio)) -> Entity {
                                     }
                                 }
                                 View (position:Position::Absolute,left:@width {width-Fixed::from_int(12)},top:4,width:10,height:@height {height-Fixed::from_int(8)}) [ScrollBar {target:id("studio_main_scroll"),vertical:true,thickness:8}]
+                              }
+                              Text (text:${{let _=state.revision();state.latest_notice()}},height:${text_size(state.actions().text_scale(),32)},width:Dimension::percent(100),padding:Padding{left:24.into(),right:12.into(),top:4.into(),bottom:4.into()},paragraph:mirui::ui::widgets::ParagraphStyle::label().with_align(mirui::ui::widgets::TextAlign::Start),font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(), font::CAPTION_SIZE)},text_color:ColorToken::OnSurfaceVariant)
                             }
                         }
-                        Text (text:${{let _=state.revision();state.latest_notice()}},height:32,width:Dimension::percent(100),font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(), font::CAPTION_SIZE)},text_color:ColorToken::OnSurfaceVariant)
                     }
                 }
                 overlay(state)

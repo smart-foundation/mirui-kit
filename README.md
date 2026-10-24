@@ -28,10 +28,17 @@ patterns get frozen into the OS app suite.
 | ![view options](artifacts/12-view-options.png) | ![drag and drop](artifacts/13-drag-and-drop.png) |
 | ![notifications](artifacts/14-notifications.png) | ![the running app](artifacts/desktop-window.png) |
 
+## Desktop system direction
+
+The [desktop parity and full-system audit](docs/ux-audit/DESKTOP_SYSTEM_PARITY.md)
+records the GPUI Kit/shadcn/Material Expressive/HIG baseline, the explicit
+sidebar-aligned window-control decision, and the inspected Smart Protocol
+boundary. It distinguishes implemented native source from missing host behavior.
+
 ## Actual component coverage
 
-**The shared kit is not OS-suite complete.** Studio now lists 15 grouped source
-entries, not 15 independently accepted controls. Shared grouping, tree, integer
+**The shared kit is not OS-suite complete.** Studio now lists 19 grouped source
+entries, not 19 independently accepted controls. Shared grouping, tree, integer
 entry, checkbox, table and feedback work is partial; many other families and
 cross-cutting services remain unfinished. See the [source-backed catalog](docs/COMPONENT_CATALOG.md)
 and [researched full baseline, implementation evidence and acceptance gates](docs/COMPONENT_COMPLETION.md).

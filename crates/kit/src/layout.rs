@@ -134,3 +134,16 @@ fn sync_chrome(nodes:query!(Entity,ChromeRegion,mirui::ui::Style,optional mirui:
         if matches!(region.part,ChromePart::Sidebar) && shown==hidden.is_some() {commands.set::<prop::Visible>(entity,shown);}
     }
 }
+
+/// Shared, keyboard-operable sidebar toggle. The visible label is deliberate:
+/// icon-only chrome needs the shared tooltip/semantics bridge before replacing it.
+#[compose]
+pub fn sidebar_toggle(chrome:model!(DesktopChrome),actions:model!(crate::Actions),key:u16,overlay:bool)->Entity {
+    use mirui::ui::widgets::{Button,ButtonSize,Text};
+    use crate::{FocusItem,widgets::FocusRing};
+    ui! {Button (size:ButtonSize::Custom,width:${crate::widgets::text_size(actions.text_scale(),112)},height:${crate::widgets::text_size(actions.text_scale(),40)},padding:Padding::all(4),align:AlignItems::Center,justify:JustifyContent::Center,normal_color:crate::theme::CLEAR,pressed_color:crate::theme::PRESSED,border_width:style::FOCUS_WIDTH,border_color:ColorToken::Outline,border_radius:style::RADIUS) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()},crate::button::ControlName{label:alloc::string::String::from("Toggle sidebar")}] {
+        Text (text:${if chrome.sidebar_visible() {"Hide sidebar"} else {"Show sidebar"}},font:crate::font::MEDIUM,font_size:${crate::widgets::text_size(actions.text_scale(),crate::font::BODY_SIZE)},text_color:ColorToken::OnSurface)
+    } on Tap {if actions.modal()==overlay {chrome.toggle_sidebar();}}
+    on Key(|event:event!(Key)| {if event.pressed && event.repeat!=Some(true) && actions.modal()==overlay && (event.code==13 || event.physical==Some(PhysicalKey::Space)) {chrome.toggle_sidebar();return true;}false})
+    on FocusChanged(|event:event!(FocusChanged)| {actions.focus(key,event.focused);})}
+}
