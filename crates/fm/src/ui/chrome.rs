@@ -24,7 +24,7 @@ use mirui_kit::selection::clipboard_finished;
 pub fn sidebar_caption(fm:model!(FmState))->Entity {
     ui! {Column (id:"sidebar_caption",width:216,shrink:0.0,height:Dimension::percent(100),bg_color:ColorToken::SurfaceVariant) {
         Row (width:Dimension::percent(100),height:56,padding:pad_h(12),align:AlignItems::Center,column_gap:8) {
-            Text ("Files",width:0,grow:1.0,font:MEDIUM,font_size:text::BODY,text_color:ColorToken::OnSurface)
+            Text ("Files",width:Dimension::Auto,grow:1.0,font:MEDIUM,font_size:text::BODY,text_color:ColorToken::OnSurface)
             Button (id:"sidebar_toggle",width:80,height:32,font:MEDIUM,font_size:text::BODY,normal_color:theme::CLEAR,pressed_color:theme::SELECTION,border_radius:6) [Text::label("Sidebar"),Focusable] on Tap {fm.toggle_sidebar();} on Key(|event:event!(Key)| {
                 if event.pressed && event.repeat!=Some(true) && (event.code==13 || event.physical==Some(PhysicalKey::Space)) {fm.toggle_sidebar();return true;} false
             })
@@ -39,11 +39,11 @@ pub fn sidebar_caption(fm:model!(FmState))->Entity {
 pub fn toolbar(fm:model!(FmState))->Entity {
     // One mounted search document and view switcher: native retained branches
     // must never duplicate their IDs or editing state to achieve responsive layout.
-    ui! {Row (id:"files_toolbar",grow:1.0,shrink:1.0,min_width:0,height:Dimension::percent(100),wrap:FlexWrap::Wrap,bg_color:theme::TOOLBAR,align:AlignItems::Center) {
-        Row (width:${{let _=fm.viewport();if fm.compact_toolbar() {Dimension::percent(100)} else {Dimension::px(0)}}},grow:1.0,min_width:160,height:56,align:AlignItems::Center,column_gap:8,padding:pad_h(12)) {
+    ui! {Row (id:"files_toolbar",grow:1.0,shrink:1.0,min_width:Dimension::Auto,height:Dimension::percent(100),wrap:FlexWrap::Wrap,bg_color:theme::TOOLBAR,align:AlignItems::Center) {
+        Row (width:${{let _=fm.viewport();if fm.compact_toolbar() {Dimension::percent(100)} else {Dimension::Auto}}},grow:1.0,min_width:160,height:56,align:AlignItems::Center,column_gap:8,padding:pad_h(12)) {
             back_button (fm)
             forward_button (fm)
-            Column (width:0,grow:1.0,shrink:1.0,min_width:0,height:34,row_gap:0,justify:JustifyContent::Center) {
+            Column (width:Dimension::Auto,grow:1.0,shrink:1.0,min_width:Dimension::Auto,height:34,row_gap:0,justify:JustifyContent::Center) {
                 Text (text:${data::place_name(fm.place())},width:Dimension::percent(100),font:MEDIUM,font_size:text::BODY,height:17,text_color:ColorToken::OnSurface)
                 Text ("/Users/demo/Cloud",width:Dimension::percent(100),font_size:text::SMALL,height:15,text_color:ColorToken::OnSurfaceVariant)
             }
@@ -225,10 +225,10 @@ fn search_field(fm: model!(FmState)) -> Entity {
     ui! {
         Row (
             id: "toolbar_search_frame",
-            width: ${{let _=fm.viewport();if fm.compact_toolbar() {0} else {224}}},
+            width: ${{let _=fm.viewport();if fm.compact_toolbar() {Dimension::Auto} else {Dimension::px(224)}}},
             grow: 1.0,
             shrink: 1.0,
-            min_width: 0,
+            min_width: Dimension::Auto,
             height: 36,
             padding: pad_h(10),
             column_gap: 8,
@@ -251,10 +251,10 @@ fn search_field(fm: model!(FmState)) -> Entity {
             )
             TextInput (
                 id: "toolbar_search",
-                width: 0,
+                width: Dimension::Auto,
                 grow: 1.0,
                 shrink: 1.0,
-                min_width: 0,
+                min_width: Dimension::Auto,
                 height: text_height,
                 font: crate::font::MEDIUM,
                 font_size: text::BODY,

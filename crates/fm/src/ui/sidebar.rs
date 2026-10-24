@@ -90,10 +90,10 @@ fn place_row(fm: model!(FmState), place: Place) -> Entity {
             )
             Text (
                 text: data::place_name(place),
-                width: 0,
+                width: Dimension::Auto,
                 grow: 1.0,
                 shrink: 1.0,
-                min_width: 0,
+                min_width: Dimension::Auto,
                 font_size: text::BODY,
                 text_color: ${ if fm.place() == place { ColorToken::Primary } else { ColorToken::OnSurface } }
             )

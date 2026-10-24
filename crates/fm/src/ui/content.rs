@@ -127,7 +127,7 @@ fn grid_row(fm: model!(FmState), row: u32) -> Entity {
                 if row * columns + column < fm.grid_count() {
                     cell (fm, row * columns + column)
                 } else {
-                    View (width:0,grow:1.0,height:TILE_HEIGHT)
+                    View (width:Dimension::Auto,grow:1.0,height:TILE_HEIGHT)
                 }
             }
         }
@@ -144,10 +144,10 @@ fn cell(fm: model!(FmState), position: u32) -> Entity {
     let text_height = res!(FontManager).with(|fonts| controls::field_height(&fonts));
     ui! {
         View (
-            width: 0,
+            width: Dimension::Auto,
             grow: 1.0,
             shrink: 1.0,
-            min_width: 0,
+            min_width: Dimension::Auto,
             height: TILE_HEIGHT,
             border_radius: 8,
             padding: pad_v(0),

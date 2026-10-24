@@ -30,6 +30,12 @@ pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) -> model:
     install_views(app);
     mirui_kit::field::install(app);
     let state = app.add_model(model::FmState::new()).finish();
+    // Initialise from the real surface before the first interactive frame.
+    // Do not wait for the first pointer event to establish the window size.
+    if let Some(viewport)=app.world.resource::<mirui::app::RenderViewport>() {
+        let (width,height)=viewport.0.logical_size();
+        state.set_viewport(width.into(),height.into());
+    }
     state.recompute();
     sync::install_notifications(app, &state);
     app.add_system(sync::theme_sync::system(state.clone()));

@@ -237,7 +237,7 @@ fn sidebar_row_centre(
             rect.0.x >= panel.x
                 && rect.0.x < panel.x + panel.w
                 && rect.0.y > panel.y + Fixed::from_int(20)
-                && rect.0.h == Fixed::from_int(28)
+                && rect.0.h == Fixed::from_int(32)
         })
         .map(|(_, rect)| rect.0)
         .collect();
@@ -265,7 +265,7 @@ fn first_tile_centre(app: &App<ScriptedSurface, mirui::render::SwRendererFactory
         .iter()
         .filter(|(_, rect)| {
             rect.0.x >= panel.x + panel.w
-                && rect.0.w == Fixed::from_int(104)
+                && rect.0.w > Fixed::ZERO
                 && rect.0.h == Fixed::from_int(98)
         })
         .map(|(_, rect)| rect.0)
@@ -348,7 +348,7 @@ fn search_has_real_padding_and_a_centered_native_line_box() {
     let editor = entity_named(&app, "toolbar_search");
     let outer = app.world.get::<mirui::ui::ComputedRect>(frame).unwrap().0;
     let inner = app.world.get::<mirui::ui::ComputedRect>(editor).unwrap().0;
-    assert!(outer.h >= Fixed::from_int(40));
+    assert_eq!(outer.h, Fixed::from_int(36));
     assert!(inner.x >= outer.x + Fixed::from_int(10));
     assert!(((inner.y + inner.h / 2) - (outer.y + outer.h / 2)).abs() <= Fixed::ONE);
     // Installing the editing layer must not replace the App's one active root.

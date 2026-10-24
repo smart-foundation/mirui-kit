@@ -38,7 +38,7 @@ fn native_shell_counts_and_controls_fit_at_real_window_sizes() {
             assert!(badge.x+badge.w<=sidebar.x+sidebar.w-Fixed::from_int(14),"count clipped at divider");
         }
         let toolbar=rect("files_toolbar");let search=rect("toolbar_search_frame");
-        assert!(search.w>Fixed::from_int(80));
+        assert!(search.w>Fixed::from_int(80),"search {search:?}, toolbar {toolbar:?}, viewport {width}");
         assert!(search.x>=toolbar.x && search.x+search.w<=toolbar.x+toolbar.w,"search outside toolbar at {width}");
         assert!(search.y+search.h<=toolbar.y+toolbar.h);
         let available=state.content_width()-32;
