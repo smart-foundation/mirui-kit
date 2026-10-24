@@ -65,9 +65,13 @@ fn preview_card_hugs_content_and_task_actions_do_not_fill_the_form() {
         let rect=app.world.get::<mirui::ui::ComputedRect>(card).unwrap().0;
         assert!(rect.h>Fixed::from_int(80),"preview content collapsed");
         assert!(rect.h<Fixed::from_int(300),"short preview stretched into an empty panel");
+        let strip=app.world.query::<studio::ui::TaskActions>().iter().next().expect("task action strip").0;
+        let strip=app.world.get::<mirui::ui::ComputedRect>(strip).unwrap().0;
         for command in [Command::Preview,Command::SavePreset] {
             let action=app.world.query::<mirui_kit::FocusItem>().iter().find(|(_,item)|item.order==command as u16).expect("task action").0;
             let action=app.world.get::<mirui::ui::ComputedRect>(action).unwrap().0;
+            assert!(action.x>=strip.x && action.x+action.w<=strip.x+strip.w,"action overflows the available form width");
+            assert!(action.y>=strip.y && action.y+action.h<=strip.y+strip.h,"wrapped action overflows its strip height");
             assert!(action.w>Fixed::from_int(100));
             assert!(action.w<Fixed::from_int(400),"task action stretched across its form");
             assert_eq!(action.h,Fixed::from_int(mirui_kit::widgets::text_size(scale,32) as i32));

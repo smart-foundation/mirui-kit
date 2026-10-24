@@ -46,7 +46,19 @@ fn natural(world:&mut World,node:Entity,parent_direction:FlexDirection,parent_he
         let height=natural(world,child,style.layout.direction,explicit,depth+1,budget,changed)?;
         if style.layout.direction==FlexDirection::Column {
             if count>0 {extent+=Fixed64::from(gap);}extent+=Fixed64::from(height);
-        } else {extent=extent.max(Fixed64::from(height));}
+        } else {
+            // A wrapping row can have several native lines. Max(child height)
+            // alone freezes it to one line and overlaps the following section.
+            // Use native line positions, not a parallel wrapping algorithm.
+            let offset=if style.layout.wrap==FlexWrap::Wrap {
+                match (world.get::<ComputedRect>(node),world.get::<ComputedRect>(child)) {
+                    (Some(row),Some(child)) if child.0.w>Fixed::ZERO =>
+                        (child.0.y-row.0.y-pixels(style.layout.padding.top)?).max(Fixed::ZERO),
+                    _=>Fixed::ZERO,
+                }
+            } else {Fixed::ZERO};
+            extent=extent.max(Fixed64::from(offset)+Fixed64::from(height));
+        }
         count+=1;
     }
     if let Some(height)=explicit {return Ok(height);}

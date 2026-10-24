@@ -45,6 +45,8 @@ fn command(state: model!(Studio), key: Command, overlay: bool) -> Entity {
 pub struct NavigationItem;
 #[component]
 pub struct PreviewCard;
+#[component]
+pub struct TaskActions;
 
 /// Bounded task actions avoid turning every command into a full-width bar.
 /// The label and target grow with text scale; containing rows wrap natively.
@@ -218,7 +220,7 @@ fn controls(state: model!(Studio)) -> Entity {
                     )
                     number (state.actions(), state.quality(), 101)
                     toggle (state.actions(), state.metadata(), 103, "Include sample metadata")
-                    Row (width:Dimension::percent(100),wrap:FlexWrap::Wrap,column_gap:8,row_gap:8) {
+                    Row (width:Dimension::percent(100),wrap:FlexWrap::Wrap,column_gap:8,row_gap:8) [TaskActions] {
                         compact_command(state,(Command::Preview),184)
                         compact_command(state,(Command::SavePreset),218)
                     }
