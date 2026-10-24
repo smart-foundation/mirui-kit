@@ -14,6 +14,12 @@ impl Calendar {
 #[model]
 impl Calendar {
     pub fn selection(&self)->Option<(Date,Date)> {self.state.selection()}
+    pub fn selection_label(&self)->String {
+        if let Some((start,end))=self.state.selection() {
+            let (y,m,d)=start.parts();let (ey,em,ed)=end.parts();
+            if start==end {format!("{y:04}-{m:02}-{d:02}")} else {format!("{y:04}-{m:02}-{d:02} to {ey:04}-{em:02}-{ed:02}")}
+        } else if self.state.range_pending() {"Choose an end date".into()} else {"No dates selected".into()}
+    }
     pub fn focused_date(&self)->Date {self.state.focused}
     pub fn cell(&self,index:u8)->Option<Date> {self.state.cell(index)}
     pub fn cell_label(&self,index:u8)->String {self.state.cell(index).map(|date|date.parts().2.to_string()).unwrap_or_default()}

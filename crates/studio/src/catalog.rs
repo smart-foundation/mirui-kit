@@ -97,4 +97,22 @@ pub const COMPONENTS: &[ComponentDoc] = &[
         source: "crates/kit/src/table.rs — partial keyboard support; runtime acceptance pending",
         route: Command::Collections,
     },
+    ComponentDoc {
+        title: "Listbox / multiple option selection",
+        api: "choices::{ChoiceList, list_box}",
+        source: "crates/kit/src/choices.rs — pointer modifiers and virtualization pending",
+        route: Command::Controls,
+    },
+    ComponentDoc {
+        title: "Gregorian calendar / date ranges",
+        api: "calendar::{Calendar, calendar}; CalendarMode::{Single, Range}",
+        source: "crates/kit/src/calendar.rs — date-only, ISO formatting; picker popup and host semantics pending",
+        route: Command::Controls,
+    },
+    ComponentDoc {
+        title: "Native slotted layout / content sizing",
+        api: "layout::{Panel, AppFrame, ToolbarLayout}; sizing::ContentFit",
+        source: "crates/kit/src/layout.rs; crates/kit/src/sizing.rs — geometry, not command routing or window host services",
+        route: Command::Foundations,
+    },
 ];

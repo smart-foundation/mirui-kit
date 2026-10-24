@@ -20,6 +20,8 @@ use mirui_kit::{
     feedback::{Severity, alert},
     forms::number_field,
     table::data_table,
+    choices::list_box,
+    calendar::calendar,
 };
 use studio_core::{Route, Surface};
 
@@ -227,6 +229,10 @@ fn controls(state: model!(Studio)) -> Entity {
             choice_group (state.actions(),state.demo_choices(),300,false,true)
             checkbox (state.actions(),state.demo_check(),301,"Enable optional indexing".into(),false)
             number_field (state.actions(),state.demo_numeric(),302,"Worker count (1–64)".into(),false)
+            heading (state,"Option list / Range calendar","Arrow keys move option focus; Space selects. Calendar arrows move days, Page Up/Down changes months, Shift changes years. Dates are local Gregorian values, not a scheduled host task.")
+            list_box (state.actions(),state.demo_options(),303,false)
+            calendar (state.actions(),state.demo_calendar(),304,false)
+            Text (text:${ {let _=state.demo_calendar().revision();state.demo_calendar().selection_label()} },font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)
             alert (state.actions(),(Severity::Information),"Shared kit specimens".into(),"These controls use the same theme roles and input ownership as the application.".into())
             Text (
                 "Recipe: mirui_kit::widgets::{field, number, toggle, action}. Editing any setting cancels the old job. Preview must be requested again.",

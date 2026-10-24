@@ -63,6 +63,8 @@ use studio_core::{Error, Route, Session, Surface, Theme};
 
 #[model]
 pub struct Studio {
+    pub demo_calendar: model!(owned mirui_kit::calendar::Calendar),
+    pub demo_options: model!(owned mirui_kit::choices::ChoiceList),
     pub demo_table: model!(owned DataTable),
     pub demo_choices: model!(owned ChoiceGroup),
     pub demo_hierarchy: model!(owned Hierarchy),
@@ -104,6 +106,14 @@ impl Default for Studio {
         Self {
             actions: Actions::default().into(),
             demo_choices: example_choices().into(),
+            demo_calendar: {
+                use mirui_kit::behavior::{forms::Date,calendar::{CalendarMode,WeekStart}};
+                mirui_kit::calendar::Calendar::new(Date::new(2026,10,24).unwrap(),Date::new(2026,1,1).unwrap(),Date::new(2027,12,31).unwrap(),CalendarMode::Range,WeekStart::Monday).unwrap().into()
+            },
+            demo_options: {
+                use mirui_kit::behavior::choices::OptionItem;
+                mirui_kit::choices::ChoiceList::new(alloc::vec![OptionItem{id:1,label:"Documents".into(),disabled:false},OptionItem{id:2,label:"Unavailable volume".into(),disabled:true},OptionItem{id:3,label:"Images".into(),disabled:false}],SelectionMode::Multiple).unwrap().into()
+            },
             demo_table: {
                 use mirui_kit::behavior::table::{Cell, Column, TableRow};
                 mirui_kit::table::DataTable::new(

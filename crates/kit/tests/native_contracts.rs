@@ -249,3 +249,27 @@ fn content_sizing_reserves_nested_height_and_idle_frames_do_not_drift() {
     assert_eq!(rect(&app,fitted),before);
     assert!(!app.world.has::<mirui_kit::sizing::ContentFitIssue>(fitted));
 }
+
+#[compose]
+fn calendar_fixture(actions:model!(Actions),state:model!(mirui_kit::calendar::Calendar))->Entity {
+    use mirui_kit::calendar::calendar;
+    ui! {calendar(actions,state,10,false)}
+}
+#[test]
+fn calendar_pointer_and_keyboard_commit_real_dates_and_respect_disabled_state() {
+    use mirui_kit::{calendar::{Calendar,CalendarNode,CalendarPart},behavior::{forms::Date,calendar::{CalendarMode,WeekStart}}};
+    let mut app=support::app_with_size(360,400);
+    let actions=app.add_model(Actions::default()).finish();
+    let first=Date::new(2024,2,1).unwrap();
+    let calendar=app.add_model(Calendar::new(first,first,Date::new(2024,2,29).unwrap(),CalendarMode::Single,WeekStart::Monday).unwrap()).finish();
+    let root=app.spawn_root().id();app.compose(root,calendar_fixture(actions,calendar.clone()));app.tick();app.render().unwrap();
+    let node=app.world.query::<CalendarNode>().iter().find(|(_,node)|matches!(node.part,CalendarPart::Cell(3))).unwrap().0;
+    support::tap(&mut app,node);
+    assert_eq!(calendar.selection(),Some((first,first)));
+    for physical in [PhysicalKey::ArrowRight,PhysicalKey::Space] {
+        app.backend.events.push_back(mirui::surface::InputEvent::Key{physical:Some(physical),code:0,pressed:true,modifiers:Some(Default::default()),repeat:Some(false)});app.tick();
+    }
+    let second=Date::new(2024,2,2).unwrap();assert_eq!(calendar.selection(),Some((second,second)));
+    calendar.set_disabled(true);app.tick();app.render().unwrap();support::tap(&mut app,node);
+    assert_eq!(calendar.selection(),Some((second,second)));
+}

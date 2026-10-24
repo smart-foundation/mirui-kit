@@ -15,8 +15,9 @@ impl FramebufferAccess for ScriptedSurface {
     fn framebuffer(&mut self)->Texture<'_> {self.framebuffer.framebuffer()}
 }
 pub type TestApp=App<ScriptedSurface,SwRendererFactory>;
-pub fn app()->TestApp {
-    let mut app=App::new(ScriptedSurface{framebuffer:FramebufSurface::with_format(240,200,ColorFormat::RGBA8888,|_,_|{}),events:VecDeque::new()});
+pub fn app()->TestApp {app_with_size(240,200)}
+pub fn app_with_size(width:u16,height:u16)->TestApp {
+    let mut app=App::new(ScriptedSurface{framebuffer:FramebufSurface::with_format(width,height,ColorFormat::RGBA8888,|_,_|{}),events:VecDeque::new()});
     app.with_default_widgets().with_default_systems();mirui_kit::install(&mut app);app
 }
 pub fn tap(app:&mut TestApp,entity:mirui::ecs::Entity) {
