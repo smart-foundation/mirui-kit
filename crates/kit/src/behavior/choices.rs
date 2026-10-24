@@ -18,12 +18,14 @@ impl Choices {
         let query=self.filter.to_lowercase();
         self.items.iter().filter(|i|i.label.to_lowercase().contains(&query)).cloned().collect()
     }
+    pub fn option(&self,id:ItemId)->Option<&OptionItem> {self.items.iter().find(|item|item.id==id)}
     pub fn available(&self)->Vec<ItemId> {self.rows().iter().filter(|i|!i.disabled).map(|i|i.id).collect()}
     pub fn filter(&mut self,query:String) {self.filter=query;self.reconcile();}
     fn reconcile(&mut self) {
         let all:Vec<_>=self.items.iter().filter(|i|!i.disabled).map(|i|i.id).collect();
         self.selection.reconcile(&all);
         let visible=self.available();
+        if visible.is_empty() {self.selection.clear_focus();return;}
         if !self.selection.focus().is_some_and(|id|visible.contains(&id)) {
             if let Some(id)=visible.first() {self.selection.focus_only(*id,&visible);}
         }
@@ -55,6 +57,7 @@ impl Choices {
     use super::*;use alloc::vec;
     fn options()->Vec<OptionItem> {vec![OptionItem{id:9,label:"Apricot".into(),disabled:false},OptionItem{id:2,label:"Apple".into(),disabled:true},OptionItem{id:5,label:"Banana".into(),disabled:false}]}
     #[test]fn filter_keeps_selected_ids_and_recovers_visible_focus() {let mut c=Choices::new(options(),SelectionMode::Multiple).unwrap();c.choose(9,Modifiers::default());c.filter("ban".into());assert!(c.selection.contains(9));assert_eq!(c.selection.focus(),Some(5));}
+    #[test]fn empty_filter_clears_focus_but_not_selection() {let mut c=Choices::new(options(),SelectionMode::Multiple).unwrap();c.choose(9,Modifiers::default());c.filter("missing".into());assert_eq!(c.selection.focus(),None);assert!(c.selection.contains(9));c.filter("".into());assert_eq!(c.selection.focus(),Some(9));}
     #[test]fn navigation_skips_unavailable_and_clamps() {let mut c=Choices::new(options(),SelectionMode::Single).unwrap();c.navigate(Move::Next,Modifiers::default());assert_eq!(c.selection.focus(),Some(5));c.navigate(Move::Next,Modifiers::default());assert_eq!(c.selection.focus(),Some(5));assert!(c.selection.selected().is_empty());}
     #[test]fn failed_replace_is_atomic() {let mut c=Choices::new(options(),SelectionMode::Single).unwrap();let mut bad=options();bad[2].id=9;assert_eq!(c.replace(bad),Err(9));assert_eq!(c.rows().len(),3);}
     #[test]fn typeahead_wraps_and_ignores_disabled() {let mut c=Choices::new(options(),SelectionMode::Single).unwrap();c.typeahead("ban");assert_eq!(c.selection.focus(),Some(5));c.typeahead("ap");assert_eq!(c.selection.focus(),Some(9));}

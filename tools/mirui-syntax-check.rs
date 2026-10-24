@@ -8,7 +8,10 @@ impl<'ast> Visit<'ast> for UiCheck {
     fn visit_macro(&mut self, mac: &'ast syn::Macro) {
         if mac.path.is_ident("ui") {
             let (_, tokens) = strip_bound_captures(mac.tokens.clone()).expect("UI captures");
-            if try_parse_fn_call_form(&tokens).is_none() {
+            if let Some(tokens) = try_strip_compose_keyword(&tokens) {
+                let output = mold::expand(tokens).to_string();
+                assert!(!output.contains("compile_error !"), "native slot composition: {output}");
+            } else if try_parse_fn_call_form(&tokens).is_none() {
                 let tokens = crate::layout_reactive::preprocess(tokens).expect("layout bindings");
                 let tree: DsTree = syn::parse2(tokens.clone()).unwrap_or_else(|e| {
                     panic!(
@@ -36,6 +39,8 @@ fn arena_sources_expand_against_real_051_macros() {
         "crates/kit/src/controls.rs",
         "crates/kit/src/button.rs",
         "crates/kit/src/choices.rs",
+        "crates/kit/src/layout.rs",
+        "crates/fm/src/ui/menu.rs",
         "crates/kit/tests/native_contracts.rs",
         "crates/kit/src/feedback.rs",
         "crates/kit/src/forms.rs",

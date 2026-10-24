@@ -62,3 +62,5 @@ pub const fn menu_height(items: u16, separators: u16) -> i32 {
     let nodes = items + separators;
     items * MENU_ROW_HEIGHT + separators + (if nodes > 0 {nodes - 1} else {0}) * MENU_GAP + 2 * MENU_INSET + 2
 }
+/// Standard inset for panels and inset containers.
+pub const INSET: i32 = 12;

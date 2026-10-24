@@ -11,6 +11,8 @@ impl ChoiceList {pub fn new(items:Vec<OptionItem>,mode:SelectionMode)->Result<Se
 #[model]
 impl ChoiceList {
     pub fn rows(&self)->Vec<OptionItem> {self.state.rows()}
+    pub fn label(&self,id:ItemId)->String {self.state.option(id).map(|option|option.label.clone()).unwrap_or_default()}
+    pub fn disabled(&self,id:ItemId)->bool {self.state.option(id).is_none_or(|option|option.disabled)}
     pub fn selected(&self,id:ItemId)->bool {self.state.selection.contains(id)}
     pub fn focused(&self,id:ItemId)->bool {self.state.selection.focus()==Some(id)}
     pub fn selected_ids(&self)->Vec<ItemId> {self.state.selection.selected().iter().copied().collect()}
@@ -21,6 +23,17 @@ impl ChoiceList {
     pub fn toggle_focused(&mut self) {if let Some(id)=self.state.selection.focus() {self.state.choose(id,Modifiers{ctrl:true,shift:false});self.revision=self.revision.wrapping_add(1);}}
     pub fn select_all(&mut self) {self.state.select_all();self.revision=self.revision.wrapping_add(1);}
     pub fn replace(&mut self,items:Vec<OptionItem>)->Result<(),ItemId> {self.state.replace(items)?;self.revision=self.revision.wrapping_add(1);Ok(())}
+}
+#[component]
+pub struct ChoiceOption {pub list:model!(ChoiceList),pub item:ItemId}
+#[view(component=ChoiceOption,name="KitChoiceOption",systems=[sync_availability::system()])]
+pub fn availability() {}
+#[system]
+fn sync_availability(rows:query!(Entity,ChoiceOption,optional crate::availability::InputBlocked),commands:commands!()) {
+    for (entity,option,blocked) in rows {
+        let enabled=!option.list.disabled(option.item);
+        if enabled==blocked.is_some() {commands.set::<crate::availability::InputAvailability>(entity,enabled);}
+    }
 }
 #[compose]
 pub fn list_box(actions:model!(Actions),list:model!(ChoiceList),key:u16,overlay:bool)->Entity {
@@ -44,8 +57,8 @@ pub fn list_box(actions:model!(Actions),list:model!(ChoiceList),key:u16,overlay:
 #[compose]
 fn option_row(actions:model!(Actions),list:model!(ChoiceList),option:OptionItem,overlay:bool)->Entity {
     ui! {
-        Button (width:Dimension::percent(100),height:${text_size(actions.text_scale(),40)},padding:Padding::all(8),border_radius:style::RADIUS,border_width:2,border_color:${ {let _=list.revision();if list.focused(option.id) {theme::FOCUS} else {theme::CLEAR}} },normal_color:${ {let _=list.revision();if list.selected(option.id) {theme::SELECTION} else {theme::CLEAR}} },pressed_color:theme::PRESSED) {
-            Text (text:option.label.clone(),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:if option.disabled {ColorToken::OnSurfaceVariant} else {ColorToken::OnSurface})
+        Button (width:Dimension::percent(100),height:${text_size(actions.text_scale(),40)},padding:Padding::all(8),border_radius:style::RADIUS,border_width:2,border_color:${ {let _=list.revision();if list.focused(option.id) {theme::FOCUS} else {theme::CLEAR}} },normal_color:${ {let _=list.revision();if list.selected(option.id) {theme::SELECTION} else {theme::CLEAR}} },pressed_color:theme::PRESSED) [ChoiceOption{list:list.clone(),item:option.id}] {
+            Text (text:${ {let _=list.revision();list.label(option.id)} },font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:${ {let _=list.revision();if list.disabled(option.id) {ColorToken::OnSurfaceVariant} else {ColorToken::OnSurface}} })
         } on Tap {if actions.modal()==overlay {list.choose(option.id,Modifiers::default());}}
     }
 }

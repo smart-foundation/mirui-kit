@@ -38,6 +38,7 @@ impl Selection {
     pub fn contains(&self, id: ItemId) -> bool {
         self.selected.contains(&id)
     }
+    pub fn clear_focus(&mut self) { self.focus = None; }
     pub fn focus_only(&mut self, id: ItemId, available: &[ItemId]) {
         if available.contains(&id) {
             self.focus = Some(id);
