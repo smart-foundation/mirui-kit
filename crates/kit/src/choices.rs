@@ -40,7 +40,7 @@ pub fn list_box(actions:model!(Actions),list:model!(ChoiceList),key:u16,overlay:
     ui! {
         Column (width:Dimension::percent(100),row_gap:2,border_radius:style::RADIUS,border_width:2,border_color:theme::CLEAR) [crate::sizing::ContentFit,Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
             walk ${ {let _=list.revision();list.rows()} } with option by option.id {
-                option_row (actions,list,option,overlay)
+                option_row (actions,list,option,key,overlay)
             }
             Text ("No matching options",visible:${ {let _=list.revision();list.rows().is_empty()} },font:font::MEDIUM,font_size:font::BODY_SIZE,text_color:ColorToken::OnSurfaceVariant)
         } on Key(|event:event!(Key)| {
@@ -55,9 +55,9 @@ pub fn list_box(actions:model!(Actions),list:model!(ChoiceList),key:u16,overlay:
     }
 }
 #[compose]
-fn option_row(actions:model!(Actions),list:model!(ChoiceList),option:OptionItem,overlay:bool)->Entity {
+fn option_row(actions:model!(Actions),list:model!(ChoiceList),option:OptionItem,key:u16,overlay:bool)->Entity {
     ui! {
-        Button (size:ButtonSize::Custom,align:AlignItems::Center,justify:JustifyContent::FlexStart,width:Dimension::percent(100),height:${text_size(actions.text_scale(),40)},padding:Padding::all(8),border_radius:style::RADIUS,border_width:2,border_color:${ {let _=list.revision();if list.focused(option.id) {theme::FOCUS} else {theme::CLEAR}} },normal_color:${ {let _=list.revision();if list.selected(option.id) {theme::SELECTION} else {theme::CLEAR}} },pressed_color:theme::PRESSED) [ChoiceOption{list:list.clone(),item:option.id}] {
+        Button (size:ButtonSize::Custom,align:AlignItems::Center,justify:JustifyContent::FlexStart,width:Dimension::percent(100),height:${text_size(actions.text_scale(),actions.control_height())},padding:Padding{left:8.into(),right:8.into(),top:4.into(),bottom:4.into()},border_radius:style::RADIUS,border_width:2,border_color:${ {let _=list.revision();if list.focused(option.id) && actions.keyboard_focus_on(key) {theme::FOCUS} else {theme::CLEAR}} },normal_color:${ {let _=list.revision();if list.selected(option.id) {theme::SELECTION} else {theme::CLEAR}} },pressed_color:theme::PRESSED) [ChoiceOption{list:list.clone(),item:option.id}] {
             Text (text:${ {let _=list.revision();list.label(option.id)} },font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:${ {let _=list.revision();if list.disabled(option.id) {ColorToken::OnSurfaceVariant} else {ColorToken::OnSurface}} })
         } on Tap {if actions.modal()==overlay {list.choose(option.id,Modifiers::default());}}
     }

@@ -13,7 +13,7 @@ fn numeric_steps_align_with_the_editable_field_at_both_text_scales() {
             let step=app.world.query::<mirui_kit::FocusItem>().iter().find(|(_,item)|item.order==key).expect("step button").0;
             let step=app.world.get::<mirui::ui::ComputedRect>(step).unwrap().0;
             assert_eq!((step.y,step.h),(rect.y,rect.h),"{theme}/{scale}: input and step edges differ");
-            assert!(step.w>=Fixed::from_int(40));
+            assert_eq!(step.w,Fixed::from_int(mirui_kit::widgets::text_size(scale,mirui_kit::style::FIELD_HEIGHT).into()));
         }
     }}
 }

@@ -2,7 +2,7 @@
 use alloc::string::String;
 use mirui::prelude::*;
 use mirui::render::path::Path;
-use mirui::ui::widgets::{Button,Icon,Text};
+use mirui::ui::widgets::{Button,ButtonSize,Icon,Text};
 use crate::{Actions,FocusItem,availability::{InputAvailability,InputBlocked},font,style::{self,Density,Intent},theme,widgets::{FocusRing,text_size}};
 
 #[model]
@@ -30,7 +30,7 @@ pub struct ButtonSpec {
     pub toggle:bool,
 }
 impl ButtonSpec {
-    pub fn labelled(label:impl Into<String>)->Self {Self{label:label.into(),icon:None,icon_only:false,intent:Intent::Neutral,density:Density::Comfortable,full_width:false,toggle:false}}
+    pub fn labelled(label:impl Into<String>)->Self {Self{label:label.into(),icon:None,icon_only:false,intent:Intent::Neutral,density:Density::Compact,full_width:false,toggle:false}}
     pub fn icon(label:impl Into<String>,icon:&'static Path)->Self {Self{icon:Some(icon),icon_only:true,..Self::labelled(label)}}
 }
 /// Public label metadata is retained even when an icon-only control hides its
@@ -54,13 +54,14 @@ pub fn button(actions:model!(Actions),state:model!(ButtonState),key:u16,spec:But
     assert!(!spec.icon_only || spec.icon.is_some(),"icon buttons require an icon");
     ui! {
         Button (
+            size:ButtonSize::Custom,
             font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},
             text_color:spec.intent.foreground(),
             width:if spec.full_width {Dimension::percent(100)} else {Dimension::Auto},
             height:${text_size(actions.text_scale(),spec.density.control_height() as u16)},
             min_width:spec.density.control_height(),
             padding:Padding{left:Dimension::px(if spec.icon.is_some() && !spec.icon_only {spec.density.inset()+18+style::GAP} else {spec.density.inset()}),right:Dimension::px(spec.density.inset()),top:Dimension::px(4),bottom:Dimension::px(4)},
-            border_width:style::FOCUS_WIDTH,border_color:${if state.checked() {theme::FOCUS} else {ColorToken::Outline}},
+            border_width:style::OUTLINE_WIDTH,border_color:${if state.checked() {theme::FOCUS} else {ColorToken::Outline}},
             border_radius:style::RADIUS,normal_color:spec.intent.background(),pressed_color:theme::PRESSED
         ) [Text::label(if spec.icon_only {String::new()} else {spec.label.clone()}),Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()},ButtonAvailability{state:state.clone()},ControlName{label:spec.label.clone()}] {
             if spec.icon.is_some() {

@@ -3,8 +3,8 @@ use crate::theme;
 use mirui::prelude::*;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Density {
-    Compact,
     #[default]
+    Compact,
     Comfortable,
     Touch,
 }
@@ -48,7 +48,11 @@ impl Intent {
         }
     }
 }
-pub const RADIUS: i32 = 6;
+/// Restrained desktop curves, independent of typography and target density.
+pub const RADIUS: i32 = 8;
+pub const CONTROL_HEIGHT: u16 = 32;
+pub const FIELD_HEIGHT: u16 = 36;
+pub const OUTLINE_WIDTH: i32 = 1;
 pub const GAP: i32 = 8;
 pub const FOCUS_WIDTH: i32 = 2;
 

@@ -121,7 +121,7 @@ pub fn number_field(
     ui! {Column (width:Dimension::percent(100),row_gap:style::GAP) [crate::sizing::ContentFit] {
         Text (text:label.clone(),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)
         Row (width:Dimension::percent(100),column_gap:style::GAP) {
-            View (grow:1.0,height:${text_size(actions.text_scale(),44)},padding:Padding::all(10),bg_color:ColorToken::SurfaceVariant,border_width:1,border_color:${if entry.error().is_empty() {ColorToken::Outline} else {ColorToken::Error}},border_radius:style::RADIUS) [crate::field::FieldFrame::default(),crate::field::EditingSurface,HitTarget,mirui::input::event::focus::PointerFocus::Preserve] {
+            View (grow:1.0,height:${text_size(actions.text_scale(),actions.field_height())},padding:Padding{left:10.into(),right:10.into(),top:4.into(),bottom:4.into()},bg_color:ColorToken::SurfaceVariant,border_width:1,border_color:${if entry.error().is_empty() {ColorToken::Outline} else {ColorToken::Error}},border_radius:style::RADIUS) [crate::field::FieldFrame::default(),crate::field::EditingSurface,HitTarget,mirui::input::event::focus::PointerFocus::Preserve] {
                 Editor (document:Some(entry.document()),width:Dimension::percent(100),height:24,font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)}) [crate::field::FieldContent,FocusItem{overlay,order:key}] on TextEditing::Submitted {if actions.modal()==overlay {entry.commit();}} on Key(|event:event!(Key)| {
                     if !event.pressed || actions.modal()!=overlay {return false;}
                     let direction=match event.physical {Some(PhysicalKey::ArrowUp)|Some(PhysicalKey::PageUp)=>1,Some(PhysicalKey::ArrowDown)|Some(PhysicalKey::PageDown)=>-1,_=>0};
@@ -142,7 +142,7 @@ fn number_step(
     overlay: bool,
     direction: i32,
 ) -> Entity {
-    ui! {Button (width:${text_size(actions.text_scale(),44)},height:${text_size(actions.text_scale(),44)},normal_color:ColorToken::SurfaceVariant,pressed_color:theme::PRESSED,border_width:2,border_color:ColorToken::Outline,border_radius:style::RADIUS) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
+    ui! {Button (width:${text_size(actions.text_scale(),actions.field_height())},height:${text_size(actions.text_scale(),actions.field_height())},normal_color:ColorToken::SurfaceVariant,pressed_color:theme::PRESSED,border_width:style::OUTLINE_WIDTH,border_color:ColorToken::Outline,border_radius:style::RADIUS) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
         Icon (path:if direction<0 {icons::MINUS.clone()} else {icons::PLUS.clone()},width:${text_size(actions.text_scale(),18)},height:${text_size(actions.text_scale(),18)},color:ColorToken::OnSurface)
     } on Tap {if actions.modal()==overlay {entry.step(direction,false);}} on Key(|event:event!(Key)| {if event.pressed && event.repeat!=Some(true) && (event.code==13||event.physical==Some(PhysicalKey::Space)) && actions.modal()==overlay {entry.step(direction,false);return true;} false}) on FocusChanged(|event:event!(FocusChanged)| {actions.focus(key,event.focused);})}
 }

@@ -1,6 +1,8 @@
 //! Files itself must be tested, not only Studio's shared specimens.
 use mirui::prelude::*;
 use fm::model::{FmState,Place};
+#[path="../../../targets/studio/src/capture_surface.rs"]
+mod capture_surface;
 #[test]
 fn grid_uses_the_measured_pane_without_an_eight_column_cap() {
     let mut state=FmState::new();
@@ -14,11 +16,11 @@ fn grid_uses_the_measured_pane_without_an_eight_column_cap() {
 #[test]
 fn native_shell_counts_and_controls_fit_at_real_window_sizes() {
     for (width,height) in [(640,600),(1180,720),(1400,900)] {
-        let backend=mirui::surface::framebuf::FramebufSurface::with_format(width,height,mirui::render::texture::ColorFormat::RGBA8888,|_,_|{});
+        let backend=capture_surface::CaptureSurface::new(width,height);
         let mut app=App::new(backend);app.with_default_widgets().with_default_systems();
         let state=fm::install(&mut app);
         for _ in 0..6 {app.tick();app.render().unwrap();}
-        let rect=|id:&str| {let node=app.world.find_by_id(id).unwrap_or_else(||panic!("missing {id}"));app.world.get::<mirui::ui::ComputedRect>(node).unwrap().0};
+        let rect=|id:&'static str| {let node=app.world.find_by_id(id).unwrap_or_else(||panic!("missing {id}"));app.world.get::<mirui::ui::ComputedRect>(node).unwrap().0};
         let cap=rect("sidebar_caption");let sidebar=rect("sidebar");let content=rect("files_content");
         assert_eq!((cap.x,cap.y),(Fixed::ZERO,Fixed::ZERO));
         assert_eq!(cap.w,sidebar.w);
@@ -43,7 +45,12 @@ fn native_shell_counts_and_controls_fit_at_real_window_sizes() {
         assert!(state.grid_columns() as i32*fm::model::TILE_WIDTH+(state.grid_columns() as i32-1)*6<=available);
         assert!(content.w>Fixed::ZERO);
         if width==1400 {assert!(state.grid_columns()>8);}
-        state.toggle_sidebar();
+        let toggle=rect("sidebar_toggle");
+        let x=toggle.x+toggle.w/2;let y=toggle.y+toggle.h/2;
+        app.backend.events.push_back(mirui::surface::InputEvent::PointerDown{kind:mirui::surface::PointerKind::Mouse,id:0,x,y});
+        app.tick();app.render().unwrap();
+        app.backend.events.push_back(mirui::surface::InputEvent::PointerUp{kind:mirui::surface::PointerKind::Mouse,id:0,x,y});
+        app.tick();
         for _ in 0..4 {app.tick();app.render().unwrap();}
         assert!(!state.sidebar_visible());
         let node=app.world.find_by_id("files_content").unwrap();

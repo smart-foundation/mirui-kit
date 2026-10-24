@@ -52,11 +52,14 @@ impl Property for FocusRequest {
 }
 pub fn install<B:Surface,F:RendererFactory<B>>(app:&mut App<B,F>,actions:ActionsHandle) {
     app.on_event(Key::EVENT,tab::callback(actions.clone()));
+    app.add_system(pointer_modality::system(actions.clone()));
     app.add_system(focus_layer::system(actions));
 }
 #[event]
 fn tab(event:event!(Key),actions:model!(Actions),targets:query!(Entity,FocusItem),commands:commands!())->bool {
-    if !event.pressed || event.physical!=Some(PhysicalKey::Tab) {return false;}
+    if !event.pressed {return false;}
+    if matches!(event.physical,Some(PhysicalKey::Tab|PhysicalKey::ArrowUp|PhysicalKey::ArrowDown|PhysicalKey::ArrowLeft|PhysicalKey::ArrowRight|PhysicalKey::Home|PhysicalKey::End|PhysicalKey::PageUp|PhysicalKey::PageDown)) {actions.set_focus_visible(true);}
+    if event.physical!=Some(PhysicalKey::Tab) {return false;}
     for (entity,_) in targets {
         commands.set::<FocusRequest>(entity,Request{actions:actions.clone(),reverse:Some(event.modifiers.is_some_and(|m|m.shift))});break;
     }
@@ -68,4 +71,10 @@ fn focus_layer(actions:model!(Actions),targets:query!(Entity,FocusItem),commands
     for (entity,_) in targets {
         commands.set::<FocusRequest>(entity,Request{actions:actions.clone(),reverse:None});break;
     }
+}
+
+/// A pointer press hides keyboard-only rings, not focus or selection itself.
+#[system]
+fn pointer_modality(cursor:res!(mirui::input::event::PointerCursor),actions:model!(Actions)) {
+    if cursor.down && actions.focus_visible() {actions.set_focus_visible(false);}
 }

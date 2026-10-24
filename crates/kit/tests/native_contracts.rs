@@ -423,3 +423,36 @@ fn vertical_split_with_impossible_minima_stays_inside_the_viewport() {
     assert_eq!(height(first)+height(divider)+height(second),Fixed::from_int(160));
     assert!(height(first)>Fixed::ZERO && height(second)>Fixed::ZERO);
 }
+
+#[test]
+fn desktop_defaults_are_compact_without_shrinking_type() {
+    use mirui_kit::{button::ButtonSpec,style::Density};
+    assert_eq!(Density::default(),Density::Compact);
+    assert_eq!(ButtonSpec::labelled("Open").density,Density::Compact);
+    assert_eq!(Density::Compact.control_height(),32);
+    assert_eq!(Density::Touch.control_height(),48);
+    assert_eq!(mirui_kit::widgets::text_size(100,mirui_kit::font::BODY_SIZE),mirui_kit::font::BODY_SIZE);
+    let mut app=App::headless(100,100);
+    let actions=app.add_model(Actions::default()).finish();
+    actions.focus(7,true);
+    assert!(!actions.keyboard_focus_on(7),"a remembered selection/focus must not paint a keyboard ring at rest");
+    actions.set_focus_visible(true);
+    assert!(actions.keyboard_focus_on(7));
+    assert!(!actions.keyboard_focus_on(8));
+    actions.set_focus_visible(false);
+    assert!(!actions.keyboard_focus_on(7));
+    assert_eq!(actions.focused(),Some(7),"hiding a ring must not discard focus");
+}
+#[test]
+fn desktop_density_is_explicit_and_does_not_override_text_scale() {
+    use mirui_kit::style::Density;
+    let mut app=App::headless(100,100);
+    let actions=app.add_model(Actions::default()).finish();
+    assert_eq!((actions.control_height(),actions.field_height()),(32,36));
+    actions.set_scale(150);
+    actions.set_density(Density::Comfortable);
+    assert_eq!((actions.control_height(),actions.field_height()),(40,44));
+    assert_eq!(actions.text_scale(),150);
+    actions.set_density(Density::Touch);
+    assert_eq!(actions.control_height(),48);
+}

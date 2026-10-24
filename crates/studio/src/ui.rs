@@ -72,7 +72,7 @@ pub fn shell(state: model!(Studio)) -> Entity {
                 ]
                 Column (id:"studio_window",width:1180,height:720,bg_color:ColorToken::Surface,border_radius:14) [OffscreenRender::new()] {
                     Column (width:Dimension::percent(100),grow:1.0) [InputGate { actions:state.actions(), overlay:false }] {
-                        Row (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(),48)},padding:Padding::all(4),align:AlignItems::Center,column_gap:12,bg_color:theme::TOOLBAR) {
+                        Row (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(),40)},padding:Padding::all(4),align:AlignItems::Center,column_gap:12,bg_color:theme::TOOLBAR) {
                             sidebar_toggle(state.desktop_chrome(),state.actions(),90,false)
                             Text ("NALEDZI / STUDIO",grow:1.0,font:font::SEMIBOLD,font_size:${text_size(state.actions().text_scale(), font::SECTION_SIZE)},text_color:ColorToken::OnSurface)
                             View (width:196,height:40) { command(state,(Command::Palette),false) }

@@ -91,14 +91,14 @@ pub fn choice_group(
             if ${ !group.vertical() } {
                 Row (width:Dimension::percent(100),column_gap:2) {
                     walk ${ {let _=group.revision();group.items()} } with item by item.id {
-                        choice_item (actions,group,item,overlay)
+                        choice_item (actions,group,item,key,overlay)
                     }
                 }
             }
             if ${ group.vertical() } {
                 Column (width:Dimension::percent(100),row_gap:2) [crate::sizing::ContentFit] {
                     walk ${ {let _=group.revision();group.items()} } with item by item.id {
-                        choice_item (actions,group,item,overlay)
+                        choice_item (actions,group,item,key,overlay)
                     }
                 }
             }
@@ -124,13 +124,15 @@ fn choice_item(
     actions: model!(Actions),
     group: model!(ChoiceGroup),
     item: GroupItem,
+    key:u16,
     overlay: bool,
 ) -> Entity {
     ui! {
         Button (
-            height:${text_size(actions.text_scale(),40)}, min_width:40, grow:1.0,
-            padding:Padding::all(8),border_radius:style::RADIUS,border_width:2,
-            border_color:${ {let _=group.revision();if group.active()==Some(item.id) {theme::FOCUS} else {theme::CLEAR}} },
+            size:ButtonSize::Custom,
+            height:${text_size(actions.text_scale(),actions.control_height())}, min_width:40, grow:1.0,
+            padding:Padding{left:8.into(),right:8.into(),top:4.into(),bottom:4.into()},border_radius:style::RADIUS,border_width:2,
+            border_color:${ {let _=group.revision();if group.active()==Some(item.id) && actions.keyboard_focus_on(key) {theme::FOCUS} else {theme::CLEAR}} },
             normal_color:${ {let _=group.revision();if group.selected(item.id) {theme::SEGMENTED_SELECTED} else {theme::CLEAR}} },
             pressed_color:theme::PRESSED
         ) {
@@ -219,7 +221,7 @@ pub fn tree_view(
             Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()},
         ] {
             walk ${ {let _=tree.revision();tree.rows()} } with row by row.id {
-                tree_row (actions,tree,row,overlay)
+                tree_row (actions,tree,row,key,overlay)
             }
             Text ("No items",visible:${ {let _=tree.revision();tree.rows().is_empty()} },font:font::MEDIUM,font_size:font::BODY_SIZE,text_color:ColorToken::OnSurfaceVariant)
         } on Key(|event:event!(Key)| {
@@ -242,17 +244,18 @@ fn tree_row(
     actions: model!(Actions),
     tree: model!(Hierarchy),
     row: TreeRow,
+    key:u16,
     overlay: bool,
 ) -> Entity {
     ui! {
-        Row (width:Dimension::percent(100),height:${text_size(actions.text_scale(),40)},padding:Padding{left:((row.depth.min(32)*16) as i32).into(),top:0.into(),right:4.into(),bottom:0.into()},column_gap:4,bg_color:${ {let _=tree.revision();if tree.selected(row.id) {theme::SELECTION} else {theme::CLEAR}} },border_width:2,border_color:${ {let _=tree.revision();if tree.focused(row.id) {theme::FOCUS} else {theme::CLEAR}} },border_radius:style::RADIUS) {
-            View (width:36,height:36) {
-                Button (width:36,height:36,normal_color:theme::CLEAR,pressed_color:theme::PRESSED,visible:${ {let _=tree.revision();tree.branch(row.id)} }) {
+        Row (width:Dimension::percent(100),height:${text_size(actions.text_scale(),actions.control_height())},padding:Padding{left:((row.depth.min(32)*16) as i32).into(),top:0.into(),right:4.into(),bottom:0.into()},column_gap:4,bg_color:${ {let _=tree.revision();if tree.selected(row.id) {theme::SELECTION} else {theme::CLEAR}} },border_width:2,border_color:${ {let _=tree.revision();if tree.focused(row.id) && actions.keyboard_focus_on(key) {theme::FOCUS} else {theme::CLEAR}} },border_radius:style::RADIUS) {
+            View (width:30,height:30) {
+                Button (width:30,height:30,normal_color:theme::CLEAR,pressed_color:theme::PRESSED,visible:${ {let _=tree.revision();tree.branch(row.id)} }) {
                     Icon (path:icons::DISCLOSURE_DOWN.clone(),width:18,height:18,color:ColorToken::OnSurface,visible:${ {let _=tree.revision();tree.expanded(row.id)} })
                     Icon (path:icons::DISCLOSURE_RIGHT.clone(),width:18,height:18,color:ColorToken::OnSurface,visible:${ {let _=tree.revision();!tree.expanded(row.id)} })
                 } on Tap {if actions.modal()==overlay {tree.toggle(row.id);}}
             }
-            Button (size:ButtonSize::Custom,padding:Padding::all(8),align:AlignItems::Center,grow:1.0,height:${text_size(actions.text_scale(),36)},justify:JustifyContent::FlexStart,normal_color:theme::CLEAR,pressed_color:theme::PRESSED) {
+            Button (size:ButtonSize::Custom,padding:Padding{left:8.into(),right:8.into(),top:4.into(),bottom:4.into()},align:AlignItems::Center,grow:1.0,height:${text_size(actions.text_scale(),30)},justify:JustifyContent::FlexStart,normal_color:theme::CLEAR,pressed_color:theme::PRESSED) {
                 Text (text:${ {let _=tree.revision();tree.label(row.id)} },font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:${ {let _=tree.revision();if tree.disabled(row.id) {ColorToken::OnSurfaceVariant} else {ColorToken::OnSurface}} })
             } on Tap {if actions.modal()==overlay {tree.choose(row.id,Modifiers::default());}}
         }
@@ -286,7 +289,7 @@ pub fn checkbox(
     overlay: bool,
 ) -> Entity {
     ui! {
-        Button (width:Dimension::percent(100),height:${text_size(actions.text_scale(),40)},padding:Padding::all(8),normal_color:theme::CLEAR,pressed_color:theme::PRESSED,border_width:2,border_color:theme::CLEAR,border_radius:style::RADIUS) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
+        Button (width:Dimension::percent(100),height:${text_size(actions.text_scale(),actions.control_height())},padding:Padding{left:8.into(),right:8.into(),top:4.into(),bottom:4.into()},normal_color:theme::CLEAR,pressed_color:theme::PRESSED,border_width:2,border_color:theme::CLEAR,border_radius:style::RADIUS) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
             Row (width:Dimension::percent(100),column_gap:12,align:AlignItems::Center) {
                 View (width:20,height:20,border_width:2,border_radius:4,border_color:ColorToken::Outline,bg_color:${if check.value()==CheckState::Unchecked {ColorToken::Surface} else {ColorToken::Primary}}) {
                     Icon (path:icons::CHECK.clone(),width:16,height:16,color:ColorToken::OnPrimary,visible:${check.value()==CheckState::Checked})

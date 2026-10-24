@@ -1,5 +1,5 @@
 //! Controls used by both Studio chrome and live specimens.
-use crate::{font, theme};
+use crate::{font, theme, style};
 use alloc::{string::String, vec::Vec};
 use mirui::input::event::focus::PointerFocus;
 use mirui::prelude::*;
@@ -7,7 +7,7 @@ use mirui::render::path::Path;
 use mirui::ui::clipboard::ClipboardFinished;
 use mirui::ui::{
     widgets::{
-        Button, Icon, Placeholder, Slider, Switch, Text, TextDocument, TextEditing, TextInput,
+        Button, ButtonSize, Icon, Placeholder, Slider, Switch, Text, TextDocument, TextEditing, TextInput,
     },
 };
 
@@ -27,6 +27,11 @@ pub struct Actions {
     pub focused: Option<u16>,
     #[observe]
     pub focus_revision: u64,
+    /// Keyboard navigation feedback is not a permanent selection decoration.
+    #[observe]
+    pub focus_visible: bool,
+    #[observe]
+    pub density: style::Density,
     #[observe]
     pub text_scale: u16,
 }
@@ -64,6 +69,13 @@ impl Actions {
             self.focused = None;
         }
     }
+    pub fn set_density(&mut self,density:style::Density) {self.density=density;}
+    pub fn control_height(&self)->u16 {self.density.control_height() as u16}
+    pub fn field_height(&self)->u16 {self.density.control_height() as u16+4}
+    pub fn set_focus_visible(&mut self, visible:bool) {
+        if self.focus_visible!=visible {self.focus_visible=visible;self.focus_revision=self.focus_revision.wrapping_add(1);}
+    }
+    pub fn keyboard_focus_on(&self,key:u16)->bool {self.focus_visible && self.focused==Some(key)}
     pub fn set_scale(&mut self, scale: u16) {
         self.text_scale = scale.clamp(100, 150);
     }
@@ -174,14 +186,15 @@ pub fn action(
 ) -> Entity {
     ui! {
         Button (
-            height: ${ text_size(actions.text_scale(), 40) },
+            size:ButtonSize::Custom,
+            height: ${ text_size(actions.text_scale(), actions.control_height()) },
             min_width: 40,
             width: Dimension::percent(100),
-            padding: Padding::all(8),
+            padding: Padding{left:8.into(),right:8.into(),top:4.into(),bottom:4.into()},
             normal_color: ColorToken::SurfaceVariant,
             pressed_color: theme::PRESSED,
             border_radius: 8,
-            border_width: 2,
+            border_width: style::OUTLINE_WIDTH,
             border_color: ColorToken::Outline
         ) [
             FocusRing {
@@ -229,7 +242,7 @@ pub fn field(
     ui! {
         View (
             width: Dimension::percent(100),
-            height: ${ text_size(actions.text_scale(), 44) },
+            height: ${ text_size(actions.text_scale(), actions.field_height()) },
             padding: Padding {
                 top: 0.into(),
                 right: 10.into(),
@@ -291,7 +304,7 @@ pub fn number(actions: model!(Actions), number: model!(Number), key: u16) -> Ent
                     height: 40,
                     font: font::MEDIUM,
                     font_size: ${ text_size(actions.text_scale(), font::BODY_SIZE) },
-                    border_width: 2,
+                    border_width: style::OUTLINE_WIDTH,
                     border_color: ColorToken::Outline
                 ) [
                     FocusRing {
@@ -319,7 +332,7 @@ pub fn number(actions: model!(Actions), number: model!(Number), key: u16) -> Ent
                     height: 40,
                     font: font::MEDIUM,
                     font_size: ${ text_size(actions.text_scale(), font::BODY_SIZE) },
-                    border_width: 2,
+                    border_width: style::OUTLINE_WIDTH,
                     border_color: ColorToken::Outline
                 ) [
                     FocusRing {
@@ -369,7 +382,7 @@ pub fn toggle(
                 width: 44,
                 height: 26,
                 border_radius: 13,
-                border_width: 2,
+                border_width: style::OUTLINE_WIDTH,
                 border_color: ColorToken::Outline
             ) [
                 FocusRing {
@@ -412,12 +425,12 @@ pub struct FocusRing {
 pub fn focus_ring(
     _ring: component!(),
     node: entity!(),
-    _actions: model!(component.actions, watch(focus_revision)),
+    actions: model!(component.actions, watch(focus_revision)),
     focus: res!(mirui::input::event::focus::FocusState),
     theme: res!(Theme),
     paint: paint!(),
 ) {
-    if focus.focused != Some(node) {
+    if !actions.focus_visible() || focus.focused != Some(node) {
         return;
     }
     paint.draw(&mirui::render::DrawCommand::Border {
@@ -425,7 +438,7 @@ pub fn focus_ring(
         transform: paint.transform(),
         quad: paint.quad(),
         color: theme.resolve(crate::theme::FOCUS),
-        width: Fixed::from_int(3),
+        width: Fixed::from_int(style::FOCUS_WIDTH),
         radius: paint.style().border_radius,
         opa: 255,
     });

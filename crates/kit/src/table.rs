@@ -142,13 +142,13 @@ pub fn data_table(
     ui! {Column (width:${ {let _=table.revision();table.total_width()} },row_gap:2,border_width:2,border_color:theme::CLEAR,border_radius:style::RADIUS) [crate::sizing::ContentFit,Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
         Row (width:Dimension::percent(100),column_gap:1) {
             walk ${ {let _=table.revision();table.columns()} } with column by column.id {
-                Button (size:ButtonSize::Custom,align:AlignItems::Center,width:${ {let _=table.revision();table.column_width(column.id)} },height:${text_size(actions.text_scale(),40)},justify:JustifyContent::FlexStart,normal_color:ColorToken::SurfaceVariant,pressed_color:theme::PRESSED,padding:Padding::all(8)) {
+                Button (size:ButtonSize::Custom,align:AlignItems::Center,width:${ {let _=table.revision();table.column_width(column.id)} },height:${text_size(actions.text_scale(),actions.control_height())},justify:JustifyContent::FlexStart,normal_color:ColorToken::SurfaceVariant,pressed_color:theme::PRESSED,padding:Padding{left:8.into(),right:8.into(),top:4.into(),bottom:4.into()}) {
                     Text (text:column.label.clone(),font:font::SEMIBOLD,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)
                 } on Tap {if actions.modal()==overlay {table.sort(column.id);}}
             }
         }
         walk ${ {let _=table.revision();table.rows()} } with row by row.id {
-            table_row (actions,table,row,overlay)
+            table_row (actions,table,row,key,overlay)
         }
         Text ("No rows",visible:${ {let _=table.revision();table.rows().is_empty()} },font:font::MEDIUM,font_size:font::BODY_SIZE,text_color:ColorToken::OnSurfaceVariant)
     } on Key(|event:event!(Key)| {
@@ -166,12 +166,13 @@ fn table_row(
     actions: model!(Actions),
     table: model!(DataTable),
     row: TableRow,
+    key:u16,
     overlay: bool,
 ) -> Entity {
-    ui! {Button (size:ButtonSize::Custom,width:Dimension::percent(100),height:${text_size(actions.text_scale(),40)},normal_color:${ {let _=table.revision();if table.selected(row.id) {theme::SELECTION} else {theme::CLEAR}} },pressed_color:theme::PRESSED,border_width:2,border_color:${ {let _=table.revision();if table.focused(row.id) {theme::FOCUS} else {theme::CLEAR}} },border_radius:style::RADIUS,padding:Padding::all(0)) {
+    ui! {Button (size:ButtonSize::Custom,width:Dimension::percent(100),height:${text_size(actions.text_scale(),actions.control_height())},normal_color:${ {let _=table.revision();if table.selected(row.id) {theme::SELECTION} else {theme::CLEAR}} },pressed_color:theme::PRESSED,border_width:2,border_color:${ {let _=table.revision();if table.focused(row.id) && actions.keyboard_focus_on(key) {theme::FOCUS} else {theme::CLEAR}} },border_radius:style::RADIUS,padding:Padding::all(0)) {
         Row (width:Dimension::percent(100),height:Dimension::percent(100),column_gap:1) {
             walk ${ {let _=table.revision();table.columns()} } with column by column.id {
-                View (width:${ {let _=table.revision();table.column_width(column.id)} },height:Dimension::percent(100),padding:Padding::all(8)) {
+                View (width:${ {let _=table.revision();table.column_width(column.id)} },height:Dimension::percent(100),padding:Padding{left:8.into(),right:8.into(),top:4.into(),bottom:4.into()}) {
                     Text (text:${ {let _=table.revision();table.cell_text(row.id,column.id)} },font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:${ {let _=table.revision();if table.disabled(row.id) {ColorToken::OnSurfaceVariant} else {ColorToken::OnSurface}} })
                 }
             }
