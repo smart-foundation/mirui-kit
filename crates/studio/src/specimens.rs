@@ -20,6 +20,8 @@ pub struct Fixture {
     pub progress:model!(owned mirui_kit::feedback::Progress),
     pub validation:model!(owned mirui_kit::forms::Validation),
 }
+#[model]
+impl Fixture {}
 impl Default for Fixture {
     fn default()->Self {Self {state:Studio::default().into(),button:mirui_kit::button::ButtonState::default().into(),progress:mirui_kit::feedback::Progress::default().into(),validation:mirui_kit::forms::Validation::default().into()}}
 }
