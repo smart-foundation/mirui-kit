@@ -13,9 +13,11 @@ without copying file-manager internals.
 
 The kit is **not OS-suite ready**. The updated [actual component catalog](../COMPONENT_CATALOG.md)
 separates shared partial APIs, app-local implementations, native Mirui primitives
-and missing components. Eight catalog groups and 17 showcase surface IDs do not
-establish completeness. ButtonGroup and TreeView are unimplemented shared controls,
-not visual polish items. The visual-shell review does not supersede this verdict.
+and missing components. The [researched full baseline](../COMPONENT_COMPLETION.md)
+covers all standard families and service contracts. New group/tree/table/form
+source is partial, not release accepted. Neither the expanded catalog nor the
+17 showcase surface IDs establishes completeness. The visual-shell review does
+not supersede this verdict.
 
 ## Read these reports
 

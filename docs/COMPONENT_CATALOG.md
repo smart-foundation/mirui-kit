@@ -1,7 +1,11 @@
 # Current component catalog and OS-suite readiness
 
 Audit date: 2026-10-24. Inspected the working source on
-`arena/db7ace04-mirui-kit`, not just the screenshots or showcase specification.
+the active working branch, not just the screenshots or showcase specification.
+
+Updated after the research/implementation pass: see [the complete baseline and
+new-source evidence](COMPONENT_COMPLETION.md). The original eight catalog groups
+are retained below as a baseline; the live catalog now has **15 partial groups**.
 
 ## Verdict
 
@@ -11,7 +15,7 @@ app authors would currently need to implement fundamental components themselves.
 A toolkit that requires every app to build its own tree, forms, selection model,
 button groups, tables and overlay lifecycle is not yet delivering that foundation.
 
-The current Studio catalog has **eight grouped entries**, not eight independently
+The original Studio catalog had **eight grouped entries**, not eight independently
 complete, behaviorally accepted components. Several entries combine multiple
 concepts; two point at the same document/editing infrastructure, and others are
 services or assets rather than controls. Six showcase routes and 17 surface IDs
@@ -20,7 +24,7 @@ are not evidence of a complete component library.
 No complete-widget count or percentage is asserted here: there is no agreed
 finite universe of all OS apps, and source presence is not runtime acceptance.
 
-## What the existing catalog actually advertises
+## Original eight-entry baseline
 
 Source: `crates/studio/src/catalog.rs::COMPONENTS`.
 
@@ -35,7 +39,12 @@ Source: `crates/studio/src/catalog.rs::COMPONENTS`.
 | Input ownership / focus scope | `InputGate`, `FocusItem`, keyboard service | Binary background/overlay gating and ordered Tab traversal; not a general nested overlay/focus-scope stack |
 | Semantic appearance / typography | `theme`, `font`, assets/features | Reusable assets and size helpers; not a complete component state/shape/elevation/accessibility system |
 
-Follow-up shared source not represented as separate catalog entries includes
+The new live entries add ChoiceGroup, Hierarchy/TreeView, tri-state Checkbox,
+NumericEntry, labelled field/validation presentation, feedback and DataTable.
+Their policies are tested; the views remain partial and await full native builds
+and runtime acceptance. See `COMPONENT_COMPLETION.md` for exact remaining limits.
+
+Follow-up shared source also includes
 `FieldFrame`, `FieldContent` and `selection` services. Their presence does not
 close the larger gaps below. These additions are also awaiting full application
 compilation, integration execution and fresh visual acceptance.
@@ -67,11 +76,11 @@ Low-level layout containers and gestures are not substitutes for their behavior.
 | --- | --- | --- |
 | Button | Shared partial: `widgets::action` | Intent/variant/size, icon optionality, disabled/pending, consistent activation, complete semantics |
 | IconButton | Native Icon + ad hoc tappable Views | Label, tooltip association, target sizing, keyboard/disabled behavior in one public component |
-| **ButtonGroup** | **Missing shared component** | Joined/separated layout, orientation, shared sizing, edge shapes, per-action availability, focus policy |
-| ToggleButton / ToggleButtonGroup | Missing shared component | Single/multiple selection modes, pressed semantics, value model and group keyboard behavior |
-| SegmentedControl | App-local: `fm::ui::kit::segmented_control` | Generic options/value, disabled options, arrow-key navigation; current helper is fixed to Files grid/list |
-| Radio / RadioGroup | Missing shared component | Exclusive selection, labelled choices, required/disabled/mixed focus rules, arrows and Space |
-| Checkbox | Native primitive + FmState-coupled custom painter | Generic checked/mixed state, whole-label hit target, keyboard, validation and semantics |
+| **ButtonGroup** | Shared partial: `controls::ChoiceGroup`, Actions mode | Joined-edge variants, intent/pending configuration, native semantics and runtime acceptance |
+| ToggleButton / ToggleButtonGroup | Shared partial: `ChoiceGroup`, Single/Multiple modes | Standalone ToggleButton, pressed semantics and runtime acceptance |
+| SegmentedControl | Shared partial `choice_group`; Files still has local selector | Finish component-specific geometry, semantics and migrate Files consumer |
+| Radio / RadioGroup | Shared partial `ChoiceGroup` single mode | Dedicated radio indicator, accessible group/choice labels, native semantics and runtime acceptance |
+| Checkbox | Shared partial: `controls::{Check,checkbox}` | Tested mixed state; disabled focus/semantics, validation association and native runtime acceptance pending |
 | Switch | Shared partial: `widgets::toggle` | Complete labelled interaction and state/semantics contract |
 | MenuButton / SplitButton | Missing shared components | Primary versus disclosure action, menu ownership, availability and keyboard routing |
 | Link | Native text/action building blocks only | Link semantics, keyboard activation, host navigation policy and disabled/visited treatment where applicable |
@@ -90,10 +99,10 @@ than treat them as interchangeable skins.
 | SearchField | App-local Files search | Generic clear, scope, result state and keyboard focus API |
 | **TextArea / multiline editor** | **Missing complete shared component** | Multiline layout, caret/selection, scroll, IME, clipboard, undo/redo; current Editor is not this |
 | PasswordField | Missing shared component | Secure display/reveal policy, clipboard policy, labelled state and accessibility/host implications |
-| NumberField / SpinBox | Missing shared component | Editable numeric text, invalid intermediate values, parse/commit, bounds/step/unit; slider is not a substitute |
+| NumberField / SpinBox | Shared partial: `forms::{NumericEntry,number_field}` | Integer draft/commit and bounds/step exist; decimals/units/localization, semantics and runtime acceptance pending |
 | Select / Dropdown | Missing shared component | Option descriptors, selection, keyboard navigation and popup ownership |
 | ComboBox / Autocomplete | Missing shared component | Input versus selected value, filtering, loading/empty/error results, acceptance/cancellation |
-| Form / FormGroup / Field validation | Missing shared components | Label alignment, dependencies, touched/submitted errors, summary, focus to invalid field and consistent submission |
+| Form / FormGroup / Field validation | Partial `form_field`, `Validation`, tested `FieldState` policy | Full form/group lifecycle, async errors, dependencies, summary, focus links and native label association pending |
 | Date / Time / Calendar picker | Missing shared components | Locale/time-zone policy, keyboard entry, validation and selection views |
 | Color picker | Missing shared component | Typed value, formats, keyboard alternatives, commit/cancel and contrast-aware preview |
 
@@ -107,10 +116,10 @@ acceptance cannot be inferred from a Copy button existing.
 | --- | --- | --- |
 | List / ListView | Native LazyList; app-local capped plain Files list | Generic items, identity, complete reachability, virtualization, focus, selection and row actions |
 | Grid / GridView | App-local Files/Studio collections | Measured tracks, complete item access, responsive reflow, selection and virtualization |
-| SelectionModel | App-local selection state | Shared focused item versus selected set, Ctrl toggle, Shift ranges, filtering/removal reconciliation |
-| **TreeView** | **Missing shared component** | Hierarchy model, expansion, keyboard navigation, lazy children, focus/selection and semantics |
+| SelectionModel | Shared tested `behavior::collection::Selection` | Integrate consistently into all consumers; native pointer modifier/reveal and event acceptance pending |
+| **TreeView** | **Shared partial: `controls::{Hierarchy,tree_view}`** | Virtualization, reveal, pointer modifiers, DnD, host semantics, typeahead event wiring and runtime acceptance pending |
 | TreeGrid / outline table | Missing shared component | Tree behavior plus typed columns, sorting and aligned/virtualized rows |
-| DataTable | Missing shared component | Headers, column widths/resizing, typed sorting, selection, row identity and virtualization |
+| DataTable | Shared partial: `table::{DataTable,data_table}` | Header keyboard navigation/sort indicators, resize gestures, full grid navigation/editing, virtualization, semantics and runtime acceptance pending |
 | Drag/drop controller | Native gestures + Files-specific tracking/model | Explicit capture, payloads, allowed operations, targets, cancellation, keyboard alternative and host bridge |
 | Reorderable list | Missing shared component | Stable moves, insertion markers, keyboard reorder, undo and invalid-target behavior |
 
@@ -144,15 +153,16 @@ supply the higher-level behavior and constraints in this table.
 | Tooltip | App-local passive bubble; Studio surface | Actual hover/focus delay, passive hit behavior, anchoring, dismissal and accessible association |
 | CommandPalette | App-local Files/Studio | Shared registry/query/availability API, context, result navigation and execution/restore lifecycle |
 | Toast / Notification / banner | App-local Files/Studio | Shared priorities, actionable messages, expiry policy, announcements and host notification boundaries |
-| Badge / Counter | App-local generic helper | Passive semantics, live counts, width/overflow and aligned numeric track |
-| Progress / task feedback | Native ProgressBar + app-local uses | Determinate/indeterminate state, task identity, truthful progress, cancellation/retry and errors |
-| Empty / Loading / Error state | App-local helper/skeletons | Shared recovery actions, async state, reduced motion and semantics |
+| Badge / Counter | Shared partial: `feedback::badge` | Passive semantics, live counts, width/overflow and aligned numeric track |
+| Progress / task feedback | Shared partial `feedback::progress`; tested Task policy | Wire task/cancel/retry lifecycle into consumers, live semantics and native visual acceptance |
+| Empty / Loading / Error state | Shared partial `feedback::{empty_state,alert}` | Recovery actions, async integration, skeleton/spinner, reduced motion and semantics |
 | File/Open/Save picker | Missing shared component | Real location/selection/filter state, validation, overwrite and explicit filesystem capability boundary |
 | Image / Icon / Avatar / thumbnail presentation | Native Image/Icon + shared filled icon assets | Semantic labels, sizing/fallback/loading policy and outline action-icon family; a graphics primitive is not the whole family |
 | Surface / Shape / Elevation roles | Local styles + native effects | Consistent shape, border/focus/clip/shadow contracts and accepted render output |
 
-No generic app-independent Menu, TreeView, ButtonGroup or DataTable API should
-appear in the live catalog as implemented until it actually exists.
+Catalog entries must link real shared APIs, and distinguish partial source from
+accepted components. A generic Menu remains missing; the new group/tree/table
+APIs exist in source but are not runtime accepted.
 
 ## Cross-cutting foundations also incomplete
 

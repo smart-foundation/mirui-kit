@@ -1,13 +1,19 @@
 //! Shared no_std Mirui components. No file-manager or showcase state lives here.
 #![no_std]
 extern crate alloc;
+pub mod behavior;
+pub mod controls;
 pub mod editing_policy;
+pub mod feedback;
 pub mod field;
 pub mod font;
+pub mod forms;
 pub mod icons;
 pub mod keyboard;
 pub mod scrollbar;
 pub mod selection;
+pub mod style;
+pub mod table;
 pub mod theme;
 pub mod widgets;
 pub use widgets::{

@@ -55,9 +55,14 @@ pub const TOOLTIP_BG: ColorToken = ColorToken::custom("tooltip_bg");
 /// The text of a tooltip bubble.
 pub const TOOLTIP_TEXT: ColorToken = ColorToken::custom("tooltip_text");
 
+pub const SUCCESS: ColorToken = ColorToken::custom("success");
+pub const WARNING: ColorToken = ColorToken::custom("warning");
+
 /// The dark palette.
 pub fn dark_theme() -> Theme {
     Theme::dark().with_many([
+        (SUCCESS, Color::rgb(0x75, 0xD5, 0x98)),
+        (WARNING, Color::rgb(0xF0, 0xC0, 0x60)),
         (ColorToken::Surface, Color::rgb(0x1C, 0x1C, 0x1E)),
         (ColorToken::SurfaceVariant, Color::rgb(0x2C, 0x2C, 0x2E)),
         (ColorToken::OnSurface, Color::rgb(0xF2, 0xF2, 0xF7)),
@@ -98,6 +103,8 @@ pub fn dark_theme() -> Theme {
 /// The light palette.
 pub fn light_theme() -> Theme {
     Theme::light().with_many([
+        (SUCCESS, Color::rgb(0x18, 0x68, 0x38)),
+        (WARNING, Color::rgb(0x80, 0x50, 0x00)),
         (ColorToken::Surface, Color::rgb(0xFF, 0xFF, 0xFF)),
         (ColorToken::SurfaceVariant, Color::rgb(0xF2, 0xF2, 0xF7)),
         (ColorToken::OnSurface, Color::rgb(0x00, 0x00, 0x00)),

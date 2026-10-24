@@ -6,11 +6,68 @@ use alloc::{
 };
 use mirui::prelude::*;
 use mirui::ui::widgets::TextDocument;
+use mirui_kit::behavior::{
+    collection::SelectionMode,
+    group::{GroupItem, GroupKind, Orientation},
+    tree::TreeNode,
+};
+use mirui_kit::table::DataTable;
 use mirui_kit::{Actions, Number, Toggle};
+use mirui_kit::{
+    controls::{Check, ChoiceGroup, Hierarchy},
+    forms::NumericEntry,
+};
+fn example_choices() -> ChoiceGroup {
+    ChoiceGroup::new(
+        GroupKind::Single { required: true },
+        Orientation::Horizontal,
+        [
+            (1, "Balanced", false),
+            (2, "Detailed", false),
+            (3, "Unavailable", true),
+        ]
+        .into_iter()
+        .map(|(id, label, disabled)| GroupItem {
+            id,
+            label: label.into(),
+            disabled,
+        })
+        .collect(),
+    )
+    .expect("unique specimen IDs")
+}
+fn example_tree() -> Hierarchy {
+    Hierarchy::new(
+        [
+            (1, None, "Workspace", true),
+            (2, Some(1), "Documents", true),
+            (3, Some(2), "Readme.txt", false),
+            (4, Some(1), "Images", true),
+            (5, Some(4), "Preview.png", false),
+            (6, None, "Archive", true),
+        ]
+        .into_iter()
+        .map(|(id, parent, label, branch)| TreeNode {
+            id,
+            parent,
+            label: label.into(),
+            branch,
+            disabled: false,
+        })
+        .collect(),
+        SelectionMode::Multiple,
+    )
+    .expect("valid specimen tree")
+}
 use studio_core::{Error, Route, Session, Surface, Theme};
 
 #[model]
 pub struct Studio {
+    pub demo_table: model!(owned DataTable),
+    pub demo_choices: model!(owned ChoiceGroup),
+    pub demo_hierarchy: model!(owned Hierarchy),
+    pub demo_check: model!(owned Check),
+    pub demo_numeric: model!(owned NumericEntry),
     pub actions: model!(owned Actions),
     pub quality: model!(owned Number),
     pub metadata: model!(owned Toggle),
@@ -46,6 +103,48 @@ impl Default for Studio {
         let core = Session::default();
         Self {
             actions: Actions::default().into(),
+            demo_choices: example_choices().into(),
+            demo_table: {
+                use mirui_kit::behavior::table::{Cell, Column, TableRow};
+                mirui_kit::table::DataTable::new(
+                    alloc::vec![
+                        Column {
+                            id: 1,
+                            label: "Name".into(),
+                            width: 240,
+                            minimum: 120,
+                            maximum: 480,
+                            sortable: true
+                        },
+                        Column {
+                            id: 2,
+                            label: "Size".into(),
+                            width: 120,
+                            minimum: 80,
+                            maximum: 240,
+                            sortable: true
+                        }
+                    ],
+                    alloc::vec![
+                        TableRow {
+                            id: 1,
+                            cells: alloc::vec![Cell::Text("Readme.txt".into()), Cell::Integer(100)],
+                            disabled: false
+                        },
+                        TableRow {
+                            id: 2,
+                            cells: alloc::vec![Cell::Text("Notes.txt".into()), Cell::Integer(9)],
+                            disabled: false
+                        }
+                    ],
+                    SelectionMode::Multiple,
+                )
+                .expect("valid table fixture")
+                .into()
+            },
+            demo_hierarchy: example_tree().into(),
+            demo_check: Check::default().into(),
+            demo_numeric: NumericEntry::new(4, 1, 64, 1).expect("valid bounds").into(),
             quality: Number {
                 value: Fixed::from_int(80),
             }
@@ -117,6 +216,7 @@ impl Studio {
         }
     }
     pub fn sync(&mut self) {
+        while self.demo_choices.take_action().is_some() {}
         self.sync_inputs();
         for (key, overlay) in self.actions.take() {
             // A surface transition invalidates the rest of a sampled background press.

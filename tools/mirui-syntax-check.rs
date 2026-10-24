@@ -33,6 +33,10 @@ fn arena_sources_expand_against_real_051_macros() {
     let root = std::path::Path::new(env!("MIRUI_KIT_ROOT"));
     for file in [
         "crates/kit/src/widgets.rs",
+        "crates/kit/src/controls.rs",
+        "crates/kit/src/feedback.rs",
+        "crates/kit/src/forms.rs",
+        "crates/kit/src/table.rs",
         "crates/kit/src/field.rs",
         "crates/kit/src/selection.rs",
         "crates/fm/src/ui/chrome.rs",

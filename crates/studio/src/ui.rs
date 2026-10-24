@@ -15,6 +15,12 @@ use mirui_kit::{
     theme,
     widgets::{action, field, number, text_size, toggle},
 };
+use mirui_kit::{
+    controls::{checkbox, choice_group, tree_view},
+    feedback::{Severity, alert},
+    forms::number_field,
+    table::data_table,
+};
 use studio_core::{Route, Surface};
 
 #[compose]
@@ -217,6 +223,11 @@ fn controls(state: model!(Studio)) -> Entity {
                     command (state, (Command::Tooltip), false)
                 }
             }
+            heading (state, "Shared control specimens", "Radio-style grouped selection skips unavailable items. Numeric entry validates on Enter or blur; arrow keys step the value.")
+            choice_group (state.actions(),state.demo_choices(),300,false,true)
+            checkbox (state.actions(),state.demo_check(),301,"Enable optional indexing".into(),false)
+            number_field (state.actions(),state.demo_numeric(),302,"Worker count (1–64)".into(),false)
+            alert (state.actions(),(Severity::Information),"Shared kit specimens".into(),"These controls use the same theme roles and input ownership as the application.".into())
             Text (
                 "Recipe: mirui_kit::widgets::{field, number, toggle, action}. Editing any setting cancels the old job. Preview must be requested again.",
                 width: Dimension::percent(100),
@@ -246,6 +257,10 @@ fn collections(state: model!(Studio)) -> Entity {
                 font_size: ${ text_size(state.actions().text_scale(), font::SECTION_SIZE) },
                 text_color: ColorToken::OnSurface
             )
+            heading (state, "Hierarchy specimen", "Independent in-memory tree. Right/Left expand and collapse; Up/Down move focus; Space toggles selection; Ctrl+A selects visible available nodes.")
+            tree_view (state.actions(),state.demo_hierarchy(),310,false)
+            heading (state, "Data table specimen", "Read-only text and integer cells with stable row selection. Click a column heading to cycle sorting; Up/Down move focus and Space toggles selection. Header keyboard navigation and virtualization remain pending.")
+            data_table (state.actions(),state.demo_table(),320,false)
             field (state.actions(), state.query(), 110, "Filter this folder", false, 0)
             Row (width: Dimension::percent(100), column_gap: 8) {
                 View (grow: 1.0) {

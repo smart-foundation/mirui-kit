@@ -132,3 +132,39 @@ fn registry_entries_are_unique_and_have_real_icon_paths() {
         }
     }
 }
+
+#[test]
+fn numeric_entry_keeps_committed_value_when_draft_is_invalid() {
+    let (_app, state) = app();
+    let entry = state.demo_numeric();
+    entry.document().set_text("not a number").unwrap();
+    entry.commit();
+    assert_eq!(entry.value(), 4);
+    assert!(!entry.error().is_empty());
+    entry.document().set_text("8").unwrap();
+    entry.commit();
+    assert_eq!(entry.value(), 8);
+    assert!(entry.error().is_empty());
+}
+#[test]
+fn grouped_control_disabled_item_cannot_change_selection() {
+    let (_app, state) = app();
+    let group = state.demo_choices();
+    assert!(group.selected(1));
+    group.activate(3);
+    assert!(group.selected(1));
+    group.activate(2);
+    assert!(group.selected(2));
+    assert!(!group.selected(1));
+}
+#[test]
+fn collapsed_hierarchy_retains_selection_without_hidden_focus() {
+    use mirui_kit::behavior::collection::Modifiers;
+    let (_app, state) = app();
+    let tree = state.demo_hierarchy();
+    tree.toggle(1);
+    tree.choose(2, Modifiers::default());
+    tree.toggle(1);
+    assert_eq!(tree.selected_ids(), [2]);
+    assert!(tree.focused(1));
+}

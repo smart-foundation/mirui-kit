@@ -30,12 +30,13 @@ patterns get frozen into the OS app suite.
 
 ## Actual component coverage
 
-**The shared kit is not OS-suite complete.** Studio currently lists eight grouped
-catalog entries, not eight complete independent controls. ButtonGroup, TreeView,
-DataTable, SplitPane, generic form families and other fundamental contracts are
-missing or app-local. See the source-backed [current component catalog and
-OS-suite readiness matrix](docs/COMPONENT_CATALOG.md); native Mirui primitives
-and showcase surfaces are not counted as completed kit components.
+**The shared kit is not OS-suite complete.** Studio now lists 15 grouped source
+entries, not 15 independently accepted controls. Shared grouping, tree, integer
+entry, checkbox, table and feedback work is partial; many other families and
+cross-cutting services remain unfinished. See the [source-backed catalog](docs/COMPONENT_CATALOG.md)
+and [researched full baseline, implementation evidence and acceptance gates](docs/COMPONENT_COMPLETION.md).
+Native Mirui primitives, tested policies and macro expansion are not substitutes
+for verified complete widgets.
 
 ## Naledzi Studio source
 
