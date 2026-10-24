@@ -70,7 +70,7 @@ pub fn frame(frame: component!(), theme: res!(Theme), paint: paint!()) {
         area: paint.rect(),
         transform: paint.transform(),
         quad: paint.quad(),
-        color: crate::theme::FOCUS.resolve(&theme),
+        color: theme.resolve(crate::theme::FOCUS),
         width: Fixed::from_int(3),
         radius: Fixed::from_int(8),
         opa: 255,

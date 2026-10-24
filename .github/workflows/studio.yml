@@ -16,6 +16,7 @@ jobs:
         with:
           toolchain: nightly-2026-07-24
           targets: riscv64gc-unknown-none-elf
+      - uses: Swatinem/rust-cache@v2
       - name: Native host dependencies
         run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libwayland-dev pkg-config
       - name: Shared kit behavior tests and no_std check

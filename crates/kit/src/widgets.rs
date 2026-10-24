@@ -278,7 +278,7 @@ pub fn number(actions: model!(Actions), number: model!(Number), key: u16) -> Ent
                 value: ${ number.value() },
                 width: Dimension::percent(100),
                 height: 36
-            ) on Slider::ValueChanged(|event: event!(Slider::ValueChanged)| {
+            ) on Slider::ValueChanged(|event: event!(mirui::ui::widgets::slider::ValueChanged)| {
                 number.set(event.new);
             })
             Row (width: Dimension::percent(100), height: 40, column_gap: 8) {
@@ -376,7 +376,7 @@ pub fn toggle(
                     overlay: false,
                     order: key,
                 },
-            ] on Switch::Toggled(|event: event!(Switch::Toggled)| {
+            ] on Switch::Toggled(|event: event!(mirui::ui::widgets::switch::Toggled)| {
                 toggle.set(event.now);
             }) on Key(|event: event!(Key)| {
                 if event.pressed && event.repeat != Some(true)
