@@ -11,3 +11,5 @@ pub mod tree;
 pub mod table;
 pub mod task;
 pub mod choices;
+
+pub mod calendar;

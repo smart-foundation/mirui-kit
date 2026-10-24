@@ -39,7 +39,7 @@ pub fn form_field(
     overlay: bool,
     submit: u16,
 ) -> Entity {
-    ui! {Column (width:Dimension::percent(100),row_gap:style::GAP) {
+    ui! {Column (width:Dimension::percent(100),row_gap:style::GAP) [crate::sizing::ContentFit] {
         Text (text:label.clone(),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)
         Text ("Required",visible:${validation.required()},font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::CAPTION_SIZE)},text_color:ColorToken::OnSurfaceVariant)
         field (actions,document,key,placeholder,overlay,submit)
@@ -118,7 +118,7 @@ pub fn number_field(
         key <= u16::MAX - 2,
         "number_field reserves three consecutive focus IDs"
     );
-    ui! {Column (width:Dimension::percent(100),row_gap:style::GAP) {
+    ui! {Column (width:Dimension::percent(100),row_gap:style::GAP) [crate::sizing::ContentFit] {
         Text (text:label.clone(),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)
         Row (width:Dimension::percent(100),column_gap:style::GAP) {
             View (grow:1.0,height:${text_size(actions.text_scale(),44)},padding:Padding::all(10),bg_color:ColorToken::SurfaceVariant,border_width:1,border_color:${if entry.error().is_empty() {ColorToken::Outline} else {ColorToken::Error}},border_radius:style::RADIUS) [crate::field::FieldFrame::default(),crate::field::EditingSurface,HitTarget,mirui::input::event::focus::PointerFocus::Preserve] {

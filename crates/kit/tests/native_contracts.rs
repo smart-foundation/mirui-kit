@@ -223,3 +223,29 @@ fn tab_skips_retained_but_unselected_native_conditional_branches() {
     app.backend.events.push_back(tab);app.tick();
     assert_eq!(app.world.resource::<mirui::input::event::focus::FocusState>().unwrap().focused,Some(conditional));
 }
+
+#[compose]
+fn fitted_sections()->Entity {
+    ui! {Column (id:"fitted_sections",width:200,row_gap:8,padding:Padding::all(4)) [mirui_kit::sizing::ContentFit] {
+        Column (id:"first_section",width:200,row_gap:4) {
+            View (width:100,height:20)
+            View (width:100,height:30)
+        }
+        View (id:"following_section",width:100,height:40)
+    }}
+}
+#[test]
+fn content_sizing_reserves_nested_height_and_idle_frames_do_not_drift() {
+    let mut app=support::app();let root=app.spawn_root().id();app.compose(root,fitted_sections());
+    for _ in 0..3 {app.tick();app.render().unwrap();}
+    let fitted=app.world.find_by_id("fitted_sections").unwrap();
+    let first=app.world.find_by_id("first_section").unwrap();
+    let following=app.world.find_by_id("following_section").unwrap();
+    let rect=|app:&support::TestApp,entity|app.world.get::<mirui::ui::ComputedRect>(entity).unwrap().0;
+    assert_eq!(rect(&app,first).h,Fixed::from_int(54));
+    assert!(rect(&app,following).y>=rect(&app,first).y+rect(&app,first).h+Fixed::from_int(8));
+    let before=rect(&app,fitted);
+    for _ in 0..20 {app.tick();app.render().unwrap();}
+    assert_eq!(rect(&app,fitted),before);
+    assert!(!app.world.has::<mirui_kit::sizing::ContentFitIssue>(fitted));
+}

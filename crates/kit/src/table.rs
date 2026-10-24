@@ -111,7 +111,7 @@ pub fn data_table(
     key: u16,
     overlay: bool,
 ) -> Entity {
-    ui! {Column (row_gap:2,border_width:2,border_color:theme::CLEAR,border_radius:style::RADIUS) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
+    ui! {Column (row_gap:2,border_width:2,border_color:theme::CLEAR,border_radius:style::RADIUS) [crate::sizing::ContentFit,Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
         Row (column_gap:1) {
             walk ${ {let _=table.revision();table.columns()} } with column by column.id {
                 Button (width:column.width.min(i32::MAX as u32) as i32,height:40,normal_color:ColorToken::SurfaceVariant,pressed_color:theme::PRESSED,padding:Padding::all(8)) {

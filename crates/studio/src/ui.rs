@@ -83,7 +83,7 @@ pub fn shell(state: model!(Studio)) -> Entity {
                             }
                             View (grow:1.0,height:Dimension::percent(100)) {
                                 Scroll (id:"studio_main_scroll",width:Dimension::percent(100),height:Dimension::percent(100),padding:Padding::all(24)) {
-                                    Column (width:Dimension::percent(100),row_gap:20) {
+                                    Column (width:Dimension::percent(100),row_gap:20) [mirui_kit::sizing::ContentFit] {
                                         if ${state.route()==Route::Overview} { overview(state) }
                                         if ${state.route()==Route::Controls} { controls(state) }
                                         if ${state.route()==Route::Collections} { collections(state) }

@@ -5,7 +5,9 @@ pub mod availability;
 pub mod behavior;
 pub mod button;
 pub mod choices;
+pub mod calendar;
 pub mod layout;
+pub mod sizing;
 pub mod controls;
 pub mod editing_policy;
 pub mod feedback;
@@ -29,8 +31,10 @@ use mirui::prelude::*;
 /// Install assets and the shared component views once per App, after default widgets.
 pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) {
     layout::install(app);
+    app.with_widget(sizing::content_fit::view());
     app.with_widget(button::availability::view());
     app.with_widget(choices::availability::view());
+    app.with_widget(calendar::availability::view());
     app.with_widget(controls::tab_panel::view());
     field::install(app);
     theme::install(app);

@@ -86,7 +86,7 @@ pub fn choice_group(
 ) -> Entity {
     ui! {
         View (width:Dimension::percent(100), padding:Padding::all(4), bg_color:theme::SEGMENTED_BG, border_radius:style::RADIUS, border_width:2, border_color:theme::CLEAR) [
-            Focusable, FocusItem{overlay,order:key}, FocusRing{actions:actions.clone()},
+            crate::sizing::ContentFit,Focusable, FocusItem{overlay,order:key}, FocusRing{actions:actions.clone()},
         ] {
             if ${ !group.vertical() } {
                 Row (width:Dimension::percent(100),column_gap:2) {
@@ -96,7 +96,7 @@ pub fn choice_group(
                 }
             }
             if ${ group.vertical() } {
-                Column (width:Dimension::percent(100),row_gap:2) {
+                Column (width:Dimension::percent(100),row_gap:2) [crate::sizing::ContentFit] {
                     walk ${ {let _=group.revision();group.items()} } with item by item.id {
                         choice_item (actions,group,item,overlay)
                     }
@@ -215,7 +215,7 @@ pub fn tree_view(
     overlay: bool,
 ) -> Entity {
     ui! {
-        Column (width:Dimension::percent(100),row_gap:2,border_width:2,border_color:theme::CLEAR,border_radius:style::RADIUS) [
+        Column (width:Dimension::percent(100),row_gap:2,border_width:2,border_color:theme::CLEAR,border_radius:style::RADIUS) [crate::sizing::ContentFit,
             Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()},
         ] {
             walk ${ {let _=tree.revision();tree.rows()} } with row by row.id {

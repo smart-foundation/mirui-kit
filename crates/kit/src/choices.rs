@@ -38,7 +38,7 @@ fn sync_availability(rows:query!(Entity,ChoiceOption,optional crate::availabilit
 #[compose]
 pub fn list_box(actions:model!(Actions),list:model!(ChoiceList),key:u16,overlay:bool)->Entity {
     ui! {
-        Column (width:Dimension::percent(100),row_gap:2,border_radius:style::RADIUS,border_width:2,border_color:theme::CLEAR) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
+        Column (width:Dimension::percent(100),row_gap:2,border_radius:style::RADIUS,border_width:2,border_color:theme::CLEAR) [crate::sizing::ContentFit,Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
             walk ${ {let _=list.revision();list.rows()} } with option by option.id {
                 option_row (actions,list,option,overlay)
             }
