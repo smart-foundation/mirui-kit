@@ -45,24 +45,78 @@ jobs:
       - name: Fresh route and overlay captures
         if: ${{ !cancelled() }}
         run: python3 tools/ci-check.py cargo run --locked -p studio-host --bin studio-snapshot -- --out artifacts/studio
-      - name: Export native route 1 review evidence
+      - name: Native route 1 evidence batch 1
         if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
-        run: python3 tools/export-capture-evidence.py artifacts/studio/s01-*.png
-      - name: Export native route 2 review evidence
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s01-*.png 1
+      - name: Native route 1 evidence batch 2
         if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
-        run: python3 tools/export-capture-evidence.py artifacts/studio/s02-*.png
-      - name: Export native route 3 review evidence
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s01-*.png 2
+      - name: Native route 1 evidence batch 3
         if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
-        run: python3 tools/export-capture-evidence.py artifacts/studio/s03-*.png
-      - name: Export native route 4 review evidence
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s01-*.png 3
+      - name: Native route 1 evidence batch 4
         if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
-        run: python3 tools/export-capture-evidence.py artifacts/studio/s04-*.png
-      - name: Export native route 5 review evidence
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s01-*.png 4
+      - name: Native route 2 evidence batch 1
         if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
-        run: python3 tools/export-capture-evidence.py artifacts/studio/s05-*.png
-      - name: Export native route 6 review evidence
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s02-*.png 1
+      - name: Native route 2 evidence batch 2
         if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
-        run: python3 tools/export-capture-evidence.py artifacts/studio/s06-*.png
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s02-*.png 2
+      - name: Native route 2 evidence batch 3
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s02-*.png 3
+      - name: Native route 2 evidence batch 4
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s02-*.png 4
+      - name: Native route 3 evidence batch 1
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s03-*.png 1
+      - name: Native route 3 evidence batch 2
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s03-*.png 2
+      - name: Native route 3 evidence batch 3
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s03-*.png 3
+      - name: Native route 3 evidence batch 4
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s03-*.png 4
+      - name: Native route 4 evidence batch 1
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s04-*.png 1
+      - name: Native route 4 evidence batch 2
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s04-*.png 2
+      - name: Native route 4 evidence batch 3
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s04-*.png 3
+      - name: Native route 4 evidence batch 4
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s04-*.png 4
+      - name: Native route 5 evidence batch 1
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s05-*.png 1
+      - name: Native route 5 evidence batch 2
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s05-*.png 2
+      - name: Native route 5 evidence batch 3
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s05-*.png 3
+      - name: Native route 5 evidence batch 4
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s05-*.png 4
+      - name: Native route 6 evidence batch 1
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s06-*.png 1
+      - name: Native route 6 evidence batch 2
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s06-*.png 2
+      - name: Native route 6 evidence batch 3
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s06-*.png 3
+      - name: Native route 6 evidence batch 4
+        if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+        run: python3 tools/export-capture-evidence.py artifacts/studio/s06-*.png 4
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
