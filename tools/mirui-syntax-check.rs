@@ -61,6 +61,7 @@ fn arena_sources_expand_against_real_051_macros() {
         "crates/kit/src/scrollbar.rs",
         "crates/studio/src/model.rs",
         "crates/studio/src/ui.rs",
+        "crates/studio/src/specimens.rs",
         "crates/studio/src/lib.rs",
     ] {
         eprintln!("checking {file}");

@@ -26,6 +26,8 @@ jobs:
           cache-on-failure: true
       - name: Native host dependencies
         run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libwayland-dev pkg-config
+      - name: Visual comparison regression checks
+        run: python3 tools/test-visual-comparison.py
       - name: Shared kit behavior tests and no_std check
         run: sh tools/test-kit-behavior.sh
       - name: Full workspace tests, including existing Files regressions
@@ -73,3 +75,35 @@ jobs:
         run: python3 tools/export-capture-evidence.py artifacts/studio/s${{ matrix.route }}-*.png 3
       - name: Exact native PNG evidence batch 4
         run: python3 tools/export-capture-evidence.py artifacts/studio/s${{ matrix.route }}-*.png 4
+
+  component-review:
+    needs: checks
+    if: ${{ !cancelled() && (inputs.export_review || contains(github.event.head_commit.message, '[capture-review]')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        theme: [dark, light]
+        scale: [100, 150]
+        width: [640, 960]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-07-24
+      - uses: Swatinem/rust-cache@v2
+      - name: Native host dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libwayland-dev pkg-config
+      - name: Capture isolated native components and meaningful states
+        run: python3 tools/ci-check.py cargo run --locked -p studio-host --bin component-snapshot -- --out artifacts/studio/components --theme ${{ matrix.theme }} --scale ${{ matrix.scale }} --width ${{ matrix.width }}
+      - name: Check reviewed baselines, report unreviewed captures honestly
+        run: python3 tools/compare-native-captures.py artifacts/studio/components --baseline docs/visual-baselines --out artifacts/studio/component-differences --allow-missing
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: components-${{ matrix.theme }}-${{ matrix.scale }}-${{ matrix.width }}
+          path: |
+            artifacts/studio/components
+            artifacts/studio/component-differences
+          if-no-files-found: error

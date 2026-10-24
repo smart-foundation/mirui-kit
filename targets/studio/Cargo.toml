@@ -24,3 +24,7 @@ required-features = ["desktop"]
 [[bin]]
 name = "studio-snapshot"
 path = "src/snapshot.rs"
+
+[[bin]]
+name = "component-snapshot"
+path = "src/components.rs"
