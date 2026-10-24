@@ -368,6 +368,7 @@ pub fn toggle(
                 on: ${ toggle.checked() },
                 width: 44,
                 height: 26,
+                border_radius: 13,
                 border_width: 2,
                 border_color: ColorToken::Outline
             ) [

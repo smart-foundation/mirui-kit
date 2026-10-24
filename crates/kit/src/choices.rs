@@ -57,7 +57,7 @@ pub fn list_box(actions:model!(Actions),list:model!(ChoiceList),key:u16,overlay:
 #[compose]
 fn option_row(actions:model!(Actions),list:model!(ChoiceList),option:OptionItem,overlay:bool)->Entity {
     ui! {
-        Button (width:Dimension::percent(100),height:${text_size(actions.text_scale(),40)},padding:Padding::all(8),border_radius:style::RADIUS,border_width:2,border_color:${ {let _=list.revision();if list.focused(option.id) {theme::FOCUS} else {theme::CLEAR}} },normal_color:${ {let _=list.revision();if list.selected(option.id) {theme::SELECTION} else {theme::CLEAR}} },pressed_color:theme::PRESSED) [ChoiceOption{list:list.clone(),item:option.id}] {
+        Button (size:ButtonSize::Custom,align:AlignItems::Center,justify:JustifyContent::FlexStart,width:Dimension::percent(100),height:${text_size(actions.text_scale(),40)},padding:Padding::all(8),border_radius:style::RADIUS,border_width:2,border_color:${ {let _=list.revision();if list.focused(option.id) {theme::FOCUS} else {theme::CLEAR}} },normal_color:${ {let _=list.revision();if list.selected(option.id) {theme::SELECTION} else {theme::CLEAR}} },pressed_color:theme::PRESSED) [ChoiceOption{list:list.clone(),item:option.id}] {
             Text (text:${ {let _=list.revision();list.label(option.id)} },font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:${ {let _=list.revision();if list.disabled(option.id) {ColorToken::OnSurfaceVariant} else {ColorToken::OnSurface}} })
         } on Tap {if actions.modal()==overlay {list.choose(option.id,Modifiers::default());}}
     }

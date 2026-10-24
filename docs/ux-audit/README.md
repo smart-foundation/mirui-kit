@@ -190,3 +190,11 @@ into six task-based screens and a shared-component implementation contract. Its
 inspection, scope, feedback and lifecycle checks. The Files palette now has a
 semantic-icon/registry-row patch; F20 remains patched but unverified, not closed.
 The audit evidence inventory is the earlier snapshot, not a hash of this later patch.
+
+## Native component visual regressions
+
+[Component visual review](COMPONENT_VISUAL_REVIEW.md) records the first real
+isolated native inspection: 288 generated captures, 15 visually inspected
+representatives, exactly five screenshot-visible findings, and explicit limits.
+[Baseline policy](../visual-baselines/README.md) explains manual approval and
+pixel/geometry evidence; generated images do not approve themselves.

@@ -142,8 +142,8 @@ fn number_step(
     overlay: bool,
     direction: i32,
 ) -> Entity {
-    ui! {Button (width:40,height:40,normal_color:ColorToken::SurfaceVariant,pressed_color:theme::PRESSED,border_width:2,border_color:ColorToken::Outline,border_radius:style::RADIUS) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
-        Icon (path:if direction<0 {icons::MINUS.clone()} else {icons::PLUS.clone()},width:18,height:18,color:ColorToken::OnSurface)
+    ui! {Button (width:${text_size(actions.text_scale(),44)},height:${text_size(actions.text_scale(),44)},normal_color:ColorToken::SurfaceVariant,pressed_color:theme::PRESSED,border_width:2,border_color:ColorToken::Outline,border_radius:style::RADIUS) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
+        Icon (path:if direction<0 {icons::MINUS.clone()} else {icons::PLUS.clone()},width:${text_size(actions.text_scale(),18)},height:${text_size(actions.text_scale(),18)},color:ColorToken::OnSurface)
     } on Tap {if actions.modal()==overlay {entry.step(direction,false);}} on Key(|event:event!(Key)| {if event.pressed && event.repeat!=Some(true) && (event.code==13||event.physical==Some(PhysicalKey::Space)) && actions.modal()==overlay {entry.step(direction,false);return true;} false}) on FocusChanged(|event:event!(FocusChanged)| {actions.focus(key,event.focused);})}
 }
 

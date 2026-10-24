@@ -22,9 +22,12 @@ impl Severity {
         }
     }
 }
+/// Semantic surface marker also exposes the real badge bounds to native tests.
+#[component]
+pub struct BadgeSurface;
 #[compose]
 pub fn badge(actions: model!(Actions), label: String) -> Entity {
-    ui! {View (padding:Padding::all(4),bg_color:theme::BADGE,border_radius:style::RADIUS) {Text (text:label.clone(),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::CAPTION_SIZE)},text_color:theme::BADGE_TEXT)}}
+    ui! {View (width:Dimension::Content,padding:Padding::all(4),bg_color:theme::BADGE,border_radius:style::RADIUS) [BadgeSurface] {Text (text:label.clone(),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::CAPTION_SIZE)},text_color:theme::BADGE_TEXT)}}
 }
 #[compose]
 pub fn alert(
