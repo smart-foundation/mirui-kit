@@ -6,7 +6,7 @@ use crate::style;
 
 // Mirui's Auto container axis does not infer children's extents. Supply slot
 // extents explicitly rather than let content paint over adjacent sections.
-ui!(compose Panel (header_height:u16,footer_height:u16) {
+ui!(compose Panel (header_height:i32,footer_height:i32) {
     Column (width:Dimension::percent(100),height:Dimension::percent(100),row_gap:style::GAP,padding:Padding::all(style::INSET),bg_color:ColorToken::Surface,border_color:ColorToken::Outline,border_width:1,border_radius:style::RADIUS) {
         Column (width:Dimension::percent(100),height:header_height,row_gap:style::GAP) {@@header}
         Column (width:Dimension::percent(100),grow:1.0,row_gap:style::GAP) {@@body}
@@ -20,7 +20,7 @@ ui!(compose ToolbarLayout {
         Row (column_gap:style::GAP,align:AlignItems::Center) {@@trailing}
     }
 });
-ui!(compose AppFrame (sidebar_width:u16,header_height:u16,toolbar_height:u16,status_height:u16) {
+ui!(compose AppFrame (sidebar_width:i32,header_height:i32,toolbar_height:i32,status_height:i32) {
     Column (width:Dimension::percent(100),height:Dimension::percent(100),bg_color:ColorToken::Surface) {
         Column (width:Dimension::percent(100),height:header_height) {@@header}
         Row (width:Dimension::percent(100),grow:1.0) {
