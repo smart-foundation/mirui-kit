@@ -156,3 +156,42 @@ be retrieved: the log download host returned EOF in this environment, and the
 check annotations expose only the exit code. This is **not** evidence that the
 new work passes, and the precise old failure must not be guessed. Fixing and
 rerunning the full build/CI remains a release blocker.
+
+## Native verification update (supersedes the earlier local-only evidence)
+
+The earlier blocked-build/red-CI section above is historical, not current status.
+Native workspace tests, RISC-V no_std checks, SDL compilation and capture builds
+passed on this branch in runs
+[40080688593](https://github.com/smart-foundation/mirui-kit/actions/runs/40080688593),
+[40080791046](https://github.com/smart-foundation/mirui-kit/actions/runs/40080791046)
+and [40080850464](https://github.com/smart-foundation/mirui-kit/actions/runs/40080850464).
+The policy suite now has **52 passing tests**. These results do not establish
+full component/interaction/accessibility acceptance.
+
+- Shared `sizing::ContentFit` now aggregates native text/container geometry with
+  explicit overflow/depth/node-budget diagnostics. The native nested-layout and
+  idle-stability regression passed. Native overview rendering confirms the old
+  section overlap is gone. Visibility/wrapping/text-scale tests are newly added;
+  their native results must be checked separately.
+- `calendar::{Calendar,calendar}` is a real single/range date grid, with bounds,
+  configurable week start, keyboard/month/year navigation and disabled input.
+  Actual native pointer/keyboard/disabled tests passed. Studio now mounts it and
+  the shared option list. Time/color pickers, localized date-entry/popup and
+  host accessibility are still not supplied by this calendar.
+- `Actions::activate` now returns explicit wrong-layer/backpressure errors;
+  native FIFO regression passed. Most internal tap handlers still discard those
+  errors; automatic diagnostics/recovery are not claimed.
+- Six complete native route PNGs from commit `6ee8e69` were recovered through
+  Checks annotations with every PNG chunk CRC and IEND verified. All six were
+  visually reviewed. Collections exposes table/tree alignment and description
+  clipping; Foundations exposes a clipped font explanation. Fixes now use native
+  custom Button metrics, definite row geometry and wrapping paragraphs. New
+  table regression covers stable-ID replacement and column resizing as well as
+  actual header/cell geometry. Fresh native acceptance is required for these
+  changes; the older six captures cannot prove them.
+
+Still open: nested overlays/focus ownership, full semantics bridge, fundamental
+picker/navigation/layout/collection families, editable/virtualized grid,
+modifier/typeahead wiring, direct manipulation, semantic typography migration,
+rich native elevation, freeze/stress investigation and complete scaled/theme
+workflow coverage. This is an implementation checkpoint, **not kit completion**.

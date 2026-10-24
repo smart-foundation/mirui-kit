@@ -35,14 +35,14 @@ pub fn alert(
 ) -> Entity {
     ui! {Column (width:Dimension::percent(100),padding:Padding::all(12),row_gap:style::GAP,bg_color:ColorToken::SurfaceVariant,border_color:severity.accent(),border_width:2,border_radius:style::RADIUS) [crate::sizing::ContentFit] {
         Text (text:title.clone(),font:font::SEMIBOLD,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)
-        Text (text:description.clone(),width:Dimension::percent(100),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)
+        Text (text:description.clone(),paragraph:mirui::ui::widgets::ParagraphStyle::default(),width:Dimension::percent(100),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)
     }}
 }
 #[compose]
 pub fn empty_state(actions: model!(Actions), title: String, description: String) -> Entity {
     ui! {Column (width:Dimension::percent(100),padding:Padding::all(24),row_gap:style::GAP) [crate::sizing::ContentFit] {
         Text (text:title.clone(),font:font::SEMIBOLD,font_size:${text_size(actions.text_scale(),font::SECTION_SIZE)},text_color:ColorToken::OnSurface)
-        Text (text:description.clone(),width:Dimension::percent(100),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurfaceVariant)
+        Text (text:description.clone(),paragraph:mirui::ui::widgets::ParagraphStyle::default(),width:Dimension::percent(100),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurfaceVariant)
     }}
 }
 #[model]

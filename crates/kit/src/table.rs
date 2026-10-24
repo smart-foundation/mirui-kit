@@ -14,7 +14,7 @@ use alloc::{
     vec::Vec,
 };
 use mirui::prelude::*;
-use mirui::ui::widgets::{Button, Text};
+use mirui::ui::widgets::{Button, ButtonSize, Text};
 #[model]
 pub struct DataTable {
     state: TableState,
@@ -27,10 +27,17 @@ impl DataTable {
         rows: Vec<TableRow>,
         mode: SelectionMode,
     ) -> Result<Self, TableError> {
-        Ok(Self {
-            state: TableState::new(columns, rows, mode)?,
-            revision: 0,
-        })
+        let state = TableState::new(columns, rows, mode)?;
+        // Reserve arithmetic headroom in Mirui's signed fixed-point geometry.
+        // Validate maxima too, so future resize calls cannot overflow layout.
+        let mut extent = 0u64;
+        for column in state.columns() {
+            extent += u64::from(column.maximum) + 1;
+            if extent > (Fixed::MAX.to_int() / 4) as u64 {
+                return Err(TableError::InvalidWidth(column.id));
+            }
+        }
+        Ok(Self { state, revision: 0 })
     }
 }
 #[model]
@@ -40,6 +47,27 @@ impl DataTable {
     }
     pub fn rows(&self) -> Vec<TableRow> {
         self.state.ordered_rows()
+    }
+    pub fn column_width(&self, id: ItemId) -> i32 {
+        self.state.columns().iter().find(|c| c.id == id)
+            .map(|c| c.width as i32).unwrap_or(0)
+    }
+    pub fn total_width(&self) -> i32 {
+        self.state.columns().iter().map(|c| self.column_width(c.id))
+            .fold(0i32, i32::saturating_add)
+            .saturating_add(self.state.columns().len().saturating_sub(1).min(i32::MAX as usize) as i32)
+            .max(1)
+    }
+    pub fn cell_text(&self, row: ItemId, column: ItemId) -> String {
+        let index = self.state.columns().iter().position(|c| c.id == column);
+        match index.and_then(|i| self.state.row(row)?.cells.get(i)) {
+            Some(Cell::Text(text)) => text.clone(),
+            Some(Cell::Integer(value)) => value.to_string(),
+            None => String::new(),
+        }
+    }
+    pub fn disabled(&self, id: ItemId) -> bool {
+        self.state.row(id).is_none_or(|row| row.disabled)
     }
     pub fn selected(&self, id: ItemId) -> bool {
         self.state.selection.contains(id)
@@ -111,10 +139,10 @@ pub fn data_table(
     key: u16,
     overlay: bool,
 ) -> Entity {
-    ui! {Column (row_gap:2,border_width:2,border_color:theme::CLEAR,border_radius:style::RADIUS) [crate::sizing::ContentFit,Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
-        Row (column_gap:1) {
+    ui! {Column (width:${ {let _=table.revision();table.total_width()} },row_gap:2,border_width:2,border_color:theme::CLEAR,border_radius:style::RADIUS) [crate::sizing::ContentFit,Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
+        Row (width:Dimension::percent(100),column_gap:1) {
             walk ${ {let _=table.revision();table.columns()} } with column by column.id {
-                Button (width:column.width.min(i32::MAX as u32) as i32,height:40,normal_color:ColorToken::SurfaceVariant,pressed_color:theme::PRESSED,padding:Padding::all(8)) {
+                Button (size:ButtonSize::Custom,align:AlignItems::Center,width:${ {let _=table.revision();table.column_width(column.id)} },height:${text_size(actions.text_scale(),40)},justify:JustifyContent::FlexStart,normal_color:ColorToken::SurfaceVariant,pressed_color:theme::PRESSED,padding:Padding::all(8)) {
                     Text (text:column.label.clone(),font:font::SEMIBOLD,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)
                 } on Tap {if actions.modal()==overlay {table.sort(column.id);}}
             }
@@ -140,26 +168,11 @@ fn table_row(
     row: TableRow,
     overlay: bool,
 ) -> Entity {
-    let columns = table.columns();
-    let cells: Vec<(u32, String)> = row
-        .cells
-        .iter()
-        .zip(columns.iter())
-        .map(|(cell, column)| {
-            (
-                column.width,
-                match cell {
-                    Cell::Text(s) => s.clone(),
-                    Cell::Integer(n) => n.to_string(),
-                },
-            )
-        })
-        .collect();
-    ui! {Button (height:40,normal_color:${ {let _=table.revision();if table.selected(row.id) {theme::SELECTION} else {theme::CLEAR}} },pressed_color:theme::PRESSED,border_width:2,border_color:${ {let _=table.revision();if table.focused(row.id) {theme::FOCUS} else {theme::CLEAR}} },border_radius:style::RADIUS,padding:Padding::all(0)) {
-        Row (column_gap:1) {
-            walk cells with cell {
-                View (width:cell.0.min(i32::MAX as u32) as i32,padding:Padding::all(8)) {
-                    Text (text:cell.1.clone(),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:if row.disabled {ColorToken::OnSurfaceVariant} else {ColorToken::OnSurface})
+    ui! {Button (size:ButtonSize::Custom,width:Dimension::percent(100),height:${text_size(actions.text_scale(),40)},normal_color:${ {let _=table.revision();if table.selected(row.id) {theme::SELECTION} else {theme::CLEAR}} },pressed_color:theme::PRESSED,border_width:2,border_color:${ {let _=table.revision();if table.focused(row.id) {theme::FOCUS} else {theme::CLEAR}} },border_radius:style::RADIUS,padding:Padding::all(0)) {
+        Row (width:Dimension::percent(100),height:Dimension::percent(100),column_gap:1) {
+            walk ${ {let _=table.revision();table.columns()} } with column by column.id {
+                View (width:${ {let _=table.revision();table.column_width(column.id)} },height:Dimension::percent(100),padding:Padding::all(8)) {
+                    Text (text:${ {let _=table.revision();table.cell_text(row.id,column.id)} },font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:${ {let _=table.revision();if table.disabled(row.id) {ColorToken::OnSurfaceVariant} else {ColorToken::OnSurface}} })
                 }
             }
         }

@@ -50,6 +50,8 @@ fn heading(state: model!(Studio), title: &'static str, body: &'static str) -> En
             )
             Text (
                 body,
+                width: Dimension::percent(100),
+                paragraph: mirui::ui::widgets::ParagraphStyle::default(),
                 font: font::MEDIUM,
                 font_size: ${ text_size(state.actions().text_scale(), font::BODY_SIZE) },
                 text_color: ColorToken::OnSurfaceVariant
@@ -398,6 +400,9 @@ fn workbench(state: model!(Studio)) -> Entity {
             }
             Text (
                 "Ctrl S saves in session. Leaving with unsaved edits opens a Save / Discard / Cancel guard. Native input is not advertised as a code editor.",
+                width: Dimension::percent(100),
+                paragraph: mirui::ui::widgets::ParagraphStyle::default(),
+                font: font::MEDIUM,
                 font_size: ${ text_size(state.actions().text_scale(), font::CAPTION_SIZE) },
                 text_color: ColorToken::OnSurfaceVariant
             )
@@ -559,6 +564,9 @@ fn foundations(state: model!(Studio)) -> Entity {
             command (state, (Command::ApplyAppearance), false)
             Text (
                 "Available static Inter weights: Thin, ExtraLight, Light, Regular, Medium, SemiBold, Bold, ExtraBold, Black. Memory-costed Cargo features select atlases; this is not variable-font support.",
+                width: Dimension::percent(100),
+                paragraph: mirui::ui::widgets::ParagraphStyle::default(),
+                font: font::MEDIUM,
                 font_size: ${ text_size(state.actions().text_scale(), font::CAPTION_SIZE) },
                 text_color: ColorToken::OnSurfaceVariant
             )

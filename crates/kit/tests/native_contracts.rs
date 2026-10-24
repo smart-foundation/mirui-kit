@@ -284,3 +284,68 @@ fn shared_action_channel_reports_rejection_without_reordering_or_overwriting() {
     assert_eq!(actions.take(),(0..32).map(|id|(id,false)).collect::<Vec<_>>());
     actions.activate(99,false).unwrap();assert_eq!(actions.take(),[(99,false)]);
 }
+
+#[compose]
+fn changing_content(actions:model!(Actions),toggle:model!(mirui_kit::Toggle))->Entity {
+    use mirui::ui::widgets::{Text,ParagraphStyle};
+    ui! {Column (id:"changing_fit",width:180,row_gap:8) [mirui_kit::sizing::ContentFit] {
+        Text (id:"scaled_body","A readable paragraph wraps at its container and grows with text scale.",width:Dimension::percent(100),paragraph:ParagraphStyle::default(),font:mirui_kit::font::MEDIUM,font_size:${mirui_kit::widgets::text_size(actions.text_scale(),14)})
+        View (id:"conditional_extent",visible:${toggle.value()},width:100,height:40)
+        View (id:"fit_tail",width:100,height:20)
+    }}
+}
+#[test]
+fn native_content_sizing_tracks_visibility_wrapping_and_text_scaling() {
+    let mut app=support::app_with_size(240,400);
+    let actions=app.add_model(Actions::default()).finish();
+    let toggle=app.add_model(mirui_kit::Toggle::default()).finish();
+    let root=app.spawn_root().id();app.compose(root,changing_content(actions.clone(),toggle.clone()));
+    for _ in 0..4 {app.tick();app.render().unwrap();}
+    let fitted=app.world.find_by_id("changing_fit").unwrap();
+    let body=app.world.find_by_id("scaled_body").unwrap();
+    let height=|app:&support::TestApp,node|app.world.get::<mirui::ui::ComputedRect>(node).unwrap().0.h;
+    let before=height(&app,fitted);
+    assert!(height(&app,body)>Fixed::from_int(20),"body should actually wrap");
+    toggle.set(true);for _ in 0..4 {app.tick();app.render().unwrap();}
+    assert_eq!(height(&app,fitted),before+Fixed::from_int(48));
+    toggle.set(false);for _ in 0..4 {app.tick();app.render().unwrap();}
+    assert_eq!(height(&app,fitted),before);
+    let small=height(&app,body);actions.set_scale(150);
+    for _ in 0..4 {app.tick();app.render().unwrap();}
+    assert!(height(&app,body)>small);
+    assert!(height(&app,fitted)>before);
+    assert!(!app.world.has::<mirui_kit::sizing::ContentFitIssue>(fitted));
+}
+
+#[compose]
+fn table_fixture(actions:model!(Actions),table:model!(mirui_kit::table::DataTable))->Entity {
+    use mirui_kit::table::data_table;
+    ui! {data_table(actions,table,40,false)}
+}
+#[test]
+fn native_table_aligns_cells_and_updates_retained_rows_and_column_widths() {
+    use mirui_kit::{table::DataTable,behavior::{collection::SelectionMode,table::{Column,TableRow,Cell}}};
+    use mirui::ui::widgets::Text;
+    let mut app=support::app_with_size(600,400);
+    let actions=app.add_model(Actions::default()).finish();
+    let table=app.add_model(DataTable::new(vec![
+        Column{id:1,label:"Title".into(),width:240,minimum:100,maximum:400,sortable:true},
+        Column{id:2,label:"Size".into(),width:120,minimum:80,maximum:200,sortable:true},
+    ],vec![TableRow{id:10,cells:vec![Cell::Text("alpha".into()),Cell::Integer(11)],disabled:false}],SelectionMode::Single).unwrap()).finish();
+    let root=app.spawn_root().id();app.compose(root,table_fixture(actions,table.clone()));
+    for _ in 0..4 {app.tick();app.render().unwrap();}
+    let text_node=|app:&support::TestApp,label:&str|app.world.query::<Text>().iter().find(|(_,text)|text.resolve(None)==label).unwrap().0;
+    let rect=|app:&support::TestApp,node|app.world.get::<mirui::ui::ComputedRect>(node).unwrap().0;
+    let title=text_node(&app,"Title");let size=text_node(&app,"Size");
+    let alpha=text_node(&app,"alpha");let number=text_node(&app,"11");
+    assert_eq!(rect(&app,title).x,rect(&app,alpha).x);
+    assert_eq!(rect(&app,size).x,rect(&app,number).x);
+    let previous=rect(&app,number).x;
+    table.resize(1,300);
+    table.replace_rows(vec![TableRow{id:10,cells:vec![Cell::Text("updated".into()),Cell::Integer(22)],disabled:false}]).unwrap();
+    for _ in 0..4 {app.tick();app.render().unwrap();}
+    assert_eq!(text_node(&app,"updated"),alpha,"stable row IDs retain the mounted cell");
+    assert_eq!(text_node(&app,"22"),number);
+    assert_eq!(rect(&app,number).x,previous+Fixed::from_int(60));
+    assert_eq!(rect(&app,size).x,rect(&app,number).x);
+}

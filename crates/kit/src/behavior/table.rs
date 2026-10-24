@@ -85,6 +85,10 @@ impl TableState {
     pub fn columns(&self) -> &[Column] {
         &self.columns
     }
+    /// Stable-ID lookup without sorting or cloning the collection.
+    pub fn row(&self, id: ItemId) -> Option<&TableRow> {
+        self.rows.iter().find(|row| row.id == id)
+    }
     pub fn ordered_rows(&self) -> Vec<TableRow> {
         let mut rows = self.rows.clone();
         rows.sort_by(|a, b| {

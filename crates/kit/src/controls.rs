@@ -11,7 +11,7 @@ use crate::{
 };
 use alloc::{collections::VecDeque, string::String, vec::Vec};
 use mirui::prelude::*;
-use mirui::ui::widgets::{Button, Icon, Text};
+use mirui::ui::widgets::{Button, ButtonSize, Icon, Text};
 
 #[model]
 pub struct ChoiceGroup {
@@ -252,7 +252,7 @@ fn tree_row(
                     Icon (path:icons::DISCLOSURE_RIGHT.clone(),width:18,height:18,color:ColorToken::OnSurface,visible:${ {let _=tree.revision();!tree.expanded(row.id)} })
                 } on Tap {if actions.modal()==overlay {tree.toggle(row.id);}}
             }
-            Button (grow:1.0,height:36,normal_color:theme::CLEAR,pressed_color:theme::PRESSED) {
+            Button (size:ButtonSize::Custom,padding:Padding::all(8),align:AlignItems::Center,grow:1.0,height:${text_size(actions.text_scale(),36)},justify:JustifyContent::FlexStart,normal_color:theme::CLEAR,pressed_color:theme::PRESSED) {
                 Text (text:${ {let _=tree.revision();tree.label(row.id)} },font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:${ {let _=tree.revision();if tree.disabled(row.id) {ColorToken::OnSurfaceVariant} else {ColorToken::OnSurface}} })
             } on Tap {if actions.modal()==overlay {tree.choose(row.id,Modifiers::default());}}
         }
