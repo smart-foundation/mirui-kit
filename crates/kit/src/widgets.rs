@@ -6,7 +6,6 @@ use mirui::prelude::*;
 use mirui::render::path::Path;
 use mirui::ui::clipboard::ClipboardFinished;
 use mirui::ui::{
-    UserState,
     widgets::{
         Button, Icon, Placeholder, Slider, Switch, Text, TextDocument, TextEditing, TextInput,
     },
@@ -47,6 +46,7 @@ impl Actions {
         }
         self.applied_layer = Some(self.modal);
     }
+    #[model(local)]
     pub fn take(&mut self) -> Vec<(u16, bool)> {
         core::mem::take(&mut self.pending)
     }
@@ -103,15 +103,15 @@ pub fn gate_view() {}
 #[system]
 pub fn gate_sync(
     gates: query!(Entity, InputGate),
-    states: query!(UserState),
+    states: query!(crate::availability::InputBlocked),
     commands: commands!(),
 ) {
-    for (entity, gate) in gates.iter() {
+    for (entity, gate) in gates {
         let disabled = gate.actions.modal() != gate.overlay;
         if disabled && states.get(entity).is_none() {
-            commands.insert(entity, UserState::Disabled);
+            commands.set::<crate::availability::InputAvailability>(entity, false);
         } else if !disabled && states.get(entity).is_some() {
-            commands.remove::<UserState>(entity);
+            commands.set::<crate::availability::InputAvailability>(entity, true);
         }
     }
 }
@@ -431,4 +431,21 @@ pub fn focus_ring(
 /// explicitly so Mirui subscribes to changes, rather than hiding that read.
 pub fn text_size(scale: u16, base: u16) -> u16 {
     (u32::from(base) * u32::from(scale.clamp(100, 150)) / 100).min(u32::from(u16::MAX)) as u16
+}
+
+// Model commands publish unit changes. Queue extraction returns through the
+// synchronous update closure instead of violating that transaction protocol.
+impl ActionsHandle {
+    pub fn take(&self) -> Vec<(u16, bool)> {
+        let mut result = Vec::new();
+        mirui::core::model::ModelHandle::update(self, |data| { result = data.take(); });
+        result
+    }
+}
+impl ActionsOwned {
+    pub fn take(&mut self) -> Vec<(u16, bool)> {
+        let mut result = Vec::new();
+        mirui::core::model::OwnedModel::update(self, |data| { result = data.take(); });
+        result
+    }
 }

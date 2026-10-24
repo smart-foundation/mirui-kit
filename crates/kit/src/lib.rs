@@ -1,6 +1,7 @@
 //! Shared no_std Mirui components. No file-manager or showcase state lives here.
 #![no_std]
 extern crate alloc;
+pub mod availability;
 pub mod behavior;
 pub mod controls;
 pub mod editing_policy;
@@ -36,7 +37,7 @@ pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) {
 /// Bind the input/focus services after the consumer's action-dispatch system.
 pub fn bind_actions<B: Surface, F: RendererFactory<B>>(
     app: &mut App<B, F>,
-    actions: model!(Actions),
+    actions: ActionsHandle,
 ) {
     app.add_system(widgets::gate_sync::system());
     keyboard::install(app, actions);

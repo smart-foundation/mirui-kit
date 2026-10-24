@@ -24,7 +24,7 @@ pub fn measure(
     fonts: res!(FontManager),
     commands: commands!(),
 ) {
-    for (entity, _, style) in rows.iter() {
+    for (entity, _, style) in rows {
         let line = fonts
             .resolve(style.font_stack.primary().cache_key())
             .metrics(style.font_size.unwrap_or(14))
@@ -92,7 +92,7 @@ pub fn focus_sync(
     focus: res!(FocusState),
     commands: commands!(),
 ) {
-    for (entity, frame) in frames.iter() {
+    for (entity, frame) in frames {
         let focused = children
             .get(entity)
             .is_some_and(|children| children.0.iter().any(|child| Some(*child) == focus.focused));

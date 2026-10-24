@@ -47,18 +47,18 @@ impl ChoiceGroup {
     pub fn vertical(&self) -> bool {
         self.state.orientation == Orientation::Vertical
     }
-    /// Bounded activation queue. False means unavailable or backpressured;
+    /// Bounded activation queue. An error means unavailable or backpressured;
     /// callers must drain take_action instead of assuming activation succeeded.
-    pub fn activate(&mut self, id: ItemId) -> bool {
+    pub fn activate(&mut self, id: ItemId) -> Result<(), ActivationError> {
         if self.pending.len() >= 32 {
-            return false;
+            return Err(ActivationError::Backpressured);
         }
         if self.state.activate(id) {
             self.pending.push_back(id);
             self.revision = self.revision.wrapping_add(1);
-            true
+            Ok(())
         } else {
-            false
+            Err(ActivationError::Unavailable)
         }
     }
     pub fn navigate(&mut self, movement: Move, select_on_focus: bool) {
@@ -69,6 +69,7 @@ impl ChoiceGroup {
         self.state.set_disabled(id, disabled);
         self.revision = self.revision.wrapping_add(1);
     }
+    #[model(local)]
     pub fn take_action(&mut self) -> Option<ItemId> {
         self.pending.pop_front()
     }
@@ -296,5 +297,22 @@ pub fn checkbox(
         } on Tap {if actions.modal()==overlay {check.toggle();}} on Key(|event:event!(Key)| {
             if event.pressed && event.repeat!=Some(true) && event.physical==Some(PhysicalKey::Space) && actions.modal()==overlay {check.toggle();return true;} false
         }) on FocusChanged(|event:event!(FocusChanged)| {actions.focus(key,event.focused);})
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ActivationError { Unavailable, Backpressured }
+impl ChoiceGroupHandle {
+    pub fn take_action(&self) -> Option<ItemId> {
+        let mut result = None;
+        mirui::core::model::ModelHandle::update(self, |data| { result = data.take_action(); });
+        result
+    }
+}
+impl ChoiceGroupOwned {
+    pub fn take_action(&mut self) -> Option<ItemId> {
+        let mut result = None;
+        mirui::core::model::OwnedModel::update(self, |data| { result = data.take_action(); });
+        result
     }
 }

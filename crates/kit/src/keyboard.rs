@@ -1,11 +1,11 @@
 //! Keyboard focus stays inside the active input layer and restores on dismissal.
-use crate::{Actions, FocusItem};
+use crate::{Actions, ActionsHandle, FocusItem};
 use alloc::vec::Vec;
 use mirui::input::event::focus::FocusState;
 use mirui::prelude::*;
 use mirui::ui::{Hidden, Parent, dirty::Dirty};
 
-pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>, actions: model!(Actions)) {
+pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>, actions: ActionsHandle) {
     app.on_event(Key::EVENT, tab::callback(actions.clone()));
     app.add_system(focus_layer::system(actions));
 }
@@ -24,7 +24,7 @@ fn tab(
         return false;
     }
     let mut candidates: Vec<(u16, Entity)> = Vec::new();
-    for (entity, item) in targets.iter() {
+    for (entity, item) in targets {
         if item.overlay != actions.modal() {
             continue;
         }
@@ -81,7 +81,7 @@ fn focus_layer(
     let restore = actions.saved_focus();
     actions.accept_layer(previous);
     let mut candidates: Vec<(u16, Entity)> = Vec::new();
-    for (entity, item) in targets.iter() {
+    for (entity, item) in targets {
         if item.overlay != actions.modal() {
             continue;
         }

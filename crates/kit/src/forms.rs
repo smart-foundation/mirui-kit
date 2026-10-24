@@ -10,10 +10,10 @@ use mirui::ui::widgets::{Button, Icon, Text, TextDocument, TextEditing};
 #[model]
 #[derive(Default)]
 pub struct Validation {
-    #[observe]
     pub message: String,
-    #[observe]
     pub description: String,
+    #[observe]
+    pub revision: u64,
     #[observe]
     pub required: bool,
 }
@@ -21,9 +21,11 @@ pub struct Validation {
 impl Validation {
     pub fn set_error(&mut self, message: String) {
         self.message = message;
+        self.revision = self.revision.wrapping_add(1);
     }
     pub fn describe(&mut self, description: String) {
         self.description = description;
+        self.revision = self.revision.wrapping_add(1);
     }
 }
 #[compose]
@@ -51,8 +53,9 @@ pub struct NumericEntry {
     state: NumberState,
     #[observe]
     pub value: i64,
-    #[observe]
     pub error: String,
+    #[observe]
+    pub error_revision: u64,
 }
 impl NumericEntry {
     pub fn new(value: i64, min: i64, max: i64, step: i64) -> Result<Self, NumberError> {
@@ -67,12 +70,14 @@ impl NumericEntry {
             state,
             value,
             error: String::new(),
+            error_revision: 0,
         })
     }
 }
 #[model]
 impl NumericEntry {
     pub fn commit(&mut self) {
+        self.error_revision = self.error_revision.wrapping_add(1);
         let text = self.document.read(str::to_string);
         match self.state.commit(&text) {
             Ok(_) => {
@@ -91,6 +96,7 @@ impl NumericEntry {
         }
     }
     pub fn step(&mut self, direction: i32, page: bool) {
+        self.error_revision = self.error_revision.wrapping_add(1);
         self.state.step(direction, page);
         self.value = self.state.value();
         self.error.clear();
@@ -139,4 +145,40 @@ fn number_step(
     ui! {Button (width:40,height:40,normal_color:ColorToken::SurfaceVariant,pressed_color:theme::PRESSED,border_width:2,border_color:ColorToken::Outline,border_radius:style::RADIUS) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}] {
         Icon (path:if direction<0 {icons::MINUS.clone()} else {icons::PLUS.clone()},width:18,height:18,color:ColorToken::OnSurface)
     } on Tap {if actions.modal()==overlay {entry.step(direction,false);}} on Key(|event:event!(Key)| {if event.pressed && event.repeat!=Some(true) && (event.code==13||event.physical==Some(PhysicalKey::Space)) && actions.modal()==overlay {entry.step(direction,false);return true;} false}) on FocusChanged(|event:event!(FocusChanged)| {actions.focus(key,event.focused);})}
+}
+
+impl ValidationHandle {
+    pub fn message(&self) -> String {
+        let _ = self.revision();
+        mirui::core::model::ModelHandle::read(self, |data| data.message.clone())
+    }
+}
+impl ValidationOwned {
+    pub fn message(&self) -> String {
+        mirui::core::model::OwnedModel::read(self, |data| data.message.clone())
+    }
+}
+
+impl ValidationHandle {
+    pub fn description(&self) -> String {
+        let _ = self.revision();
+        mirui::core::model::ModelHandle::read(self, |data| data.description.clone())
+    }
+}
+impl ValidationOwned {
+    pub fn description(&self) -> String {
+        mirui::core::model::OwnedModel::read(self, |data| data.description.clone())
+    }
+}
+
+impl NumericEntryHandle {
+    pub fn error(&self) -> String {
+        let _ = self.error_revision();
+        mirui::core::model::ModelHandle::read(self, |data| data.error.clone())
+    }
+}
+impl NumericEntryOwned {
+    pub fn error(&self) -> String {
+        mirui::core::model::OwnedModel::read(self, |data| data.error.clone())
+    }
 }
