@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import json
+import base64
 import subprocess
 import sys
 import unittest
@@ -29,6 +30,21 @@ class Comparison(unittest.TestCase):
             visual.write_rgba(a,1,1,bytes([0,0,0,255]))
             visual.write_rgba(b,2,1,bytes([0,0,0,255]*2))
             self.assertEqual(visual.compare(a,b,d)['status'],'changed-size')
+    def test_checks_transport_preserves_native_png_bytes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);cases=[]
+            for family in ['button','field']:
+                name=family+'.png';visual.write_rgba(root/name,1,1,bytes([12,34,56,255]))
+                cases.append({'file':name,'component':family,'state':'rest'})
+            (root/'index.json').write_text(json.dumps({'theme':'dark','scale':100,'viewport':[640,900],'captures':cases}))
+            script=Path(__file__).with_name('export-component-evidence.py')
+            lines=[]
+            for batch in range(1,5):
+                result=subprocess.run([sys.executable,str(script),str(root),str(batch)],capture_output=True,text=True,check=True)
+                lines.extend(result.stdout.splitlines())
+            self.assertEqual(len(lines),2)
+            for line,case in zip(lines,cases):
+                self.assertEqual(base64.b64decode(line.split('::')[-1]),(root/case['file']).read_bytes())
     def test_missing_baseline_is_not_silent_approval(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);captures=root/'captures';captures.mkdir()
