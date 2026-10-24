@@ -456,3 +456,31 @@ fn desktop_density_is_explicit_and_does_not_override_text_scale() {
     actions.set_density(Density::Touch);
     assert_eq!(actions.control_height(),48);
 }
+
+#[compose]
+fn fitted_wrapped_actions()->Entity {
+    ui! {Column (id:"wrapped_root",width:200,row_gap:8) [mirui_kit::sizing::ContentFit] {
+        Row (id:"wrapped_actions",width:Dimension::percent(100),wrap:FlexWrap::Wrap,column_gap:8,row_gap:8) {
+            View (width:120,height:32)
+            View (id:"wrapped_second",width:120,height:32)
+        }
+        View (id:"after_wrapped_actions",width:200,height:20)
+    }}
+}
+#[test]
+fn content_sizing_keeps_native_wrapped_lines_and_following_sections_separate() {
+    let mut app=support::app();let root=app.spawn_root().id();app.compose(root,fitted_wrapped_actions());
+    for _ in 0..8 {app.tick();app.render().unwrap();}
+    let rect=|name:&str| {
+        let node=app.world.find_by_id(name).unwrap();
+        app.world.get::<mirui::ui::ComputedRect>(node).unwrap().0
+    };
+    let row=rect("wrapped_actions");let second=rect("wrapped_second");let after=rect("after_wrapped_actions");
+    assert_eq!(row.h,Fixed::from_int(72));
+    assert_eq!(second.y,row.y+Fixed::from_int(40));
+    assert!(after.y>=second.y+second.h+Fixed::from_int(8));
+    let before=rect("wrapped_root");
+    for _ in 0..20 {app.tick();app.render().unwrap();}
+    let root=app.world.find_by_id("wrapped_root").unwrap();
+    assert_eq!(app.world.get::<mirui::ui::ComputedRect>(root).unwrap().0,before,"wrapped content drifts on idle frames");
+}

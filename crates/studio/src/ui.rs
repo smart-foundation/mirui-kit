@@ -98,7 +98,7 @@ pub fn shell(state: model!(Studio)) -> Entity {
                             View (width:160,height:${text_size(state.actions().text_scale(),state.actions().control_height())}) { command(state,(Command::Help),false) }
                         }
                         Row (width:Dimension::percent(100),grow:1.0) {
-                            Column (width:${state.desktop_chrome().sidebar_width()},visible:${state.desktop_chrome().sidebar_visible()},height:Dimension::percent(100),padding:Padding::all(12),row_gap:4,bg_color:ColorToken::SurfaceVariant) {
+                            Column (width:${text_size(state.actions().text_scale(),state.desktop_chrome().sidebar_width() as u16)},visible:${state.desktop_chrome().sidebar_visible()},height:Dimension::percent(100),padding:Padding::all(12),row_gap:4,bg_color:ColorToken::SurfaceVariant) {
                                 walk (0..6).collect::<alloc::vec::Vec<usize>>() with index {
                                     View (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(),state.actions().control_height())},border_radius:8,bg_color:${if state.route() as usize==index {theme::SELECTION} else {theme::CLEAR}}) [NavigationItem] {
                                         action_with_intent(state.actions(),COMMANDS[index].command as u16,COMMANDS[index].label.to_string(),COMMANDS[index].icon,false,(mirui_kit::style::Intent::Quiet))

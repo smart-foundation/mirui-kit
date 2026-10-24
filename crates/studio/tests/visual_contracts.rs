@@ -1,6 +1,17 @@
 //! Real native geometry contracts for defects found in screenshot review.
 use mirui::prelude::*;
 use studio::specimens::{self,Specimen};
+// Reach large text through the real appearance flow: Studio synchronizes its
+// action scale from committed session state on every tick.
+fn apply_text_scale(state:&studio::model::StudioHandle,scale:u16) {
+    use studio::commands::Command;
+    state.execute(Command::Foundations as u16);
+    for _ in 0..(scale-100)/10 {state.execute(Command::Larger as u16);}
+    state.execute(Command::ApplyAppearance as u16);
+    state.execute(Command::Keep as u16);
+    state.execute(Command::Overview as u16);
+    assert_eq!(state.actions().text_scale(),scale);
+}
 #[test]
 fn numeric_steps_align_with_the_editable_field_at_both_text_scales() {
     for theme in ["dark","light"] {for scale in [100,150] {
@@ -38,7 +49,7 @@ fn showcase_navigation_has_one_compact_selection_surface() {
         let mut app=App::headless(1400,900);
         app.with_default_widgets().with_default_systems();
         let state=studio::install(&mut app);
-        state.actions().set_scale(scale);
+        apply_text_scale(&state,scale);
         for _ in 0..6 {app.tick();app.render().unwrap();}
         let mut count=0;
         for (entity,_) in app.world.query::<studio::ui::NavigationItem>().iter() {
@@ -58,7 +69,7 @@ fn preview_card_hugs_content_and_task_actions_do_not_fill_the_form() {
         let mut app=App::headless(1400,900);
         app.with_default_widgets().with_default_systems();
         let state=studio::install(&mut app);
-        state.actions().set_scale(scale);
+        apply_text_scale(&state,scale);
         state.actions().activate(Command::Controls as u16,false).unwrap();
         for _ in 0..8 {app.tick();app.render().unwrap();}
         let card=app.world.query::<studio::ui::PreviewCard>().iter().next().expect("preview card").0;
