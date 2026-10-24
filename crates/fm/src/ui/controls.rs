@@ -7,10 +7,10 @@
 //! focus, and a box with a tick in it for the view options.
 
 use mirui::prelude::*;
+use mirui::render::FillRule;
 use mirui::render::command::DrawCommand;
 use mirui::render::font::FontManager;
 use mirui::render::scene::Paint;
-use mirui::render::FillRule;
 use mirui::types::Transform;
 use mirui::ui::theme::WidgetState;
 use mirui::ui::widgets::TextEditing;
@@ -52,16 +52,12 @@ pub struct CheckBox {
     pub size: i32,
 }
 
-/// The height of a text field.
-///
-/// mirui lays the text of a field out from a fixed two pixel inset and never
-/// centres it, so the field is sized to the text: the line height of the
-/// type plus the inset on both sides. The line then fills the field exactly,
-/// and the field reads as centred.
+/// The native editor's line box, NOT its outer field chrome. Shared FieldContent
+/// remeasures the actual font; FieldFrame provides a 40px padded hit target.
 pub fn field_height(fonts: &FontManager) -> Fixed {
     let line = fonts
         .resolve(FontToken::Default.cache_key())
-        .metrics(text::SMALL)
+        .metrics(text::BODY)
         .line_height;
     line + Fixed::from_int(FIELD_INSET * 2)
 }

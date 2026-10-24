@@ -11,8 +11,12 @@ use crate::icons;
 use crate::model::FmState;
 use crate::text;
 use crate::theme;
-use crate::ui::controls::{self, FieldFocus};
+use crate::ui::controls;
 use crate::ui::kit::{pad, pad_h, pad_v, segmented_control};
+use mirui::input::event::focus::PointerFocus;
+use mirui::ui::clipboard::ClipboardFinished;
+use mirui_kit::field::{FieldContent, FieldFrame, focus as field_focus};
+use mirui_kit::selection::clipboard_finished;
 
 /// The unified toolbar.
 #[compose]
@@ -25,7 +29,7 @@ pub fn toolbar(fm: model!(FmState)) -> Entity {
             align: AlignItems::Center,
             column_gap: 8,
             padding: pad(0, 12, 0, 12),
-            border_radius: 12,
+            border_radius: 12
         ) {
             back_button (fm)
             forward_button (fm)
@@ -69,7 +73,7 @@ pub fn titlebar() -> Entity {
             align: AlignItems::Center,
             column_gap: 8,
             padding: pad(0, 12, 0, 12),
-            border_radius: 12,
+            border_radius: 12
         ) {
             traffic_lights ()
             View (grow: 1.0)
@@ -108,7 +112,7 @@ fn back_button(fm: model!(FmState)) -> Entity {
             justify: JustifyContent::Center,
             bg_color: ${ if fm.can_go_back() { theme::SELECTION } else { theme::CLEAR } }
         ) [
-            HitTarget
+            HitTarget,
         ] {
             Icon (
                 path: icons::CHEVRON_LEFT.clone(),
@@ -135,7 +139,7 @@ fn forward_button(fm: model!(FmState)) -> Entity {
             align: AlignItems::Center,
             justify: JustifyContent::Center
         ) [
-            HitTarget
+            HitTarget,
         ] {
             Icon (
                 path: icons::CHEVRON_RIGHT.clone(),
@@ -167,17 +171,20 @@ fn palette_button(fm: model!(FmState)) -> Entity {
                 column_gap: 6,
                 padding: pad_h(8)
             ) {
-                Icon (path: icons::SEARCH.clone(), color: ColorToken::OnSurfaceVariant, width: 13, height: 13)
-                    Text (
-                        text: "Ctrl P",
+                Icon (
+                    path: icons::SEARCH.clone(),
+                    color: ColorToken::OnSurfaceVariant,
+                    width: 13,
+                    height: 13
+                )
+                Text (
+                    text: "Ctrl P",
                     grow: 1.0,
                     font_size: text::SMALL,
                     text_color: ColorToken::OnSurfaceVariant
                 )
             }
-        } on Tap {
-            fm.open_palette();
-        }
+        } on Tap { fm.open_palette(); }
     }
 }
 
@@ -201,7 +208,7 @@ fn new_folder_button(fm: model!(FmState)) -> Entity {
                 normal_color: theme::CLEAR,
                 pressed_color: theme::SELECTION
             ) [
-                OffscreenRender::new()
+                OffscreenRender::new(),
             ] {
                 Row (
                     width: Dimension::percent(100),
@@ -210,7 +217,12 @@ fn new_folder_button(fm: model!(FmState)) -> Entity {
                     column_gap: 6,
                     padding: pad_h(8)
                 ) {
-                    Icon (path: icons::FOLDER.clone(), color: ColorToken::OnSurfaceVariant, width: 13, height: 13)
+                    Icon (
+                        path: icons::FOLDER.clone(),
+                        color: ColorToken::OnSurfaceVariant,
+                        width: 13,
+                        height: 13
+                    )
                     Text (
                         text: "New Folder",
                         grow: 1.0,
@@ -218,9 +230,7 @@ fn new_folder_button(fm: model!(FmState)) -> Entity {
                         text_color: ColorToken::OnSurfaceVariant
                     )
                 }
-            } on Tap {
-                fm.new_folder_inline();
-            }
+            } on Tap { fm.new_folder_inline(); }
             View (
                 id: "new_folder_shadow",
                 position: Position::Absolute,
@@ -232,7 +242,7 @@ fn new_folder_button(fm: model!(FmState)) -> Entity {
                 DropShadow::new(id("toolbar_new_folder"))
                     .with_blur_radius(Fixed::from_int(10))
                     .with_offset(Fixed::ZERO, Fixed::from_int(3))
-                    .with_opacity(80)
+                    .with_opacity(80),
             ]
         }
     }
@@ -240,47 +250,83 @@ fn new_folder_button(fm: model!(FmState)) -> Entity {
 
 /// The search field.
 ///
-/// The field is as tall as the line of type it holds: mirui lays the text of
-/// a field out from a fixed two pixel inset and never centres it, so the
-/// height follows the metrics of the typeface.
+/// The search field owns its whole 40px hit area, not just the text line.
 #[compose]
 fn search_field(fm: model!(FmState)) -> Entity {
     let text_height = res!(FontManager).with(|fonts| controls::field_height(&fonts));
     ui! {
         Row (
-            width: 190,
-            height: 26,
-            border_radius: 7,
-            bg_color: ColorToken::Surface,
-            column_gap: 4,
+            id: "toolbar_search_frame",
+            width: 224,
+            height: 40,
+            padding: pad_h(10),
+            column_gap: 8,
             align: AlignItems::Center,
-            padding: pad_h(6)
-        ) {
-            Icon (path: icons::SEARCH.clone(), color: ColorToken::OnSurfaceVariant, width: 13, height: 13)
+            bg_color: ColorToken::Surface,
+            border_radius: 8,
+            border_width: 1,
+            border_color: ColorToken::Outline
+        ) [
+            FieldFrame::default(),
+            mirui_kit::field::EditingSurface,
+            HitTarget,
+            PointerFocus::Preserve,
+        ] {
+            Icon (
+                path: icons::SEARCH.clone(),
+                color: ColorToken::OnSurfaceVariant,
+                width: 16,
+                height: 16
+            )
             TextInput (
                 id: "toolbar_search",
-                width: 156,
+                width: 144,
                 height: text_height,
-                font_size: text::SMALL,
-                bg_color: ColorToken::Surface,
-                border_radius: 4,
-                // mirui draws a square ring of its own when the field has the
-                // focus. The ring is given the colour of the field, so it
-                // cannot be seen: the application draws its own, rounded.
-                focus_border_color: ColorToken::Surface
+                font: crate::font::MEDIUM,
+                font_size: text::BODY,
+                bg_color: theme::CLEAR,
+                focus_border_color: theme::CLEAR
             ) [
                 TextEditing::new(fm.document()),
                 Placeholder("Search"),
-                FieldFocus {
-                    color: theme::FOCUS.into(),
-                    radius: Fixed::from_int(8),
-                    width: Fixed::from_int(3),
-                }
+                FieldContent,
+                crate::sync::FieldScope(0),
             ] on TextEditing::Changed {
                 let text = fm.document_text();
                 fm.set_query(&text);
+            } on ClipboardFinished(clipboard_finished::callback())
+            View (
+                width: 28,
+                height: 32,
+                align: AlignItems::Center,
+                justify: JustifyContent::Center
+            ) {
+                if ${
+                    {
+                        let _ = fm.revision();
+                        !fm.query_text().is_empty()
+                    }
+                } {
+                    View (
+                        id: "toolbar_search_clear",
+                        width: 28,
+                        height: 32,
+                        align: AlignItems::Center,
+                        justify: JustifyContent::Center
+                    ) [
+                        HitTarget,
+                        PointerFocus::Preserve,
+                    ] {
+                        Icon (
+                            path: icons::CLOSE.clone(),
+                            width: 16,
+                            height: 16,
+                            color: ColorToken::OnSurfaceVariant
+                        )
+                    } on Tap { fm.clear_query(); }
+                }
             }
-        }
+        } on Tap(field_focus::callback())
     }
 }
 
@@ -296,12 +342,10 @@ fn options_button(fm: model!(FmState)) -> Entity {
             align: AlignItems::Center,
             justify: JustifyContent::Center
         ) [
-            HitTarget
+            HitTarget,
         ] {
             Icon (path: icons::GEAR.clone(), color: ColorToken::OnSurface, width: 15, height: 15)
-        } on Tap {
-            fm.toggle_options();
-        }
+        } on Tap { fm.toggle_options(); }
     }
 }
 
@@ -318,12 +362,10 @@ fn inspector_button(fm: model!(FmState)) -> Entity {
             justify: JustifyContent::Center,
             bg_color: ${ if fm.inspector() { theme::SELECTION } else { theme::CLEAR } }
         ) [
-            HitTarget
+            HitTarget,
         ] {
             Icon (path: icons::PANEL.clone(), color: ColorToken::OnSurface, width: 15, height: 15)
-        } on Tap {
-            fm.toggle_inspector();
-        }
+        } on Tap { fm.toggle_inspector(); }
     }
 }
 
@@ -339,11 +381,9 @@ fn theme_button(fm: model!(FmState)) -> Entity {
             align: AlignItems::Center,
             justify: JustifyContent::Center
         ) [
-            HitTarget
+            HitTarget,
         ] {
             Icon (path: icons::MOON.clone(), color: ColorToken::OnSurface, width: 15, height: 15)
-        } on Tap {
-            fm.toggle_theme();
-        }
+        } on Tap { fm.toggle_theme(); }
     }
 }

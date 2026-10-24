@@ -28,13 +28,18 @@ pub fn install<B: Surface, F: RendererFactory<B>>(app: &mut App<B, F>) -> model:
     theme::install(app);
     font::install(app);
     install_views(app);
+    mirui_kit::field::install(app);
     let state = app.add_model(model::FmState::new()).finish();
     state.recompute();
     sync::install_notifications(app, &state);
     app.add_system(sync::theme_sync::system(state.clone()));
     app.add_system(sync::drag_tracking::system(state.clone()));
+    app.add_resource(sync::FieldFocusState::default());
+    app.add_system(sync::field_focus::system(state.clone()));
+    app.on_event(Key::EVENT, sync::escape::callback(state.clone()));
     let root = app.spawn_root().id();
     app.compose(root, ui::shell(state.clone()));
+    mirui_kit::selection::install(app, root);
     state
 }
 

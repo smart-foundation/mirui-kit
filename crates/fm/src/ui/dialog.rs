@@ -8,13 +8,19 @@
 use mirui::prelude::*;
 use mirui::render::font::{FontManager, FontToken};
 use mirui::ui::OffscreenRender;
-use mirui::ui::widgets::{Button, DropShadow, ParagraphStyle, Placeholder, Text, TextEditing, TextInput};
+use mirui::ui::widgets::{
+    Button, DropShadow, ParagraphStyle, Placeholder, Text, TextEditing, TextInput,
+};
 
 use crate::model::{DialogKind, FmState, FmStateHandle};
 use crate::text;
 use crate::theme;
-use crate::ui::controls::{self, FieldFocus};
-use crate::ui::kit::{pad, pad_v};
+use crate::ui::controls;
+use crate::ui::kit::{pad, pad_h, pad_v};
+use mirui::input::event::focus::PointerFocus;
+use mirui::ui::clipboard::ClipboardFinished;
+use mirui_kit::field::{FieldContent, FieldFrame, focus as field_focus};
+use mirui_kit::selection::clipboard_finished;
 
 const SHEET_W: i32 = 420;
 
@@ -42,10 +48,8 @@ pub fn dialog_layer(fm: model!(FmState)) -> Entity {
                 bg_color: theme::DIM,
                 visible: ${ fm.dialog().is_some() }
             ) [
-                HitTarget
-            ] on Tap {
-                fm.close_dialog();
-            }
+                HitTarget,
+            ] on Tap { fm.close_dialog(); }
             Column (
                 position: Position::Absolute,
                 left: 0,
@@ -58,7 +62,12 @@ pub fn dialog_layer(fm: model!(FmState)) -> Entity {
             ) {
                 View (
                     width: SHEET_W,
-                    height: ${ { let _ = fm.dialog(); Dimension::px(fm.sheet_height()) } }
+                    height: ${
+                        {
+                            let _ = fm.dialog();
+                            Dimension::px(fm.sheet_height())
+                        }
+                    }
                 ) {
                     View (
                         id: "sheet_shadow",
@@ -66,12 +75,17 @@ pub fn dialog_layer(fm: model!(FmState)) -> Entity {
                         left: 0,
                         top: 0,
                         width: SHEET_W,
-                        height: ${ { let _ = fm.dialog(); Dimension::px(fm.sheet_height()) } }
+                        height: ${
+                            {
+                                let _ = fm.dialog();
+                                Dimension::px(fm.sheet_height())
+                            }
+                        }
                     ) [
                         DropShadow::new(id("sheet_backdrop"))
                             .with_blur_radius(Fixed::from_int(10))
                             .with_offset(Fixed::ZERO, Fixed::from_int(3))
-                            .with_opacity(80)
+                            .with_opacity(80),
                     ]
                     View (
                         id: "sheet_backdrop",
@@ -79,14 +93,19 @@ pub fn dialog_layer(fm: model!(FmState)) -> Entity {
                         left: 0,
                         top: 0,
                         width: SHEET_W,
-                        height: ${ { let _ = fm.dialog(); Dimension::px(fm.sheet_height()) } },
+                        height: ${
+                            {
+                                let _ = fm.dialog();
+                                Dimension::px(fm.sheet_height())
+                            }
+                        },
                         border_radius: 12,
                         bg_color: ColorToken::Surface,
                         border_color: theme::SEPARATOR,
                         border_width: 1,
                         clip_children: true
                     ) [
-                        OffscreenRender::new()
+                        OffscreenRender::new(),
                     ] {
                         new_folder_sheet (fm, text_height)
                         rename_sheet (fm, text_height)
@@ -113,35 +132,52 @@ fn new_folder_sheet(fm: model!(FmState), text_height: Fixed) -> Entity {
             row_gap: 12,
             visible: ${ fm.dialog() == Some(DialogKind::NewFolder) }
         ) {
-            Text (text: "New Folder", font: FontToken::Heading, font_size: text::TITLE, text_color: ColorToken::OnSurface)
+            Text (
+                text: "New Folder",
+                font: FontToken::Heading,
+                font_size: text::TITLE,
+                text_color: ColorToken::OnSurface
+            )
             Text (
                 text: "Choose a name for the new folder.",
-                font_size: text::SMALL,
+                font_size: text::BODY,
                 text_color: ColorToken::OnSurfaceVariant
             )
-            TextInput (
-                id: "sheet_new_folder",
+            View (
+                id: "sheet_new_folder_frame",
                 width: Dimension::percent(100),
-                height: text_height,
-                font_size: text::SMALL,
+                height: 40,
+                padding: pad_h(10),
+                align: AlignItems::Center,
                 bg_color: ColorToken::SurfaceVariant,
-                border_radius: 6,
-                // mirui draws a square ring of its own when the field has the
-                // focus. The ring is given the colour of the field, so it
-                // cannot be seen: the application draws its own, rounded.
-                focus_border_color: ColorToken::SurfaceVariant
+                border_radius: 8,
+                border_width: 1,
+                border_color: ColorToken::Outline
             ) [
-                TextEditing::new(fm.folder_document()),
-                Placeholder("untitled folder"),
-                FieldFocus {
-                    color: theme::FOCUS.into(),
-                    radius: Fixed::from_int(8),
-                    width: Fixed::from_int(3),
-                }
-            ] on TextEditing::Changed {
-                let text = fm.folder_text();
-                fm.set_folder_text(&text);
-            }
+                FieldFrame::default(),
+                mirui_kit::field::EditingSurface,
+                HitTarget,
+                PointerFocus::Preserve,
+            ] {
+                TextInput (
+                    id: "sheet_new_folder",
+                    width: Dimension::percent(100),
+                    height: text_height,
+                    font_size: text::BODY,
+                    font: crate::font::MEDIUM,
+                    bg_color: theme::CLEAR,
+                    border_radius: 6,
+                    focus_border_color: theme::CLEAR
+                ) [
+                    TextEditing::new(fm.folder_document()),
+                    Placeholder("untitled folder"),
+                    FieldContent,
+                    crate::sync::FieldScope(1),
+                ] on TextEditing::Changed {
+                    let text = fm.folder_text();
+                    fm.set_folder_text(&text);
+                } on ClipboardFinished(clipboard_finished::callback()) on TextEditing::Submitted { confirm_dialog(&fm, 1); }
+            } on Tap(field_focus::callback())
             View (grow: 1.0)
             buttons (fm, 1)
         }
@@ -161,35 +197,52 @@ fn rename_sheet(fm: model!(FmState), text_height: Fixed) -> Entity {
             row_gap: 12,
             visible: ${ fm.dialog() == Some(DialogKind::Rename) }
         ) {
-            Text (text: "Rename", font: FontToken::Heading, font_size: text::TITLE, text_color: ColorToken::OnSurface)
+            Text (
+                text: "Rename",
+                font: FontToken::Heading,
+                font_size: text::TITLE,
+                text_color: ColorToken::OnSurface
+            )
             Text (
                 text: "Type a new name for this item.",
-                font_size: text::SMALL,
+                font_size: text::BODY,
                 text_color: ColorToken::OnSurfaceVariant
             )
-            TextInput (
-                id: "sheet_rename",
+            View (
+                id: "sheet_rename_frame",
                 width: Dimension::percent(100),
-                height: text_height,
-                font_size: text::SMALL,
+                height: 40,
+                padding: pad_h(10),
+                align: AlignItems::Center,
                 bg_color: ColorToken::SurfaceVariant,
-                border_radius: 6,
-                // mirui draws a square ring of its own when the field has the
-                // focus. The ring is given the colour of the field, so it
-                // cannot be seen: the application draws its own, rounded.
-                focus_border_color: ColorToken::SurfaceVariant
+                border_radius: 8,
+                border_width: 1,
+                border_color: ColorToken::Outline
             ) [
-                TextEditing::new(fm.rename_document()),
-                Placeholder("name"),
-                FieldFocus {
-                    color: theme::FOCUS.into(),
-                    radius: Fixed::from_int(8),
-                    width: Fixed::from_int(3),
-                }
-            ] on TextEditing::Changed {
-                let text = fm.rename_text();
-                fm.set_rename_text(&text);
-            }
+                FieldFrame::default(),
+                mirui_kit::field::EditingSurface,
+                HitTarget,
+                PointerFocus::Preserve,
+            ] {
+                TextInput (
+                    id: "sheet_rename",
+                    width: Dimension::percent(100),
+                    height: text_height,
+                    font_size: text::BODY,
+                    font: crate::font::MEDIUM,
+                    bg_color: theme::CLEAR,
+                    border_radius: 6,
+                    focus_border_color: theme::CLEAR
+                ) [
+                    TextEditing::new(fm.rename_document()),
+                    Placeholder("name"),
+                    FieldContent,
+                    crate::sync::FieldScope(1),
+                ] on TextEditing::Changed {
+                    let text = fm.rename_text();
+                    fm.set_rename_text(&text);
+                } on ClipboardFinished(clipboard_finished::callback()) on TextEditing::Submitted { confirm_dialog(&fm, 2); }
+            } on Tap(field_focus::callback())
             View (grow: 1.0)
             buttons (fm, 2)
         }
@@ -209,25 +262,30 @@ fn about_sheet(fm: model!(FmState)) -> Entity {
             row_gap: 8,
             visible: ${ fm.dialog() == Some(DialogKind::About) }
         ) {
-            Text (text: "Files", font: FontToken::Heading, font_size: text::TITLE, text_color: ColorToken::OnSurface)
+            Text (
+                text: "Files",
+                font: FontToken::Heading,
+                font_size: text::TITLE,
+                text_color: ColorToken::OnSurface
+            )
             Text (
                 text: "A no_std file manager built on mirui.",
-                font_size: text::SMALL,
+                font_size: text::BODY,
                 text_color: ColorToken::OnSurfaceVariant
             )
             Text (
                 text: "The whole application is no_std plus alloc.",
-                font_size: text::SMALL,
+                font_size: text::BODY,
                 text_color: ColorToken::OnSurfaceVariant
             )
             Text (
                 text: "Every icon is a vector path in the program image.",
-                font_size: text::SMALL,
+                font_size: text::BODY,
                 text_color: ColorToken::OnSurfaceVariant
             )
             Text (
                 text: "Drag a file onto a folder to move it.",
-                font_size: text::SMALL,
+                font_size: text::BODY,
                 text_color: ColorToken::OnSurfaceVariant
             )
             View (grow: 1.0)
@@ -249,7 +307,12 @@ fn info_sheet(fm: model!(FmState)) -> Entity {
             row_gap: 8,
             visible: ${ fm.dialog() == Some(DialogKind::GetInfo) }
         ) {
-            Text (text: "Info", font: FontToken::Heading, font_size: text::TITLE, text_color: ColorToken::OnSurface)
+            Text (
+                text: "Info",
+                font: FontToken::Heading,
+                font_size: text::TITLE,
+                text_color: ColorToken::OnSurface
+            )
             info_row (fm, "Name", 0)
             info_row (fm, "Kind", 1)
             info_row (fm, "Size", 2)
@@ -274,10 +337,15 @@ fn confirm_sheet(fm: model!(FmState)) -> Entity {
             row_gap: 12,
             visible: ${ fm.dialog() == Some(DialogKind::Delete) }
         ) {
-            Text (text: "Move to Trash", font: FontToken::Heading, font_size: text::TITLE, text_color: ColorToken::OnSurface)
+            Text (
+                text: "Move to Trash",
+                font: FontToken::Heading,
+                font_size: text::TITLE,
+                text_color: ColorToken::OnSurface
+            )
             Text (
                 text: "The item can be put back from the Trash.",
-                font_size: text::SMALL,
+                font_size: text::BODY,
                 text_color: ColorToken::OnSurfaceVariant
             )
             View (grow: 1.0)
@@ -291,9 +359,20 @@ fn confirm_sheet(fm: model!(FmState)) -> Entity {
 fn info_row(fm: model!(FmState), label: &'static str, field: u8) -> Entity {
     ui! {
         Row (width: Dimension::percent(100), height: 20, column_gap: 10) {
-            Text (text: label, width: 90, font_size: text::SMALL, text_color: ColorToken::OnSurfaceVariant)
             Text (
-                text: ${ { let _ = fm.selected(); let _ = fm.listing_revision(); fm.info_field(field) } },
+                text: label,
+                width: 90,
+                font_size: text::SMALL,
+                text_color: ColorToken::OnSurfaceVariant
+            )
+            Text (
+                text: ${
+                    {
+                        let _ = fm.selected();
+                        let _ = fm.listing_revision();
+                        fm.info_field(field)
+                    }
+                },
                 grow: 1.0,
                 font_size: text::SMALL,
                 text_color: ColorToken::OnSurface
@@ -308,13 +387,13 @@ fn buttons(fm: model!(FmState), action: u8) -> Entity {
     ui! {
         Row (
             width: Dimension::percent(100),
-            height: 28,
+            height: 40,
             column_gap: 8,
             justify: JustifyContent::FlexEnd
         ) {
             Button (
                 width: 82,
-                height: 26,
+                height: 40,
                 border_radius: 6,
                 padding: pad_v(0),
                 normal_color: theme::CLEAR,
@@ -323,17 +402,15 @@ fn buttons(fm: model!(FmState), action: u8) -> Entity {
                 Text (
                     text: "Cancel",
                     width: Dimension::percent(100),
-                    height: 26,
+                    height: 40,
                     paragraph: ParagraphStyle::label(),
-                    font_size: text::SMALL,
+                    font_size: text::BODY,
                     text_color: ColorToken::OnSurface
                 )
-            } on Tap {
-                fm.close_dialog();
-            }
+            } on Tap { fm.close_dialog(); }
             Button (
                 width: 82,
-                height: 26,
+                height: 40,
                 border_radius: 6,
                 padding: pad_v(0),
                 normal_color: ColorToken::Primary,
@@ -342,14 +419,12 @@ fn buttons(fm: model!(FmState), action: u8) -> Entity {
                 Text (
                     text: "OK",
                     width: Dimension::percent(100),
-                    height: 26,
+                    height: 40,
                     paragraph: ParagraphStyle::label(),
-                    font_size: text::SMALL,
+                    font_size: text::BODY,
                     text_color: ColorToken::OnPrimary
                 )
-            } on Tap {
-                confirm_dialog (&fm, action);
-            }
+            } on Tap { confirm_dialog(&fm, action); }
         }
     }
 }

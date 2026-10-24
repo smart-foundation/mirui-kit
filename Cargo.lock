@@ -185,6 +185,7 @@ name = "fm"
 version = "0.1.0"
 dependencies = [
  "mirui",
+ "mirui-kit",
  "mirx",
  "sdl2-link",
 ]
@@ -513,6 +514,14 @@ dependencies = [
  "windows-sys",
  "x11-dl",
  "x11rb",
+]
+
+[[package]]
+name = "mirui-kit"
+version = "0.1.0"
+dependencies = [
+ "mirui",
+ "mirx",
 ]
 
 [[package]]
@@ -888,6 +897,30 @@ name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
+
+[[package]]
+name = "studio"
+version = "0.1.0"
+dependencies = [
+ "mirui",
+ "mirui-kit",
+ "studio-core",
+]
+
+[[package]]
+name = "studio-core"
+version = "0.1.0"
+
+[[package]]
+name = "studio-host"
+version = "0.1.0"
+dependencies = [
+ "mirui",
+ "png",
+ "sdl2-link",
+ "studio",
+ "studio-core",
+]
 
 [[package]]
 name = "syn"

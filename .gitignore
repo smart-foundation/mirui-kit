@@ -4,3 +4,10 @@
 # The captures of the running app carry the wall clock in their name, so
 # every one of them is a file of its own.
 artifacts/screenshot-*.png
+
+# Regenerable Studio route and overlay captures.
+/artifacts/studio/
+
+/.cache/
+
+__pycache__/
