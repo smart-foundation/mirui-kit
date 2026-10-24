@@ -471,7 +471,7 @@ fn fitted_wrapped_actions()->Entity {
 fn content_sizing_keeps_native_wrapped_lines_and_following_sections_separate() {
     let mut app=support::app();let root=app.spawn_root().id();app.compose(root,fitted_wrapped_actions());
     for _ in 0..8 {app.tick();app.render().unwrap();}
-    let rect=|name:&str| {
+    let rect=|name:&'static str| {
         let node=app.world.find_by_id(name).unwrap();
         app.world.get::<mirui::ui::ComputedRect>(node).unwrap().0
     };
