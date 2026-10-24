@@ -10,7 +10,7 @@ use mirui::{ecs::World,ui::{Children,ComputedRect,Style,property::{Property,Prop
 pub enum Axis { Horizontal, Vertical }
 #[model]
 pub struct SplitState {
-    pub axis: Axis,
+    axis: Axis,
     pub first_min: u32,
     pub second_min: u32,
     #[observe]
@@ -27,6 +27,7 @@ impl SplitState {
 }
 #[model]
 impl SplitState {
+    pub fn orientation(&self)->Axis {self.axis}
     pub fn sizes(&self)->Split {split(self.available,self.requested,self.first_min,self.second_min)}
     pub fn resize(&mut self,requested:u32) {if !self.disabled {self.requested=requested;}}
     pub fn set_available(&mut self,available:u32) {if self.available!=available {self.available=available;}}
@@ -50,13 +51,13 @@ pub struct SplitDivider {pub state:SplitStateHandle,pub actions:ActionsHandle,pu
 pub struct SplitDrag {pointer:Fixed,first:u32}
 
 // Native slotted compositions keep both application-owned subtrees mounted.
-ui!(compose SplitPane (state:SplitStateHandle,actions:ActionsHandle,key:u16,overlay:bool) {
-    View (width:Dimension::percent(100),height:Dimension::percent(100)) [SplitRoot{state:state.clone()}] {
+ui!(compose SplitPane (state:Option<SplitStateHandle>,actions:Option<ActionsHandle>,key:u16,overlay:bool) {
+    View (width:Dimension::percent(100),height:Dimension::percent(100)) [SplitRoot{state:state.clone().expect("SplitPane requires state")}] {
         View [SplitPart{part:Part::First}] {@@first}
         View (bg_color:ColorToken::Outline,border_width:style::FOCUS_WIDTH,border_color:theme::CLEAR,border_radius:style::RADIUS) [
-            SplitPart{part:Part::Divider},SplitDivider{state:state.clone(),actions:actions.clone(),overlay},
-            Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()}
-        ]
+            SplitPart{part:Part::Divider},SplitDivider{state:state.clone().expect("SplitPane requires state"),actions:actions.clone().expect("SplitPane requires actions"),overlay},
+            Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone().expect("SplitPane requires actions")}
+        ] on FocusChanged(focused::callback())
         View [SplitPart{part:Part::Second}] {@@second}
     }
 });
@@ -73,7 +74,7 @@ impl Property for ApplyLayout {
     fn apply(world:&mut World,entity:Entity,_:())->PropertyChange {
         let Some(root)=world.get::<SplitRoot>(entity).cloned() else {return PropertyChange::Unchanged;};
         let Some(rect)=world.get::<ComputedRect>(entity).map(|r|r.0) else {return PropertyChange::Unchanged;};
-        let horizontal=root.state.axis()==Axis::Horizontal;
+        let horizontal=root.state.orientation()==Axis::Horizontal;
         let extent=(if horizontal {rect.w} else {rect.h}).max(Fixed::ZERO);
         let divider=Fixed::from_int(style::GAP).min(extent);
         let available=(extent-divider).to_int().max(0) as u32;
@@ -100,14 +101,15 @@ impl Property for ApplyLayout {
         if changed {world.insert(entity,mirui::ui::dirty::Dirty);PropertyChange::Layout} else {PropertyChange::Unchanged}
     }
 }
-#[view(component=SplitDivider,name="KitSplitDivider",attach=attach::callback(),input=(start::callback(),drag::callback(),end::callback(),cancel::callback(),key::callback(),focused::callback()),systems=[availability::system()])]
+#[view(component=SplitDivider,name="KitSplitDivider",attach=attach::callback(),input=(start::callback(),drag::callback(),end::callback(),cancel::callback(),key::callback()),systems=[availability::system()])]
 pub fn split_divider() {}
 #[event]
 fn attach(entity:entity!(),commands:commands!()) {commands.insert(entity,HitTarget);}
 #[system]
 fn availability(nodes:query!(Entity,SplitDivider,optional crate::availability::InputBlocked),commands:commands!()) {
     for (entity,node,blocked) in nodes {
-        let enabled=!node.state.disabled();
+        let enabled=!node.state.disabled() && node.actions.modal()==node.overlay;
+        if !enabled {commands.remove::<SplitDrag>(entity);}
         if enabled==blocked.is_some() {commands.set::<crate::availability::InputAvailability>(entity,enabled);}
     }
 }
@@ -115,13 +117,13 @@ fn availability(nodes:query!(Entity,SplitDivider,optional crate::availability::I
 fn start(entity:entity!(),event:event!(DragStart),nodes:query!(SplitDivider),commands:commands!())->bool {
     let Some(node)=nodes.get(entity) else {return false;};
     if node.state.disabled() || node.actions.modal()!=node.overlay {return false;}
-    commands.insert(entity,SplitDrag{pointer:if node.state.axis()==Axis::Horizontal {event.x} else {event.y},first:node.state.sizes().first});true
+    commands.insert(entity,SplitDrag{pointer:if node.state.orientation()==Axis::Horizontal {event.x} else {event.y},first:node.state.sizes().first});true
 }
 #[event]
 fn drag(entity:entity!(),event:event!(DragMove),nodes:query!(SplitDivider,SplitDrag))->bool {
     let Some((node,start))=nodes.get(entity) else {return false;};
     if node.state.disabled() || node.actions.modal()!=node.overlay {return true;}
-    let pointer=if node.state.axis()==Axis::Horizontal {event.x} else {event.y};
+    let pointer=if node.state.orientation()==Axis::Horizontal {event.x} else {event.y};
     let delta=(pointer-start.pointer).to_int() as i64;
     node.state.resize((start.first as i64+delta).clamp(0,u32::MAX as i64) as u32);true
 }
@@ -134,7 +136,7 @@ fn key(entity:entity!(),event:event!(Key),nodes:query!(SplitDivider))->bool {
     let Some(node)=nodes.get(entity) else {return false;};
     if !event.pressed || node.state.disabled() || node.actions.modal()!=node.overlay {return false;}
     let step=if event.modifiers.is_some_and(|m|m.shift) {32} else {8};
-    let horizontal=node.state.axis()==Axis::Horizontal;
+    let horizontal=node.state.orientation()==Axis::Horizontal;
     match event.physical {
         Some(PhysicalKey::ArrowLeft) if horizontal=>node.state.step(-step),
         Some(PhysicalKey::ArrowRight) if horizontal=>node.state.step(step),

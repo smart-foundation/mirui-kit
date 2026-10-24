@@ -354,7 +354,7 @@ fn native_table_aligns_cells_and_updates_retained_rows_and_column_widths() {
 fn split_fixture(actions:model!(Actions),state:model!(mirui_kit::split::SplitState))->Entity {
     use mirui_kit::split::SplitPane;
     ui! {View (width:500,height:160) {
-        SplitPane (state:state.clone(),actions:actions.clone(),key:50,overlay:false) {
+        SplitPane (state:Some(state.clone()),actions:Some(actions.clone()),key:50,overlay:false) {
             @first {View (id:"split_first_content",width:Dimension::percent(100),height:Dimension::percent(100))}
             @second {View (id:"split_second_content",width:Dimension::percent(100),height:Dimension::percent(100))}
         }
