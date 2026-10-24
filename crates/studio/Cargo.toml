@@ -1,0 +1,14 @@
+[package]
+name = "studio"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+mirui.workspace = true
+mirui-kit = { workspace = true, features = ["weight-medium", "weight-semibold"] }
+studio-core.workspace = true
+
+[dev-dependencies]
+mirui = { workspace = true, features = ["std"] }

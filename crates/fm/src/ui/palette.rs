@@ -12,9 +12,13 @@ use crate::icons;
 use crate::model::{COMMANDS, Command, FmState};
 use crate::text;
 use crate::theme;
-use crate::ui::controls::{self, FieldFocus};
+use crate::ui::controls;
 use crate::ui::hover::HoverSurface;
 use crate::ui::kit::{pad, pad_h, pad_v};
+use mirui::input::event::focus::PointerFocus;
+use mirui::ui::clipboard::ClipboardFinished;
+use mirui_kit::field::{FieldContent, FieldFrame, focus as field_focus};
+use mirui_kit::selection::clipboard_finished;
 
 /// The palette layer.
 #[compose]
@@ -40,10 +44,8 @@ pub fn palette_layer(fm: model!(FmState)) -> Entity {
                 bg_color: theme::DIM,
                 visible: ${ fm.palette() }
             ) [
-                HitTarget
-            ] on Tap {
-                fm.close_palette();
-            }
+                HitTarget,
+            ] on Tap { fm.close_palette(); }
             Column (
                 position: Position::Absolute,
                 left: 0,
@@ -67,39 +69,54 @@ pub fn palette_layer(fm: model!(FmState)) -> Entity {
                 ) {
                     Row (
                         width: Dimension::percent(100),
-                        height: 32,
+                        height: 48,
                         align: AlignItems::Center,
                         column_gap: 8,
                         padding: pad_h(8)
                     ) {
-                        TextInput (
-                            id: "palette_filter",
+                        View (
+                            id: "palette_filter_frame",
                             width: Dimension::percent(100),
-                            height: text_height,
-                            font_size: text::SMALL,
+                            height: 40,
+                            padding: pad_h(10),
+                            align: AlignItems::Center,
                             bg_color: ColorToken::SurfaceVariant,
-                            border_radius: 6,
-                            // mirui draws a square ring of its own when the
-                            // field has the focus. The ring is given the
-                            // colour of the field, so it cannot be seen: the
-                            // application draws its own, rounded.
-                            focus_border_color: ColorToken::SurfaceVariant
+                            border_radius: 8,
+                            border_width: 1,
+                            border_color: ColorToken::Outline
                         ) [
-                            TextEditing::new(fm.palette_document()),
-                            Placeholder("Type a command"),
-                            FieldFocus {
-                                color: theme::FOCUS.into(),
-                                radius: Fixed::from_int(8),
-                                width: Fixed::from_int(3),
-                            }
-                        ] on TextEditing::Changed {
-                            let text = fm.palette_text();
-                            fm.set_palette_text(&text);
-                        }
+                            FieldFrame::default(),
+                            mirui_kit::field::EditingSurface,
+                            HitTarget,
+                            PointerFocus::Preserve,
+                        ] {
+                            TextInput (
+                                id: "palette_filter",
+                                width: Dimension::percent(100),
+                                height: text_height,
+                                font_size: text::BODY,
+                                font: crate::font::MEDIUM,
+                                bg_color: theme::CLEAR,
+                                border_radius: 6,
+                                focus_border_color: theme::CLEAR
+                            ) [
+                                TextEditing::new(fm.palette_document()),
+                                Placeholder("Type a command"),
+                                FieldContent,
+                                crate::sync::FieldScope(2),
+                            ] on TextEditing::Changed {
+                                let text = fm.palette_text();
+                                fm.set_palette_text(&text);
+                            } on ClipboardFinished(clipboard_finished::callback())
+                        } on Tap(field_focus::callback())
                     }
                     View (width: Dimension::percent(100), height: 1, bg_color: theme::SEPARATOR)
                     Scroll (width: Dimension::percent(100), grow: 1.0) {
-                        Column (width: Dimension::percent(100), height: COMMANDS.len() as i32 * 27, row_gap: 1) {
+                        Column (
+                            width: Dimension::percent(100),
+                            height: COMMANDS.len() as i32 * 27,
+                            row_gap: 1
+                        ) {
                             command_rows (fm)
                         }
                     }
@@ -132,17 +149,20 @@ fn command_row(fm: model!(FmState), index: usize) -> Entity {
             height: 26,
             border_radius: 5,
             padding: pad_v(0),
-            // The row rests in the colour of the panel, so it is invisible
-            // until the pointer is on it.
             normal_color: ColorToken::Surface,
             pressed_color: theme::SELECTION,
-            visible: ${ { let _ = fm.palette_revision(); fm.command_matches(index) } }
+            visible: ${
+                {
+                    let _ = fm.palette_revision();
+                    fm.command_matches(index)
+                }
+            }
         ) [
             HoverSurface {
                 hover: theme::MENU_HOVER.into(),
                 pressed: theme::MENU_HOVER.into(),
-                radius: Fixed::from_int(5)
-            }
+                radius: Fixed::from_int(5),
+            },
         ] {
             Row (
                 width: Dimension::percent(100),
@@ -157,12 +177,19 @@ fn command_row(fm: model!(FmState), index: usize) -> Entity {
                     width: 16,
                     height: 16
                 )
-                Text (text: label, grow: 1.0, font_size: text::SMALL, text_color: ColorToken::OnSurface)
-                Text (text: shortcut, font_size: text::SMALL, text_color: ColorToken::OnSurfaceVariant)
+                Text (
+                    text: label,
+                    grow: 1.0,
+                    font_size: text::SMALL,
+                    text_color: ColorToken::OnSurface
+                )
+                Text (
+                    text: shortcut,
+                    font_size: text::SMALL,
+                    text_color: ColorToken::OnSurfaceVariant
+                )
             }
-        } on Tap {
-            fm.run_command(command);
-        }
+        } on Tap { fm.run_command(command); }
     }
 }
 
@@ -201,10 +228,7 @@ mod tests {
             command_icon(Command::NewFolder),
             &icons::NEW_FOLDER
         ));
-        assert!(core::ptr::eq(
-            command_icon(Command::GoTrash),
-            &icons::TRASH
-        ));
+        assert!(core::ptr::eq(command_icon(Command::GoTrash), &icons::TRASH));
         assert!(core::ptr::eq(
             command_icon(Command::OpenPalette),
             &icons::SEARCH

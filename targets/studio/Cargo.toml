@@ -1,0 +1,26 @@
+[package]
+name = "studio-host"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = []
+desktop = ["mirui/sdl", "dep:sdl2-link"]
+
+[dependencies]
+studio.workspace = true
+studio-core.workspace = true
+mirui = { workspace = true, features = ["std"] }
+png = "0.18"
+sdl2-link = { workspace = true, optional = true }
+
+[[bin]]
+name = "studio-desktop"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[[bin]]
+name = "studio-snapshot"
+path = "src/snapshot.rs"

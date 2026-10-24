@@ -52,6 +52,9 @@ pub fn drag_tracking(
     cursor: res!(mirui::input::event::PointerCursor),
     viewport: res!(RenderViewport),
     zones: query!(Entity, DropZone),
+    fields: query!(Entity, mirui_kit::field::EditingSurface),
+    hidden: query!(mirui::ui::Hidden),
+    parents: query!(mirui::ui::Parent),
     rects: query!(Entity, mirui::ui::ComputedRect),
     state: model!(crate::model::FmState),
 ) {
@@ -70,6 +73,29 @@ pub fn drag_tracking(
     // Sample ownership before any dismissal can close the overlay. Ownership
     // survives dismissal for the entire press, not just this frame.
     let pointer_started = cursor.down && !state.content_pointer_down();
+    if pointer_started
+        && fields.iter().any(|(entity, _)| {
+            let mut node = entity;
+            for _ in 0..64 {
+                if hidden.get(node).is_some() {
+                    return false;
+                }
+                if let Some(parent) = parents.get(node) {
+                    node = parent.0;
+                } else {
+                    break;
+                }
+            }
+            rects.get(entity).is_some_and(|(_, rect)| {
+                pointer_x >= rect.0.x
+                    && pointer_x < rect.0.x + rect.0.w
+                    && pointer_y >= rect.0.y
+                    && pointer_y < rect.0.y + rect.0.h
+            })
+        })
+    {
+        state.block_content_pointer();
+    }
     let content_allowed = state.update_content_pointer(cursor.down);
     if !content_allowed {
         state.set_hovered(None);
@@ -217,4 +243,134 @@ pub fn install_notifications<B: Surface, F: RendererFactory<B>>(
 #[timer(every = 250)]
 pub fn notification_timer(state: model!(crate::model::FmState)) {
     state.tick_notices();
+}
+
+/// Focus and native editing capability belong to the active Files layer.
+#[component]
+pub struct FieldScope(pub u8);
+#[derive(Default)]
+pub struct FieldFocusState {
+    applied: Option<(u8, Option<crate::model::DialogKind>, Option<u32>)>,
+    saved: Option<Entity>,
+    pending: bool,
+}
+#[system]
+pub fn field_focus(
+    state: model!(crate::model::FmState),
+    memory: res!(mut FieldFocusState),
+    focus: res!(mut mirui::input::event::focus::FocusState),
+    ids: res!(mirui::ui::IdMap),
+    fields: query!(Entity, FieldScope),
+    editors: query!(mirui::ui::widgets::TextEditing),
+    disabled: query!(mirui::ui::UserState),
+    commands: commands!(),
+) {
+    use crate::model::DialogKind;
+    let layer = if state.palette() {
+        2
+    } else if state.dialog().is_some() {
+        1
+    } else if state.has_input_overlay() {
+        4
+    } else if state.editing_folder_id().is_some() {
+        3
+    } else {
+        0
+    };
+    for (entity, scope) in fields.iter() {
+        // Inline naming is nonmodal: clicking search must still focus it and
+        // let the native FocusChanged handler commit the name.
+        let blocked = scope.0 != layer && !(layer == 3 && scope.0 == 0);
+        if blocked && disabled.get(entity).is_none() {
+            commands.insert(entity, mirui::ui::UserState::Disabled);
+        } else if !blocked && matches!(disabled.get(entity), Some(mirui::ui::UserState::Disabled)) {
+            commands.remove::<mirui::ui::UserState>(entity);
+        }
+    }
+    let key = (layer, state.dialog(), state.editing_folder_id());
+    if memory.applied == Some(key) && !memory.pending {
+        return;
+    }
+    if memory.applied.is_none_or(|old| old.0 == 0) && layer != 0 && !memory.pending {
+        memory.saved = focus.focused;
+    }
+    let name = match layer {
+        1 => match state.dialog() {
+            Some(DialogKind::NewFolder) => Some("sheet_new_folder"),
+            Some(DialogKind::Rename) => Some("sheet_rename"),
+            _ => None,
+        },
+        2 => Some("palette_filter"),
+        3 => Some("inline_rename"),
+        _ => None,
+    };
+    let next = if let Some(name) = name {
+        let target = ids
+            .get(name)
+            .filter(|&entity| editors.get(entity).is_some());
+        // A freshly mounted inline editor may not exist until the next prepare.
+        if target.is_none() {
+            focus.focused = None;
+            memory.applied = Some(key);
+            memory.pending = true;
+            return;
+        }
+        target
+    } else if layer == 0 {
+        if memory.applied.is_none() {
+            focus.focused
+        } else {
+            let saved = memory.saved.take();
+            focus
+                .focused
+                .filter(|&entity| fields.get(entity).is_some_and(|(_, scope)| scope.0 == 0))
+                .or_else(|| saved.filter(|&entity| editors.get(entity).is_some()))
+        }
+    } else {
+        None
+    };
+    if let Some(previous) = focus.focused {
+        commands.insert(previous, mirui::ui::dirty::Dirty);
+    }
+    focus.focused = next;
+    if let Some(next) = next {
+        commands.insert(next, mirui::ui::dirty::Dirty);
+        if layer == 1 || layer == 3 {
+            commands.selection().select_all(next);
+        }
+    }
+    memory.applied = Some(key);
+    memory.pending = false;
+}
+
+/// Escape dismisses the top editing surface before cancelling its owning task.
+#[event]
+pub fn escape(
+    event: event!(Key),
+    state: model!(crate::model::FmState),
+    selection: res!(optional mirui_kit::selection::SelectionToolsResource),
+) -> bool {
+    if !event.pressed || event.repeat == Some(true) || event.code != 27 {
+        return false;
+    }
+    if let Some(selection) = selection {
+        if selection.0.visible() || !selection.0.feedback().is_empty() {
+            selection.0.dismiss();
+            return true;
+        }
+    }
+    if state.palette() {
+        state.close_palette();
+    } else if state.dialog().is_some() {
+        state.close_dialog();
+    } else if state.options_open() {
+        state.set_options_open(false);
+    } else if state.menu_open() {
+        state.close_menu();
+    } else if state.editing_folder_id().is_some() {
+        state.cancel_inline_rename();
+    } else {
+        return false;
+    }
+    true
 }

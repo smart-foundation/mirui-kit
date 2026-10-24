@@ -9,6 +9,14 @@ more components. It evaluates whether people can understand and complete tasks,
 whether the UI tells the truth, and whether developers can reuse correct behavior
 without copying file-manager internals.
 
+## Current component coverage verdict
+
+The kit is **not OS-suite ready**. The updated [actual component catalog](../COMPONENT_CATALOG.md)
+separates shared partial APIs, app-local implementations, native Mirui primitives
+and missing components. Eight catalog groups and 17 showcase surface IDs do not
+establish completeness. ButtonGroup and TreeView are unimplemented shared controls,
+not visual polish items. The visual-shell review does not supersede this verdict.
+
 ## Read these reports
 
 | Report | Purpose |
@@ -20,6 +28,7 @@ without copying file-manager internals.
 | [05 — Validation and roadmap](05-validation-and-roadmap.md) | Existing test gaps, invariant tests, user journeys, release gates and ordered work |
 | [06 — Evidence and coverage](06-evidence-and-coverage.md) | Audit source inventory, measured probes, historical image observations and limits |
 | [Finding register](FINDINGS.md) | All 76 finding IDs, priorities and links in one place |
+| [2026-10-24 — Visual shell review](VISUAL_SHELL_REVIEW.md) | Audit-first corner/icon/font/shadow and sidebar/content layout decisions; five additional issues and five proposed additions |
 
 The earlier [Naledzi readiness note](../NALEDZI-READINESS.md) remains a historical
 baseline. These reports extend it with source-level evidence and detailed contracts.

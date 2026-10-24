@@ -1,8 +1,9 @@
 # Naledzi Studio — showcase application specification
 
-**Status:** implementation-ready design specification, not an implemented showcase.
-The existing executable is still Files. Markdown wireframes below are screen/state
-specifications, not screenshots of software that has been built.
+**Status:** six-route Studio source implementation added alongside Files; **not yet
+release-complete or fully compiled/render-verified**. See [implementation, run
+commands, verification and remaining gaps](IMPLEMENTATION.md). Markdown wireframes
+below remain acceptance specifications, not screenshots of the new application.
 
 Studio is a compact, useful app for trying, inspecting and composing the **real
 Mirui-kit components**. Its shell, navigation, search, forms, overlays, commands,

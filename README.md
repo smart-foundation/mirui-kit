@@ -28,10 +28,39 @@ patterns get frozen into the OS app suite.
 | ![view options](artifacts/12-view-options.png) | ![drag and drop](artifacts/13-drag-and-drop.png) |
 | ![notifications](artifacts/14-notifications.png) | ![the running app](artifacts/desktop-window.png) |
 
+## Actual component coverage
+
+**The shared kit is not OS-suite complete.** Studio currently lists eight grouped
+catalog entries, not eight complete independent controls. ButtonGroup, TreeView,
+DataTable, SplitPane, generic form families and other fundamental contracts are
+missing or app-local. See the source-backed [current component catalog and
+OS-suite readiness matrix](docs/COMPONENT_CATALOG.md); native Mirui primitives
+and showcase surfaces are not counted as completed kit components.
+
+## Naledzi Studio source
+
+The repository now also includes `crates/kit`, `crates/studio-core`,
+`crates/studio` and `targets/studio`: a shared no_std kit and a real Mirui
+six-route showcase implementation alongside Files. **This is an initial source
+milestone, not a claim that the complete specification or all audit fixes ship.**
+Run instructions, 33 passing core tests, actual upstream macro checks and the
+blocked full-build/visual gates are recorded in
+[Studio implementation status](docs/showcase/IMPLEMENTATION.md).
+
+```sh
+cargo run --locked -p studio-host --features desktop --bin studio-desktop
+cargo run --locked -p studio-host --bin studio-snapshot
+sh tools/test-studio-core.sh
+```
+
 ## What is in here
 
 ```
-crates/fm          the application: #![no_std] + alloc, zero I/O, static fake filesystem
+crates/kit         shared assets, controls, input/focus services and scrollbar
+crates/studio-core deterministic session workflows: #![no_std] + alloc
+crates/studio      six-route real Mirui showcase composition and integration
+targets/studio     SDL desktop and headless snapshot hosts for Studio
+crates/fm          the existing Files application: #![no_std] + alloc, zero I/O, static fake filesystem
 crates/sdl2-link   linker helper for the host targets
 targets/desktop    std shell -> SDL2 window (interactive)
 targets/snapshot   std shell -> headless render -> PNG (visual regression)

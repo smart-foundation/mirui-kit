@@ -90,6 +90,7 @@ fn app_with(
     let mut app = App::new(ScriptedSurface::new(events));
     app.with_default_widgets().with_default_systems();
     let state = fm::install(&mut app);
+    app.tick();
     app.render().expect("first frame");
     (app, state)
 }
@@ -198,6 +199,7 @@ fn a_status_message_dismisses_itself() {
     app.add_plugin(mirui::app::plugins::StdInstantClockPlugin);
     let state = fm::install(&mut app);
     app.add_plugin(fm::sync::ToastDismissPlugin::new(state.clone()));
+    app.tick();
     app.render().expect("first frame");
 
     state.trash(state.entry_id(3));
@@ -323,4 +325,162 @@ fn opening_an_overlay_cancels_a_drag_without_moving_the_file() {
     assert_eq!(state.dragging(), None);
     assert_eq!(state.drop_target(), None);
     assert_eq!(state.place_of(id), original);
+}
+
+fn entity_named(
+    app: &App<ScriptedSurface, mirui::render::SwRendererFactory>,
+    name: &'static str,
+) -> mirui::ecs::Entity {
+    app.world
+        .resource::<mirui::ui::IdMap>()
+        .unwrap()
+        .get(name)
+        .unwrap()
+}
+
+#[test]
+fn search_has_real_padding_and_a_centered_native_line_box() {
+    let (mut app, _) = app_with(Vec::new());
+    app.tick();
+    app.render().unwrap();
+    let frame = entity_named(&app, "toolbar_search_frame");
+    let editor = entity_named(&app, "toolbar_search");
+    let outer = app.world.get::<mirui::ui::ComputedRect>(frame).unwrap().0;
+    let inner = app.world.get::<mirui::ui::ComputedRect>(editor).unwrap().0;
+    assert!(outer.h >= Fixed::from_int(40));
+    assert!(inner.x >= outer.x + Fixed::from_int(10));
+    assert!(((inner.y + inner.h / 2) - (outer.y + outer.h / 2)).abs() <= Fixed::ONE);
+    // Installing the editing layer must not replace the App's one active root.
+    let mut node = editor;
+    while let Some(parent) = app.world.get::<mirui::ui::Parent>(node) {
+        node = parent.0;
+    }
+    assert_eq!(Some(node), app.root);
+}
+
+#[test]
+fn padding_click_focuses_the_native_editor() {
+    let (mut app, _) = app_with(Vec::new());
+    let frame = entity_named(&app, "toolbar_search_frame");
+    let rect = app.world.get::<mirui::ui::ComputedRect>(frame).unwrap().0;
+    app.backend.events = tap(rect.x.to_int() + 3, (rect.y + rect.h / 2).to_int());
+    app.backend.cursor = 0;
+    app.tick();
+    let editor = entity_named(&app, "toolbar_search");
+    assert_eq!(
+        app.world
+            .resource::<mirui::input::event::focus::FocusState>()
+            .unwrap()
+            .focused,
+        Some(editor)
+    );
+}
+
+#[test]
+fn highlighting_text_automatically_mounts_actions_and_copy_keeps_focus() {
+    use mirui::input::event::focus::FocusState;
+    use mirui::ui::widgets::{TextEditing, TextSelection};
+    let (mut app, state) = app_with(Vec::new());
+    state.document().set_text("selection example").unwrap();
+    let editor = entity_named(&app, "toolbar_search");
+    app.world.resource_mut::<FocusState>().unwrap().focused = Some(editor);
+    app.world
+        .get_mut::<TextEditing>(editor)
+        .unwrap()
+        .set_selection(TextSelection {
+            anchor: 0,
+            cursor: 9,
+        })
+        .unwrap();
+    app.tick();
+    app.render().unwrap();
+    app.tick();
+    app.render().unwrap();
+    let tools = app
+        .world
+        .resource::<mirui_kit::selection::SelectionToolsResource>()
+        .unwrap()
+        .0
+        .clone();
+    assert!(tools.visible());
+    let (x, y) = named_centre(&app, "text_selection_copy");
+    app.backend.events = tap(x, y);
+    app.backend.cursor = 0;
+    app.tick();
+    assert_eq!(
+        app.world.resource::<FocusState>().unwrap().focused,
+        Some(editor)
+    );
+    assert!(!tools.visible());
+    assert_eq!(state.document_text(), "selection example");
+}
+
+#[test]
+fn dialog_focus_owns_editing_and_closing_restores_search() {
+    use mirui::input::event::focus::FocusState;
+    let (mut app, state) = app_with(Vec::new());
+    let search = entity_named(&app, "toolbar_search");
+    app.world.resource_mut::<FocusState>().unwrap().focused = Some(search);
+    state.open_dialog(fm::model::DialogKind::NewFolder);
+    app.tick();
+    app.render().unwrap();
+    app.tick();
+    app.render().unwrap();
+    let dialog = entity_named(&app, "sheet_new_folder");
+    assert_eq!(
+        app.world.resource::<FocusState>().unwrap().focused,
+        Some(dialog)
+    );
+    assert!(matches!(
+        app.world.get::<mirui::ui::UserState>(search),
+        Some(mirui::ui::UserState::Disabled)
+    ));
+    state.close_dialog();
+    app.tick();
+    app.render().unwrap();
+    app.tick();
+    app.render().unwrap();
+    assert_eq!(
+        app.world.resource::<FocusState>().unwrap().focused,
+        Some(search)
+    );
+    assert!(app.world.get::<mirui::ui::UserState>(search).is_none());
+}
+
+#[test]
+fn search_clear_updates_document_and_filter_without_blurring() {
+    let (mut app, state) = app_with(Vec::new());
+    state.document().set_text("report").unwrap();
+    state.set_query("report");
+    let search = entity_named(&app, "toolbar_search");
+    app.world
+        .resource_mut::<mirui::input::event::focus::FocusState>()
+        .unwrap()
+        .focused = Some(search);
+    app.tick();
+    app.render().unwrap();
+    let (x, y) = named_centre(&app, "toolbar_search_clear");
+    app.backend.events = tap(x, y);
+    app.backend.cursor = 0;
+    app.tick();
+    assert_eq!(state.document_text(), "");
+    assert_eq!(state.query_text(), "");
+    assert_eq!(
+        app.world
+            .resource::<mirui::input::event::focus::FocusState>()
+            .unwrap()
+            .focused,
+        Some(search)
+    );
+}
+
+#[test]
+fn inline_naming_keeps_nonmodal_search_enabled() {
+    let (mut app, state) = app_with(Vec::new());
+    state.new_folder_inline();
+    app.tick();
+    app.tick();
+    let search = entity_named(&app, "toolbar_search");
+    assert!(state.editing_folder_id().is_some());
+    assert!(app.world.get::<mirui::ui::UserState>(search).is_none());
 }

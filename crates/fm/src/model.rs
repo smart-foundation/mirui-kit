@@ -494,6 +494,15 @@ impl FmState {
         self.query.clear();
         self.query.push_str(text);
         self.recompute();
+        if self.selected.is_some_and(|id| !self.visible.contains(&id)) {
+            self.selected = None;
+        }
+    }
+
+    /// Clearing search updates the real document and listing together; focus stays put.
+    pub fn clear_query(&mut self) {
+        let _ = self.document.set_text("");
+        self.set_query("");
     }
 
     /// The current search filter.
@@ -823,7 +832,9 @@ impl FmState {
 
     /// Commit the inline edit: name the folder, or drop an empty placeholder.
     pub fn commit_inline_rename(&mut self) {
-        let Some(id) = self.editing_folder_id else { return };
+        let Some(id) = self.editing_folder_id else {
+            return;
+        };
         let name = self.edit_text();
         self.editing_folder_id = None;
         let _ = self.edit_document.set_text("");
@@ -839,10 +850,10 @@ impl FmState {
 
     /// Cancel the inline edit: remove a never-committed placeholder, or revert.
     pub fn cancel_inline_rename(&mut self) {
-        let Some(id) = self.editing_folder_id else { return };
-        if id >= CREATED_BASE
-            && self.created.iter().any(|f| f.id == id && f.name.is_empty())
-        {
+        let Some(id) = self.editing_folder_id else {
+            return;
+        };
+        if id >= CREATED_BASE && self.created.iter().any(|f| f.id == id && f.name.is_empty()) {
             self.created.retain(|f| f.id != id);
             self.names_revision += 1;
         }
@@ -1154,6 +1165,10 @@ impl FmState {
         !self.content_pointer_blocked
     }
 
+    pub fn block_content_pointer(&mut self) {
+        self.content_pointer_blocked = true;
+    }
+
     /// Cancel without executing a drop (unlike `end_drag`).
     pub fn cancel_drag(&mut self) {
         if self.dragging.is_some() || self.drop_target.is_some() || self.pressed.is_some() {
@@ -1268,10 +1283,10 @@ impl FmState {
     /// How tall the open sheet should be.
     pub fn sheet_height(&self) -> i32 {
         match self.dialog {
-            Some(DialogKind::NewFolder) | Some(DialogKind::Rename) => 168,
-            Some(DialogKind::GetInfo) => 216,
-            Some(DialogKind::About) => 200,
-            Some(DialogKind::Delete) => 132,
+            Some(DialogKind::NewFolder) | Some(DialogKind::Rename) => 208,
+            Some(DialogKind::GetInfo) => 232,
+            Some(DialogKind::About) => 216,
+            Some(DialogKind::Delete) => 164,
             _ => 0,
         }
     }

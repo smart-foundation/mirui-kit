@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/fm", "crates/sdl2-link", "targets/desktop", "targets/snapshot"]
+members = ["crates/kit", "crates/studio-core", "crates/studio", "targets/studio", "crates/fm", "crates/sdl2-link", "targets/desktop", "targets/snapshot"]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,3 +13,7 @@ mirui = { version = "=0.51.0", default-features = false }
 mirx = { version = "=0.51.0", default-features = false }
 fm = { path = "crates/fm" }
 sdl2-link = { path = "crates/sdl2-link" }
+
+mirui-kit = { path = "crates/kit", default-features = false }
+studio-core = { path = "crates/studio-core" }
+studio = { path = "crates/studio" }

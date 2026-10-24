@@ -1,0 +1,232 @@
+{
+  "method": "Read-only metadata and current source arithmetic; not live render evidence.",
+  "font_sources": [
+    {
+      "file": "assets/fonts/src/Inter-Regular.ttf",
+      "weight_class": 400,
+      "units_per_em": 2048,
+      "variable_fvar_table": false
+    },
+    {
+      "file": "assets/fonts/src/Inter-Medium.ttf",
+      "weight_class": 500,
+      "units_per_em": 2048,
+      "variable_fvar_table": false
+    },
+    {
+      "file": "assets/fonts/src/Inter-SemiBold.ttf",
+      "weight_class": 600,
+      "units_per_em": 2048,
+      "variable_fvar_table": false
+    },
+    {
+      "file": "assets/fonts/src/Inter-Thin.ttf",
+      "weight_class": 100,
+      "units_per_em": 2048,
+      "variable_fvar_table": false
+    }
+  ],
+  "font_probe_scope": "Bake recipe only, not validation of packed MIRX bytes or selected runtime raster.",
+  "coverage_recipe_ppem": [
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    20,
+    21,
+    22,
+    23,
+    24,
+    26,
+    28,
+    30,
+    32,
+    33,
+    44
+  ],
+  "raster_recipe_probes": [
+    {
+      "logical_size": 11,
+      "output_scale": 1,
+      "output_ppem": 11,
+      "exact_coverage_in_bake_recipe": true
+    },
+    {
+      "logical_size": 14,
+      "output_scale": 1,
+      "output_ppem": 14,
+      "exact_coverage_in_bake_recipe": true
+    },
+    {
+      "logical_size": 14,
+      "output_scale": 1.25,
+      "output_ppem": 18,
+      "exact_coverage_in_bake_recipe": true
+    },
+    {
+      "logical_size": 14,
+      "output_scale": 1.5,
+      "output_ppem": 21,
+      "exact_coverage_in_bake_recipe": true
+    },
+    {
+      "logical_size": 14,
+      "output_scale": 2,
+      "output_ppem": 28,
+      "exact_coverage_in_bake_recipe": true
+    },
+    {
+      "logical_size": 19,
+      "output_scale": 1,
+      "output_ppem": 19,
+      "exact_coverage_in_bake_recipe": false
+    },
+    {
+      "logical_size": 15,
+      "output_scale": 1.25,
+      "output_ppem": 19,
+      "exact_coverage_in_bake_recipe": false
+    }
+  ],
+  "grid_arithmetic": [
+    {
+      "viewport_width": 1180,
+      "inspector_width": 0,
+      "current_model_columns": 8,
+      "content_width_if_no_other_insets": 932,
+      "declared_fixed_track_row_width": 874,
+      "unused_width_positive_overflow_negative": 58,
+      "columns_that_fit_current_fixed_tracks_without_cap": 8
+    },
+    {
+      "viewport_width": 1180,
+      "inspector_width": 236,
+      "current_model_columns": 8,
+      "content_width_if_no_other_insets": 696,
+      "declared_fixed_track_row_width": 874,
+      "unused_width_positive_overflow_negative": -178,
+      "columns_that_fit_current_fixed_tracks_without_cap": 6
+    },
+    {
+      "viewport_width": 1400,
+      "inspector_width": 0,
+      "current_model_columns": 8,
+      "content_width_if_no_other_insets": 1152,
+      "declared_fixed_track_row_width": 874,
+      "unused_width_positive_overflow_negative": 278,
+      "columns_that_fit_current_fixed_tracks_without_cap": 10
+    },
+    {
+      "viewport_width": 1122,
+      "inspector_width": 0,
+      "current_model_columns": 7,
+      "content_width_if_no_other_insets": 874,
+      "declared_fixed_track_row_width": 764,
+      "unused_width_positive_overflow_negative": 110,
+      "columns_that_fit_current_fixed_tracks_without_cap": 8
+    }
+  ],
+  "normal_grid_item_cap": 32,
+  "search_grid_item_cap": 12,
+  "historical_png_dimensions": [
+    {
+      "file": "artifacts/01-dark-icons.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/02-light-icons.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/03-downloads.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/03b-projects.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/04-list.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/05-search.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/06-selected.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/07-context-menu.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/07b-background-menu.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/08-dialog-new-folder.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/09-dialog-info.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/10-command-palette.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/11-inspector.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/12-view-options.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/13-drag-and-drop.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/14-notifications.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/desktop-window.png",
+      "width": 1215,
+      "height": 780
+    },
+    {
+      "file": "artifacts/desktop.png",
+      "width": 1180,
+      "height": 720
+    },
+    {
+      "file": "artifacts/screenshot.png",
+      "width": 1180,
+      "height": 720
+    }
+  ]
+}

@@ -21,10 +21,14 @@ use crate::data::Kind;
 use crate::model::{DialogKind, DropTarget, FmState, TILE_HEIGHT, TILE_WIDTH, ViewMode};
 use crate::text;
 use crate::theme;
-use crate::ui::controls::{self, FieldFocus};
+use crate::ui::controls;
 use crate::ui::hover::{HoverSurface, KindIcon};
-use crate::ui::scrollbar::ScrollBar;
 use crate::ui::kit::{pad, pad_h, pad_v};
+use crate::ui::scrollbar::ScrollBar;
+use mirui::input::event::focus::PointerFocus;
+use mirui::ui::clipboard::ClipboardFinished;
+use mirui_kit::field::{FieldContent, FieldFrame, focus as field_focus};
+use mirui_kit::selection::clipboard_finished;
 
 /// The size of the icon of a list row.
 const ROW_ICON: i32 = 14;
@@ -138,14 +142,18 @@ fn cell(fm: model!(FmState), position: u32) -> Entity {
             padding: pad_v(0),
             bg_color: ${ if fm.selected() == Some(id) { theme::SELECTION } else { theme::CLEAR } }
         ) [
-            HitTarget
-            InteractionFeedback
-            DropZone { id, folder: kind == Kind::Folder, place: None }
+            HitTarget,
+            InteractionFeedback,
+            DropZone {
+                id,
+                folder: kind == Kind::Folder,
+                place: None,
+            },
             HoverSurface {
                 hover: theme::HOVER.into(),
                 pressed: theme::PRESSED.into(),
                 radius: Fixed::from_int(8),
-            }
+            },
         ] {
             Column (
                 width: Dimension::percent(100),
@@ -154,9 +162,13 @@ fn cell(fm: model!(FmState), position: u32) -> Entity {
                 justify: JustifyContent::Center,
                 row_gap: 6,
                 border_radius: 8,
-                // The drop target is drawn over the surface of the tile, so
-                // it survives the hover of the pointer.
-                bg_color: ${ if fm.drop_target() == Some(DropTarget::Tile(id)) { theme::DROP } else { theme::CLEAR } }
+                bg_color: ${
+                    if fm.drop_target() == Some(DropTarget::Tile(id)) {
+                        theme::DROP
+                    } else {
+                        theme::CLEAR
+                    }
+                }
             ) {
                 View (width: size, height: size) [
                     KindIcon {
@@ -164,38 +176,56 @@ fn cell(fm: model!(FmState), position: u32) -> Entity {
                         index: position,
                         id: Some(id),
                         size,
-                    }
+                    },
                 ]
                 if editing {
-                    TextInput (
-                        id: "inline_rename",
+                    View (
+                        id: "inline_rename_frame",
                         width: Dimension::percent(100),
-                        height: text_height,
-                        font_size: text::SMALL,
+                        height: 40,
+                        padding: pad_h(10),
+                        align: AlignItems::Center,
                         bg_color: ColorToken::SurfaceVariant,
-                        border_radius: 6,
-                        focus_border_color: ColorToken::SurfaceVariant
+                        border_radius: 8,
+                        border_width: 1,
+                        border_color: ColorToken::Outline
                     ) [
-                        TextEditing::new(fm.edit_document()),
-                        Placeholder("untitled folder"),
-                        FieldFocus {
-                            color: theme::FOCUS.into(),
-                            radius: Fixed::from_int(8),
-                            width: Fixed::from_int(3),
-                        }
-                    ] on TextEditing::Changed {
-                        let text = fm.edit_text();
-                        fm.set_edit_text(&text);
-                    } on TextEditing::Submitted {
-                        fm.commit_inline_rename();
-                    } on FocusChanged {
-                        if !event.focused {
-                            fm.commit_inline_rename();
-                        }
-                    }
+                        FieldFrame::default(),
+                        mirui_kit::field::EditingSurface,
+                        HitTarget,
+                        PointerFocus::Preserve,
+                    ] {
+                        TextInput (
+                            id: "inline_rename",
+                            width: Dimension::percent(100),
+                            height: text_height,
+                            font_size: text::BODY,
+                            font: crate::font::MEDIUM,
+                            bg_color: theme::CLEAR,
+                            border_radius: 6,
+                            focus_border_color: theme::CLEAR
+                        ) [
+                            TextEditing::new(fm.edit_document()),
+                            Placeholder("untitled folder"),
+                            FieldContent,
+                            crate::sync::FieldScope(3),
+                        ] on TextEditing::Changed {
+                            let text = fm.edit_text();
+                            fm.set_edit_text(&text);
+                        } on TextEditing::Submitted { fm.commit_inline_rename(); } on FocusChanged {
+                            if !event.focused {
+                                fm.commit_inline_rename();
+                            }
+                        } on ClipboardFinished(clipboard_finished::callback())
+                    } on Tap(field_focus::callback())
                 } else {
                     Text (
-                        text: ${ { let _ = fm.names_revision(); fm.entry_title(id) } },
+                        text: ${
+                            {
+                                let _ = fm.names_revision();
+                                fm.entry_title(id)
+                            }
+                        },
                         width: Dimension::percent(100),
                         font_size: text::SMALL,
                         text_color: ColorToken::OnSurface,
@@ -203,9 +233,7 @@ fn cell(fm: model!(FmState), position: u32) -> Entity {
                     )
                 }
             }
-        } on Tap {
-            fm.select(id);
-        } on Tap(2) {
+        } on Tap { fm.select(id); } on Tap(2) {
             fm.select(id);
             fm.open_dialog(DialogKind::GetInfo);
         }
@@ -232,14 +260,18 @@ fn row_cell(fm: model!(FmState), index: u32) -> Entity {
             padding: pad_h(12),
             bg_color: ${ if fm.selected() == Some(id) { theme::SELECTION } else { theme::CLEAR } }
         ) [
-            HitTarget
-            InteractionFeedback
-            DropZone { id, folder: kind == Kind::Folder, place: None }
+            HitTarget,
+            InteractionFeedback,
+            DropZone {
+                id,
+                folder: kind == Kind::Folder,
+                place: None,
+            },
             HoverSurface {
                 hover: theme::HOVER.into(),
                 pressed: theme::PRESSED.into(),
                 radius: Fixed::ZERO,
-            }
+            },
         ] {
             View (width: ROW_ICON, height: ROW_ICON) [
                 KindIcon {
@@ -247,35 +279,53 @@ fn row_cell(fm: model!(FmState), index: u32) -> Entity {
                     index,
                     id: Some(id),
                     size: ROW_ICON,
-                }
+                },
             ]
             Text (
-                text: ${ { let _ = fm.listing_revision(); fm.entry_label(index) } },
+                text: ${
+                    {
+                        let _ = fm.listing_revision();
+                        fm.entry_label(index)
+                    }
+                },
                 font_size: text::BODY,
                 text_color: ColorToken::OnSurface,
                 grow: 1.0
             )
             Text (
-                text: ${ { let _ = fm.listing_revision(); fm.entry_kind_at(index) } },
+                text: ${
+                    {
+                        let _ = fm.listing_revision();
+                        fm.entry_kind_at(index)
+                    }
+                },
                 font_size: text::BODY,
                 text_color: ColorToken::OnSurfaceVariant,
                 width: 78
             )
             Text (
-                text: ${ { let _ = fm.listing_revision(); fm.entry_size_at(index) } },
+                text: ${
+                    {
+                        let _ = fm.listing_revision();
+                        fm.entry_size_at(index)
+                    }
+                },
                 font_size: text::BODY,
                 text_color: ColorToken::OnSurfaceVariant,
                 width: 72
             )
             Text (
-                text: ${ { let _ = fm.listing_revision(); fm.entry_date_at(index) } },
+                text: ${
+                    {
+                        let _ = fm.listing_revision();
+                        fm.entry_date_at(index)
+                    }
+                },
                 font_size: text::BODY,
                 text_color: ColorToken::OnSurfaceVariant,
                 width: 80
             )
-        } on Tap {
-            fm.select(id);
-        } on Tap(2) {
+        } on Tap { fm.select(id); } on Tap(2) {
             fm.select(id);
             fm.open_dialog(DialogKind::GetInfo);
         }
