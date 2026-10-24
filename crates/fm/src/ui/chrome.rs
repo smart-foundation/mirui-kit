@@ -37,30 +37,32 @@ pub fn sidebar_caption(fm:model!(FmState))->Entity {
 /// available through the explicitly labelled Actions palette.
 #[compose]
 pub fn toolbar(fm:model!(FmState))->Entity {
-    ui! {Column (id:"files_toolbar",grow:1.0,shrink:1.0,min_width:0,height:Dimension::percent(100),bg_color:theme::TOOLBAR) {
-        Row (width:Dimension::percent(100),height:56,align:AlignItems::Center,column_gap:8,padding:pad_h(12)) {
+    // One mounted search document and view switcher: native retained branches
+    // must never duplicate their IDs or editing state to achieve responsive layout.
+    ui! {Row (id:"files_toolbar",grow:1.0,shrink:1.0,min_width:0,height:Dimension::percent(100),wrap:FlexWrap::Wrap,bg_color:theme::TOOLBAR,align:AlignItems::Center) {
+        Row (width:${{let _=fm.viewport();if fm.compact_toolbar() {Dimension::percent(100)} else {Dimension::px(0)}}},grow:${{let _=fm.viewport();if fm.compact_toolbar() {0.0} else {1.0}}},min_width:160,height:56,align:AlignItems::Center,column_gap:8,padding:pad_h(12)) {
             back_button (fm)
             forward_button (fm)
             Column (width:0,grow:1.0,shrink:1.0,min_width:0,height:34,row_gap:0,justify:JustifyContent::Center) {
                 Text (text:${data::place_name(fm.place())},width:Dimension::percent(100),font:MEDIUM,font_size:text::BODY,height:17,text_color:ColorToken::OnSurface)
                 Text ("/Users/demo/Cloud",width:Dimension::percent(100),font_size:text::SMALL,height:15,text_color:ColorToken::OnSurfaceVariant)
             }
+        }
+        Row (width:${{let _=fm.viewport();if fm.compact_toolbar() {Dimension::percent(100)} else {Dimension::px(764)}}},height:${{let _=fm.viewport();if fm.compact_toolbar() {48} else {56}}},align:AlignItems::Center,column_gap:8,padding:pad_h(12)) {
             if ${{let _=fm.viewport();!fm.compact_toolbar()}} {
                 palette_button (fm)
                 new_folder_button (fm)
-                segmented_control (fm)
-                search_field (fm,false)
+            }
+            segmented_control (fm)
+            search_field (fm)
+            if ${{let _=fm.viewport();!fm.compact_toolbar()}} {
                 inspector_button (fm)
                 theme_button (fm)
             }
-            options_button (fm)
-        }
-        if ${{let _=fm.viewport();fm.compact_toolbar()}} {
-            Row (id:"compact_commands",width:Dimension::percent(100),height:48,align:AlignItems::Center,column_gap:8,padding:pad_h(12)) {
-                search_field (fm,true)
-                segmented_control (fm)
-                Button (id:"compact_actions",width:72,height:32,font:MEDIUM,font_size:text::BODY,normal_color:theme::CLEAR,pressed_color:theme::SELECTION,border_radius:6) [Text::label("Actions"),Focusable] on Tap {fm.open_palette();}
+            if ${{let _=fm.viewport();fm.compact_toolbar()}} {
+                Button (id:"compact_actions",width:72,height:32,font:MEDIUM,font_size:text::BODY,normal_color:theme::CLEAR,pressed_color:theme::SELECTION,border_radius:8) [Text::label("Actions"),Focusable] on Tap {fm.open_palette();}
             }
+            options_button (fm)
         }
     }}
 }
@@ -218,16 +220,16 @@ fn new_folder_button(fm: model!(FmState)) -> Entity {
 ///
 /// The search field owns its whole 40px hit area, not just the text line.
 #[compose]
-fn search_field(fm: model!(FmState), flexible:bool) -> Entity {
+fn search_field(fm: model!(FmState)) -> Entity {
     let text_height = res!(FontManager).with(|fonts| controls::field_height(&fonts));
     ui! {
         Row (
             id: "toolbar_search_frame",
-            width: if flexible {0} else {224},
-            grow: if flexible {1.0} else {0.0},
+            width: ${{let _=fm.viewport();if fm.compact_toolbar() {0} else {224}}},
+            grow: ${{let _=fm.viewport();if fm.compact_toolbar() {1.0} else {0.0}}},
             shrink: 1.0,
             min_width: 0,
-            height: 40,
+            height: 36,
             padding: pad_h(10),
             column_gap: 8,
             align: AlignItems::Center,
@@ -249,7 +251,10 @@ fn search_field(fm: model!(FmState), flexible:bool) -> Entity {
             )
             TextInput (
                 id: "toolbar_search",
-                width: 144,
+                width: 0,
+                grow: 1.0,
+                shrink: 1.0,
+                min_width: 0,
                 height: text_height,
                 font: crate::font::MEDIUM,
                 font_size: text::BODY,
