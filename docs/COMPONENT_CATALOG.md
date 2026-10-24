@@ -5,7 +5,7 @@ the active working branch, not just the screenshots or showcase specification.
 
 Updated after the research/implementation pass: see [the complete baseline and
 new-source evidence](COMPONENT_COMPLETION.md). The original eight catalog groups
-are retained below as a baseline; the live catalog now has **15 partial groups**.
+are retained below as a baseline; the live catalog now has **19 grouped entries**, still not 19 accepted families.
 
 ## Verdict
 
@@ -41,8 +41,9 @@ Source: `crates/studio/src/catalog.rs::COMPONENTS`.
 
 The new live entries add ChoiceGroup, Hierarchy/TreeView, tri-state Checkbox,
 NumericEntry, labelled field/validation presentation, feedback and DataTable.
-Their policies are tested; the views remain partial and await full native builds
-and runtime acceptance. See `COMPONENT_COMPLETION.md` for exact remaining limits.
+Their policies and several native input/layout contracts are now tested; full
+workspace/no_std/SDL checks passed through `887dac3`. Views remain partial;
+component-by-component runtime and accessibility acceptance is still required. See `COMPONENT_COMPLETION.md` for exact remaining limits.
 
 Follow-up shared source also includes
 `FieldFrame`, `FieldContent` and `selection` services. Their presence does not

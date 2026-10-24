@@ -195,3 +195,39 @@ picker/navigation/layout/collection families, editable/virtualized grid,
 modifier/typeahead wiring, direct manipulation, semantic typography migration,
 rich native elevation, freeze/stress investigation and complete scaled/theme
 workflow coverage. This is an implementation checkpoint, **not kit completion**.
+
+### Follow-up native acceptance and desktop layout work
+
+[40081541894](https://github.com/smart-foundation/mirui-kit/actions/runs/40081541894)
+passed the complete workflow for `887dac3`, including the new native table
+header/cell alignment, retained-row replacement/resize, wrapped scaled text and
+conditional hide/show sizing regressions. Recovered `16b3ccf` native Collections
+and Foundations captures independently show aligned table/tree content and
+properly wrapped instructions/font explanation.
+
+`split::{SplitState,SplitPane}` adds application-owned named slots, horizontal
+and vertical pane layout, pointer dragging, keyboard arrows/Shift/Home/End,
+minimum bounds and proportional fallback when both minima cannot fit. Divider
+availability follows native disabled state and the current input layer. It uses
+shared theme roles/geometry and is mounted in Workbench. Native build/input/
+geometry tests and a fresh capture are required; the first CI pass caught
+unsupported handle defaults and focus-notification routing, which were corrected
+against pinned native APIs. This paragraph does not claim the follow-up passed.
+Docking, collapsible pane persistence and host separator semantics remain open.
+
+Mirui's typed slotted templates require defaultable parameters. Pass model
+handles as `Some(...)` and give the composition a definite viewport, like the
+existing Panel layout:
+
+```rust,ignore
+SplitPane (
+    width: Dimension::percent(100), height: Dimension::percent(100),
+    state: Some(split_state.clone()), actions: Some(actions.clone()),
+    key: 350, overlay: false
+) {
+    @first { /* application-owned navigation */ }
+    @second { /* application-owned content */ }
+}
+```
+
+The live source catalog now has 19 grouped entries, **not 19 accepted families**.
