@@ -150,3 +150,44 @@ fn native_named_slots_keep_consumer_content_in_the_active_tree() {
     while let Some(parent)=app.world.get::<mirui::ui::Parent>(ancestor) {ancestor=parent.0;}
     assert_eq!(Some(ancestor),app.root);
 }
+
+mod support;
+#[test]
+fn button_pointer_keyboard_and_pending_use_native_event_routing() {
+    use mirui_kit::button::{ButtonState,ButtonAvailability};
+    let mut app=support::app();
+    let actions=app.add_model(Actions::default()).finish();
+    let state=app.add_model(ButtonState::default()).finish();
+    let root=app.spawn_root().id();app.compose(root,configured_button(actions.clone(),state.clone()));app.tick();app.render().unwrap();
+    let node=app.world.query::<ButtonAvailability>().iter().next().unwrap().0;
+    support::tap(&mut app,node);
+    assert_eq!(actions.take(),[(9,false)]);
+    app.world.resource_mut::<mirui::input::event::focus::FocusState>().unwrap().focused=Some(node);
+    app.backend.events.push_back(mirui::surface::InputEvent::Key{physical:Some(PhysicalKey::Space),code:32,pressed:true,modifiers:Some(Default::default()),repeat:Some(false)});
+    app.tick();assert_eq!(actions.take(),[(9,false)]);
+    state.set_pending(true);app.tick();app.render().unwrap();
+    support::tap(&mut app,node);
+    assert!(actions.take().is_empty());
+}
+#[compose]
+fn options_fixture(actions:model!(Actions),list:model!(mirui_kit::choices::ChoiceList))->Entity {
+    use mirui_kit::choices::list_box;
+    ui! {View (width:240,height:200) {list_box(actions,list,6,false)}}
+}
+#[test]
+fn disabled_options_skip_real_pointer_activation_and_navigation_selects_on_space() {
+    use mirui_kit::{choices::{ChoiceList,ChoiceOption},behavior::{choices::OptionItem,collection::SelectionMode}};
+    let mut app=support::app();
+    let actions=app.add_model(Actions::default()).finish();
+    let list=app.add_model(ChoiceList::new(vec![OptionItem{id:1,label:"One".into(),disabled:false},OptionItem{id:2,label:"Unavailable".into(),disabled:true},OptionItem{id:3,label:"Three".into(),disabled:false}],SelectionMode::Multiple).unwrap()).finish();
+    let root=app.spawn_root().id();app.compose(root,options_fixture(actions,list.clone()));app.tick();app.render().unwrap();
+    let row=|app:&support::TestApp,id|app.world.query::<ChoiceOption>().iter().find(|(_,option)|option.item==id).unwrap().0;
+    let first=row(&app,1);support::tap(&mut app,first);assert_eq!(list.selected_ids(),[1]);
+    let disabled=row(&app,2);support::tap(&mut app,disabled);assert_eq!(list.selected_ids(),[1]);
+    support::tap(&mut app,first);
+    for physical in [PhysicalKey::ArrowDown,PhysicalKey::Space] {
+        app.backend.events.push_back(mirui::surface::InputEvent::Key{physical:Some(physical),code:0,pressed:true,modifiers:Some(Default::default()),repeat:Some(false)});
+        app.tick();
+    }
+    assert!(list.focused(3));assert_eq!(list.selected_ids(),[1,3]);
+}
