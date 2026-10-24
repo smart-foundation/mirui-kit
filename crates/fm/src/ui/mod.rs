@@ -45,11 +45,14 @@ pub fn shell(fm: model!(FmState)) -> Entity {
             // centred so it never touches the window border on GNOME.
             View (
                 width: Dimension::percent(100),
+                id: "chrome_frame",
+                height: 84,
                 padding: pad(10, 24, 0, 24),
                 align: AlignItems::Center,
             ) {
                 Column (
                     width: Dimension::percent(100),
+                    height: 74,
                     row_gap: 0,
                     bg_color: theme::TOOLBAR,
                     border_radius: 12,
@@ -58,7 +61,7 @@ pub fn shell(fm: model!(FmState)) -> Entity {
                     toolbar (fm)
                 }
             }
-            Row (width: Dimension::percent(100), grow: 1.0) {
+            Row (id:"content_frame",width: Dimension::percent(100), grow: 1.0) {
                 sidebar (fm)
                 area (fm)
                 panel (fm)

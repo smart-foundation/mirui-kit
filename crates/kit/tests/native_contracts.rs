@@ -128,7 +128,7 @@ fn pending_buttons_block_native_input_and_recover() {
 fn slotted_panel()->Entity {
     use mirui_kit::layout::Panel;
     ui! {
-        Panel (id:"slotted_panel",width:200,height:160) {
+        Panel (id:"slotted_panel",width:200,height:160,header_height:20,footer_height:20) {
             @header {View (id:"panel_heading",width:100,height:20)}
             @body {View (id:"panel_body",width:100,height:30)}
             @footer {View (id:"panel_footer",width:100,height:20)}
@@ -144,7 +144,8 @@ fn native_named_slots_keep_consumer_content_in_the_active_tree() {
     let body=app.world.find_by_id("panel_body").unwrap();
     let footer=app.world.find_by_id("panel_footer").unwrap();
     let y=|entity|app.world.get::<mirui::ui::ComputedRect>(entity).unwrap().0.y;
-    assert!(y(heading)<y(body) && y(body)<y(footer));
+    assert!(y(heading)+Fixed::from_int(20)<=y(body));
+    assert!(y(body)+Fixed::from_int(30)<=y(footer));
     let mut ancestor=body;
     while let Some(parent)=app.world.get::<mirui::ui::Parent>(ancestor) {ancestor=parent.0;}
     assert_eq!(Some(ancestor),app.root);

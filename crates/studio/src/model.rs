@@ -324,9 +324,12 @@ impl Studio {
             Notices => self.core.open(Surface::Notices)?,
             NewFolder => {
                 self.require_background(Route::Collections)?;
-                self.core.begin_new()?;
-                self.core.query.clear();
+                // Clear/synchronize the filter before creating the draft.
+                // set_query intentionally cancels edits; replaying this document
+                // revision after begin_new would immediately delete the draft.
                 self.query.set_text("").map_err(|_| Error::InvalidName)?;
+                self.sync_inputs();
+                self.core.begin_new()?;
                 self.name.set_text("").map_err(|_| Error::InvalidName)?;
                 self.listing_revision += 1;
             }
