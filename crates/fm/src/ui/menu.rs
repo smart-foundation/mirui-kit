@@ -16,7 +16,6 @@ use mirui::ui::widgets::{Button, DropShadow, Icon, Text};
 use crate::icons;
 use mirui_kit::style;
 use crate::model::{DialogKind, FmState, FmStateHandle, MenuTarget, Place, SortMode};
-use crate::text;
 use crate::theme;
 use crate::ui::hover::{HoverSurface, KindIcon};
 use crate::ui::kit::{pad, pad_h, pad_v};

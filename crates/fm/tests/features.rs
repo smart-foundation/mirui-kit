@@ -591,3 +591,19 @@ fn clicking_a_notification_dismisses_it() {
     assert_eq!(state.notice_title(0), "Second");
 }
 
+
+#[test]
+fn every_context_action_fits_inside_the_menu_panel() {
+    let (mut app, state)=app_with(Vec::new());
+    state.open_menu(state.entry_id(0),300,180);
+    app.render().expect("menu frame");
+    let panel=app.world.resource::<mirui::ui::IdMap>().unwrap().get("menu_panel").unwrap();
+    let bounds=app.world.get::<mirui::ui::ComputedRect>(panel).unwrap().0;
+    let mut count=0;
+    for (entity,_) in app.world.query::<fm::ui::menu::MenuRow>().iter() {
+        let rect=app.world.get::<mirui::ui::ComputedRect>(entity).unwrap().0;
+        assert!(rect.y>=bounds.y && rect.y+rect.h<=bounds.y+bounds.h,"context action is clipped");
+        count+=1;
+    }
+    assert_eq!(count,8);
+}

@@ -56,7 +56,9 @@ pub const FOCUS_WIDTH: i32 = 2;
 pub const MENU_ROW_HEIGHT: i32 = 32;
 pub const MENU_INSET: i32 = 4;
 pub const MENU_GAP: i32 = 1;
-pub const fn menu_height(items: i32, separators: i32) -> i32 {
+pub const fn menu_height(items: u16, separators: u16) -> i32 {
+    let items = items as i32;
+    let separators = separators as i32;
     let nodes = items + separators;
     items * MENU_ROW_HEIGHT + separators + (if nodes > 0 {nodes - 1} else {0}) * MENU_GAP + 2 * MENU_INSET + 2
 }

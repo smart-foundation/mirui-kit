@@ -24,7 +24,7 @@ jobs:
       - name: Shared kit behavior tests and no_std check
         run: sh tools/test-kit-behavior.sh
       - name: Full workspace tests, including existing Files regressions
-        run: python3 tools/ci-check.py cargo test --locked --workspace
+        run: python3 tools/ci-check.py cargo test --locked --workspace --no-fail-fast
       - name: no_std Studio on RISC-V
         run: python3 tools/ci-check.py cargo check --locked -p studio --no-default-features --target riscv64gc-unknown-none-elf
       - name: SDL host compilation

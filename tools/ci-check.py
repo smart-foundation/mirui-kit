@@ -30,8 +30,6 @@ if status:
         text = full[-18000:]
     if len(text) > 18000:
         text = text[:18000]
-    if len(text) > 80000:
-        text = text[:65000] + "\n... middle diagnostics omitted ...\n" + text[-15000:]
     for i in range(0, len(text), 2000):
         escaped = text[i:i + 2000].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
         print(f"::error title=Command diagnostics {i // 2000 + 1}::{escaped}")
