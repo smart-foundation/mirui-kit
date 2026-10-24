@@ -74,7 +74,7 @@ pub fn drag_tracking(
     // survives dismissal for the entire press, not just this frame.
     let pointer_started = cursor.down && !state.content_pointer_down();
     if pointer_started
-        && fields.iter().any(|(entity, _)| {
+        && fields.into_iter().any(|(entity, _)| {
             let mut node = entity;
             for _ in 0..64 {
                 if hidden.get(node).is_some() {
@@ -261,8 +261,9 @@ pub fn field_focus(
     focus: res!(mut mirui::input::event::focus::FocusState),
     ids: res!(mirui::ui::IdMap),
     fields: query!(Entity, FieldScope),
+    restore_fields: query!(FieldScope),
     editors: query!(mirui::ui::widgets::TextEditing),
-    disabled: query!(mirui::ui::UserState),
+    disabled: query!(mirui_kit::availability::InputBlocked),
     commands: commands!(),
 ) {
     use crate::model::DialogKind;
@@ -277,14 +278,14 @@ pub fn field_focus(
     } else {
         0
     };
-    for (entity, scope) in fields.iter() {
+    for (entity, scope) in fields {
         // Inline naming is nonmodal: clicking search must still focus it and
         // let the native FocusChanged handler commit the name.
         let blocked = scope.0 != layer && !(layer == 3 && scope.0 == 0);
         if blocked && disabled.get(entity).is_none() {
-            commands.insert(entity, mirui::ui::UserState::Disabled);
-        } else if !blocked && matches!(disabled.get(entity), Some(mirui::ui::UserState::Disabled)) {
-            commands.remove::<mirui::ui::UserState>(entity);
+            commands.set::<mirui_kit::availability::InputAvailability>(entity, false);
+        } else if !blocked && disabled.get(entity).is_some() {
+            commands.set::<mirui_kit::availability::InputAvailability>(entity, true);
         }
     }
     let key = (layer, state.dialog(), state.editing_folder_id());
@@ -323,7 +324,7 @@ pub fn field_focus(
             let saved = memory.saved.take();
             focus
                 .focused
-                .filter(|&entity| fields.get(entity).is_some_and(|(_, scope)| scope.0 == 0))
+                .filter(|&entity| restore_fields.get(entity).is_some_and(|scope| scope.0 == 0))
                 .or_else(|| saved.filter(|&entity| editors.get(entity).is_some()))
         }
     } else {

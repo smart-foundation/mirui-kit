@@ -109,6 +109,7 @@ fn named_centre(
         .get::<mirui::ui::ComputedRect>(entity)
         .unwrap_or_else(|| panic!("{id} has no layout rect"))
         .0;
+    println!("target {id} entity={entity:?} rect={rect:?} hit={:?}", app.root.and_then(|root| mirui::input::event::hit_test::hit_test(&app.world, root,rect.x+rect.w/2,rect.y+rect.h/2,WIDTH,HEIGHT)));
     (
         (rect.x + rect.w / 2).to_int(),
         (rect.y + rect.h / 2).to_int(),
@@ -363,6 +364,7 @@ fn padding_click_focuses_the_native_editor() {
     let (mut app, _) = app_with(Vec::new());
     let frame = entity_named(&app, "toolbar_search_frame");
     let rect = app.world.get::<mirui::ui::ComputedRect>(frame).unwrap().0;
+    println!("padding frame={frame:?} rect={rect:?} hit={:?}",app.root.and_then(|root|mirui::input::event::hit_test::hit_test(&app.world,root,rect.x+Fixed::from_int(3),rect.y+rect.h/2,WIDTH,HEIGHT)));
     app.backend.events = tap(rect.x.to_int() + 3, (rect.y + rect.h / 2).to_int());
     app.backend.cursor = 0;
     app.tick();

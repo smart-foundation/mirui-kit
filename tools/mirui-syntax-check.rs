@@ -8,7 +8,10 @@ impl<'ast> Visit<'ast> for UiCheck {
     fn visit_macro(&mut self, mac: &'ast syn::Macro) {
         if mac.path.is_ident("ui") {
             let (_, tokens) = strip_bound_captures(mac.tokens.clone()).expect("UI captures");
-            if try_parse_fn_call_form(&tokens).is_none() {
+            if let Some(tokens) = try_strip_compose_keyword(&tokens) {
+                let output = mold::expand(tokens).to_string();
+                assert!(!output.contains("compile_error !"), "native slot composition: {output}");
+            } else if try_parse_fn_call_form(&tokens).is_none() {
                 let tokens = crate::layout_reactive::preprocess(tokens).expect("layout bindings");
                 let tree: DsTree = syn::parse2(tokens.clone()).unwrap_or_else(|e| {
                     panic!(
@@ -33,6 +36,18 @@ fn arena_sources_expand_against_real_051_macros() {
     let root = std::path::Path::new(env!("MIRUI_KIT_ROOT"));
     for file in [
         "crates/kit/src/widgets.rs",
+        "crates/kit/src/controls.rs",
+        "crates/kit/src/button.rs",
+        "crates/kit/src/choices.rs",
+        "crates/kit/src/calendar.rs",
+        "crates/kit/src/layout.rs",
+        "crates/kit/src/sizing.rs",
+        "crates/kit/src/split.rs",
+        "crates/fm/src/ui/menu.rs",
+        "crates/kit/tests/native_contracts.rs",
+        "crates/kit/src/feedback.rs",
+        "crates/kit/src/forms.rs",
+        "crates/kit/src/table.rs",
         "crates/kit/src/field.rs",
         "crates/kit/src/selection.rs",
         "crates/fm/src/ui/chrome.rs",
@@ -46,6 +61,7 @@ fn arena_sources_expand_against_real_051_macros() {
         "crates/kit/src/scrollbar.rs",
         "crates/studio/src/model.rs",
         "crates/studio/src/ui.rs",
+        "crates/studio/src/specimens.rs",
         "crates/studio/src/lib.rs",
     ] {
         eprintln!("checking {file}");

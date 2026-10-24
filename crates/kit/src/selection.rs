@@ -9,7 +9,7 @@ use mirui::input::event::{
 };
 use mirui::prelude::*;
 use mirui::ui::{
-    ComputedRect, Hidden, Parent, UserState,
+    ComputedRect, Hidden, Parent,
     clipboard::{ClipboardError, ClipboardFinished, ClipboardOutcome},
     widgets::{DropShadow, Text, TextEditing},
 };
@@ -35,8 +35,9 @@ pub struct SelectionTools {
     pub x: i32,
     #[observe]
     pub y: i32,
-    #[observe]
     pub feedback: String,
+    #[observe]
+    pub feedback_revision: u64,
 }
 #[model]
 impl SelectionTools {
@@ -54,6 +55,7 @@ impl SelectionTools {
     ) {
         if self.active != active || (stamp.is_some() && self.session.current != stamp) {
             self.feedback.clear();
+            self.feedback_revision = self.feedback_revision.wrapping_add(1);
             self.feedback_ticks = 0;
         }
         self.active = active;
@@ -69,6 +71,7 @@ impl SelectionTools {
         if self.session.pointer(down, inside) {
             self.visible = false;
             self.feedback.clear();
+            self.feedback_revision = self.feedback_revision.wrapping_add(1);
         }
     }
     /// Dismissal is remembered until selection changes; Escape never deselects text.
@@ -76,8 +79,10 @@ impl SelectionTools {
         self.session.dismiss();
         self.visible = false;
         self.feedback.clear();
+            self.feedback_revision = self.feedback_revision.wrapping_add(1);
     }
     pub fn finished(&mut self, owner: Entity, result: Result<ClipboardOutcome, ClipboardError>) {
+        self.feedback_revision = self.feedback_revision.wrapping_add(1);
         if self.active != Some(owner) {
             return;
         }
@@ -100,6 +105,7 @@ impl SelectionTools {
             self.feedback_ticks -= 1;
             if self.feedback_ticks == 0 {
                 self.feedback.clear();
+            self.feedback_revision = self.feedback_revision.wrapping_add(1);
             }
         }
     }
@@ -154,7 +160,7 @@ fn synchronize(
     editors: query!(TextEditing),
     rects: query!(ComputedRect),
     hidden: query!(Hidden),
-    states: query!(UserState),
+    states: query!(crate::availability::InputBlocked),
     parents: query!(Parent),
 ) {
     let mut active = focus
@@ -166,7 +172,7 @@ fn synchronize(
         // exclude gated background editors while a dialog/menu owns input.
         let mut valid = false;
         for _ in 0..64 {
-            if hidden.get(node).is_some() || matches!(states.get(node), Some(UserState::Disabled)) {
+            if hidden.get(node).is_some() || states.get(node).is_some() {
                 break;
             }
             if let Some(parent) = parents.get(node) {
@@ -240,7 +246,7 @@ fn operate(
     focus: res!(FocusState),
     editors: query!(TextEditing),
     hidden: query!(Hidden),
-    states: query!(UserState),
+    states: query!(crate::availability::InputBlocked),
     parents: query!(Parent),
     commands: commands!(),
 ) -> bool {
@@ -264,7 +270,7 @@ fn operate(
     let mut node = stamp.owner;
     let mut valid = false;
     for _ in 0..64 {
-        if hidden.get(node).is_some() || matches!(states.get(node), Some(UserState::Disabled)) {
+        if hidden.get(node).is_some() || states.get(node).is_some() {
             break;
         }
         if let Some(parent) = parents.get(node) {
@@ -441,8 +447,15 @@ pub fn action_hover(theme: res!(Theme), paint: paint!()) {
         area: paint.rect(),
         transform: paint.transform(),
         quad: paint.quad(),
-        color: color.resolve(&theme),
+        color: theme.resolve(color),
         radius: Fixed::from_int(6),
         opa: 255,
     });
+}
+
+impl SelectionToolsHandle {
+    pub fn feedback(&self) -> String {
+        let _ = self.feedback_revision();
+        mirui::core::model::ModelHandle::read(self, |data| data.feedback.clone())
+    }
 }

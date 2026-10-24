@@ -11,9 +11,19 @@ use mirui::ui::{
 };
 use mirui_kit::{
     InputGate, font, icons,
+    split::SplitPane,
+    layout::sidebar_toggle,
     scrollbar::ScrollBar,
     theme,
     widgets::{action, field, number, text_size, toggle},
+};
+use mirui_kit::{
+    controls::{checkbox, choice_group, tree_view},
+    feedback::{Severity, alert},
+    forms::number_field,
+    table::data_table,
+    choices::list_box,
+    calendar::calendar,
 };
 use studio_core::{Route, Surface};
 
@@ -42,6 +52,8 @@ fn heading(state: model!(Studio), title: &'static str, body: &'static str) -> En
             )
             Text (
                 body,
+                width: Dimension::percent(100),
+                paragraph: mirui::ui::widgets::ParagraphStyle::default(),
                 font: font::MEDIUM,
                 font_size: ${ text_size(state.actions().text_scale(), font::BODY_SIZE) },
                 text_color: ColorToken::OnSurfaceVariant
@@ -60,13 +72,14 @@ pub fn shell(state: model!(Studio)) -> Entity {
                 ]
                 Column (id:"studio_window",width:1180,height:720,bg_color:ColorToken::Surface,border_radius:14) [OffscreenRender::new()] {
                     Column (width:Dimension::percent(100),grow:1.0) [InputGate { actions:state.actions(), overlay:false }] {
-                        Row (width:Dimension::percent(100),height:64,padding:Padding::all(12),align:AlignItems::Center,column_gap:16,bg_color:theme::TOOLBAR) {
+                        Row (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(),48)},padding:Padding::all(4),align:AlignItems::Center,column_gap:12,bg_color:theme::TOOLBAR) {
+                            sidebar_toggle(state.desktop_chrome(),state.actions(),90,false)
                             Text ("NALEDZI / STUDIO",grow:1.0,font:font::SEMIBOLD,font_size:${text_size(state.actions().text_scale(), font::SECTION_SIZE)},text_color:ColorToken::OnSurface)
                             View (width:196,height:40) { command(state,(Command::Palette),false) }
                             View (width:160,height:40) { command(state,(Command::Help),false) }
                         }
                         Row (width:Dimension::percent(100),grow:1.0) {
-                            Column (width:184,height:Dimension::percent(100),padding:Padding::all(12),row_gap:8,bg_color:ColorToken::SurfaceVariant) {
+                            Column (width:${state.desktop_chrome().sidebar_width()},visible:${state.desktop_chrome().sidebar_visible()},height:Dimension::percent(100),padding:Padding::all(12),row_gap:8,bg_color:ColorToken::SurfaceVariant) {
                                 walk (0..6).collect::<alloc::vec::Vec<usize>>() with index {
                                     View (width:Dimension::percent(100),height:${text_size(state.actions().text_scale(), 44)},padding:Padding::all(2),border_radius:10,bg_color:${if state.route() as usize==index {theme::SELECTION} else {ColorToken::SurfaceVariant}}) {
                                         command(state,COMMANDS[index].command,false)
@@ -75,9 +88,10 @@ pub fn shell(state: model!(Studio)) -> Entity {
                                 View (grow:1.0)
                                 Text ("MIRUI 0.51\nSESSION FIXTURES",font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(), font::CAPTION_SIZE)},text_color:ColorToken::OnSurfaceVariant)
                             }
-                            View (grow:1.0,height:Dimension::percent(100)) {
+                            Column (grow:1.0,height:Dimension::percent(100)) {
+                              View (width:Dimension::percent(100),grow:1.0) {
                                 Scroll (id:"studio_main_scroll",width:Dimension::percent(100),height:Dimension::percent(100),padding:Padding::all(24)) {
-                                    Column (width:Dimension::percent(100),row_gap:20) {
+                                    Column (width:Dimension::percent(100),row_gap:20) [mirui_kit::sizing::ContentFit] {
                                         if ${state.route()==Route::Overview} { overview(state) }
                                         if ${state.route()==Route::Controls} { controls(state) }
                                         if ${state.route()==Route::Collections} { collections(state) }
@@ -88,9 +102,10 @@ pub fn shell(state: model!(Studio)) -> Entity {
                                     }
                                 }
                                 View (position:Position::Absolute,left:@width {width-Fixed::from_int(12)},top:4,width:10,height:@height {height-Fixed::from_int(8)}) [ScrollBar {target:id("studio_main_scroll"),vertical:true,thickness:8}]
+                              }
+                              Text (text:${{let _=state.revision();state.latest_notice()}},height:${text_size(state.actions().text_scale(),32)},width:Dimension::percent(100),padding:Padding{left:24.into(),right:12.into(),top:4.into(),bottom:4.into()},paragraph:mirui::ui::widgets::ParagraphStyle::label().with_align(mirui::ui::widgets::TextAlign::Start),font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(), font::CAPTION_SIZE)},text_color:ColorToken::OnSurfaceVariant)
                             }
                         }
-                        Text (text:${{let _=state.revision();state.latest_notice()}},height:32,width:Dimension::percent(100),font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(), font::CAPTION_SIZE)},text_color:ColorToken::OnSurfaceVariant)
                     }
                 }
                 overlay(state)
@@ -217,6 +232,15 @@ fn controls(state: model!(Studio)) -> Entity {
                     command (state, (Command::Tooltip), false)
                 }
             }
+            heading (state, "Shared control specimens", "Radio-style grouped selection skips unavailable items. Numeric entry validates on Enter or blur; arrow keys step the value.")
+            choice_group (state.actions(),state.demo_choices(),300,false,true)
+            checkbox (state.actions(),state.demo_check(),301,"Enable optional indexing".into(),false)
+            number_field (state.actions(),state.demo_numeric(),302,"Worker count (1–64)".into(),false)
+            heading (state,"Option list / Range calendar","Arrow keys move option focus; Space selects. Calendar arrows move days, Page Up/Down changes months, Shift changes years. Dates are local Gregorian values, not a scheduled host task.")
+            list_box (state.actions(),state.demo_options(),303,false)
+            calendar (state.actions(),state.demo_calendar(),304,false)
+            Text (text:${ {let _=state.demo_calendar().revision();state.demo_calendar().selection_label()} },font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)
+            alert (state.actions(),(Severity::Information),"Shared kit specimens".into(),"These controls use the same theme roles and input ownership as the application.".into())
             Text (
                 "Recipe: mirui_kit::widgets::{field, number, toggle, action}. Editing any setting cancels the old job. Preview must be requested again.",
                 width: Dimension::percent(100),
@@ -246,6 +270,10 @@ fn collections(state: model!(Studio)) -> Entity {
                 font_size: ${ text_size(state.actions().text_scale(), font::SECTION_SIZE) },
                 text_color: ColorToken::OnSurface
             )
+            heading (state, "Hierarchy specimen", "Independent in-memory tree. Right/Left expand and collapse; Up/Down move focus; Space toggles selection; Ctrl+A selects visible available nodes.")
+            tree_view (state.actions(),state.demo_hierarchy(),310,false)
+            heading (state, "Data table specimen", "Read-only text and integer cells with stable row selection. Click a column heading to cycle sorting; Up/Down move focus and Space toggles selection. Header keyboard navigation and virtualization remain pending.")
+            data_table (state.actions(),state.demo_table(),320,false)
             field (state.actions(), state.query(), 110, "Filter this folder", false, 0)
             Row (width: Dimension::percent(100), column_gap: 8) {
                 View (grow: 1.0) {
@@ -377,9 +405,19 @@ fn workbench(state: model!(Studio)) -> Entity {
             }
             Text (
                 "Ctrl S saves in session. Leaving with unsaved edits opens a Save / Discard / Cancel guard. Native input is not advertised as a code editor.",
+                width: Dimension::percent(100),
+                paragraph: mirui::ui::widgets::ParagraphStyle::default(),
+                font: font::MEDIUM,
                 font_size: ${ text_size(state.actions().text_scale(), font::CAPTION_SIZE) },
                 text_color: ColorToken::OnSurfaceVariant
             )
+            heading(state,"Resizable workspace","Drag the divider or focus it and use Left/Right. Shift steps faster; Home/End respect panel minima.")
+            View (width:Dimension::percent(100),height:180) {
+                SplitPane (width:Dimension::percent(100),height:Dimension::percent(100),state:Some(state.demo_split()),actions:Some(state.actions()),key:350u16,overlay:false) {
+                    @first {View (width:Dimension::percent(100),height:Dimension::percent(100),padding:Padding::all(12),bg_color:ColorToken::SurfaceVariant) {Text ("Navigation pane",font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)}}
+                    @second {View (width:Dimension::percent(100),height:Dimension::percent(100),padding:Padding::all(12),bg_color:ColorToken::SurfaceVariant) {Text ("Application-owned content",font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)}}
+                }
+            }
         }
     }
 }
@@ -422,6 +460,7 @@ fn surface_link(state: model!(Studio), index: usize) -> Entity {
             | Surface::Move
     );
     ui! {
+        View (width:Dimension::percent(100)) {
         if available {
             action (
                 state.actions(),
@@ -438,6 +477,7 @@ fn surface_link(state: model!(Studio), index: usize) -> Entity {
                 font_size: ${ text_size(state.actions().text_scale(), font::BODY_SIZE) },
                 text_color: ColorToken::OnSurfaceVariant
             )
+        }
         }
     }
 }
@@ -536,6 +576,9 @@ fn foundations(state: model!(Studio)) -> Entity {
             command (state, (Command::ApplyAppearance), false)
             Text (
                 "Available static Inter weights: Thin, ExtraLight, Light, Regular, Medium, SemiBold, Bold, ExtraBold, Black. Memory-costed Cargo features select atlases; this is not variable-font support.",
+                width: Dimension::percent(100),
+                paragraph: mirui::ui::widgets::ParagraphStyle::default(),
+                font: font::MEDIUM,
                 font_size: ${ text_size(state.actions().text_scale(), font::CAPTION_SIZE) },
                 text_color: ColorToken::OnSurfaceVariant
             )

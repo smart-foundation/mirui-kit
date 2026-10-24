@@ -6,11 +6,13 @@ use mirui::prelude::*;
 use mirui::render::path::Path;
 use mirui::ui::clipboard::ClipboardFinished;
 use mirui::ui::{
-    UserState,
     widgets::{
         Button, Icon, Placeholder, Slider, Switch, Text, TextDocument, TextEditing, TextInput,
     },
 };
+
+#[derive(Clone,Copy,Debug,PartialEq,Eq)]
+pub enum ActionError {WrongLayer,Backpressured}
 
 /// Bounded per-instance action channel, with explicit overlay ownership.
 #[model]
@@ -30,10 +32,10 @@ pub struct Actions {
 }
 #[model]
 impl Actions {
-    pub fn activate(&mut self, id: u16, overlay: bool) {
-        if overlay == self.modal && self.pending.len() < 32 {
-            self.pending.push((id, overlay));
-        }
+    pub fn activate(&mut self, id: u16, overlay: bool) -> Result<(),ActionError> {
+        if overlay!=self.modal {return Err(ActionError::WrongLayer);}
+        if self.pending.len()>=32 {return Err(ActionError::Backpressured);}
+        self.pending.push((id,overlay));Ok(())
     }
     pub fn applied_layer(&self) -> Option<bool> {
         self.applied_layer
@@ -47,6 +49,7 @@ impl Actions {
         }
         self.applied_layer = Some(self.modal);
     }
+    #[model(local)]
     pub fn take(&mut self) -> Vec<(u16, bool)> {
         core::mem::take(&mut self.pending)
     }
@@ -103,15 +106,15 @@ pub fn gate_view() {}
 #[system]
 pub fn gate_sync(
     gates: query!(Entity, InputGate),
-    states: query!(UserState),
+    states: query!(crate::availability::InputBlocked),
     commands: commands!(),
 ) {
-    for (entity, gate) in gates.iter() {
+    for (entity, gate) in gates {
         let disabled = gate.actions.modal() != gate.overlay;
         if disabled && states.get(entity).is_none() {
-            commands.insert(entity, UserState::Disabled);
+            commands.set::<crate::availability::InputAvailability>(entity, false);
         } else if !disabled && states.get(entity).is_some() {
-            commands.remove::<UserState>(entity);
+            commands.set::<crate::availability::InputAvailability>(entity, true);
         }
     }
 }
@@ -201,11 +204,11 @@ pub fn action(
                     text_color: ColorToken::OnSurface
                 )
             }
-        } on Tap { actions.activate(key, overlay); } on Key(|event: event!(Key)| {
+        } on Tap { let _=actions.activate(key, overlay); } on Key(|event: event!(Key)| {
             if event.pressed && event.repeat != Some(true)
                 && (event.code == 13 || event.physical == Some(PhysicalKey::Space))
             {
-                actions.activate(key, overlay);
+                let _=actions.activate(key, overlay);
                 return true;
             }
             false
@@ -259,7 +262,7 @@ pub fn field(
                 FocusItem { overlay, order: key },
             ] on TextEditing::Submitted {
                 if submit != 0 {
-                    actions.activate(submit, overlay);
+                    let _=actions.activate(submit, overlay);
                 }
             } on FocusChanged(|event: event!(FocusChanged)| {
                 actions.focus(key, event.focused);
@@ -278,7 +281,7 @@ pub fn number(actions: model!(Actions), number: model!(Number), key: u16) -> Ent
                 value: ${ number.value() },
                 width: Dimension::percent(100),
                 height: 36
-            ) on Slider::ValueChanged(|event: event!(Slider::ValueChanged)| {
+            ) on Slider::ValueChanged(|event: event!(mirui::ui::widgets::slider::ValueChanged)| {
                 number.set(event.new);
             })
             Row (width: Dimension::percent(100), height: 40, column_gap: 8) {
@@ -365,6 +368,7 @@ pub fn toggle(
                 on: ${ toggle.checked() },
                 width: 44,
                 height: 26,
+                border_radius: 13,
                 border_width: 2,
                 border_color: ColorToken::Outline
             ) [
@@ -376,7 +380,7 @@ pub fn toggle(
                     overlay: false,
                     order: key,
                 },
-            ] on Switch::Toggled(|event: event!(Switch::Toggled)| {
+            ] on Switch::Toggled(|event: event!(mirui::ui::widgets::switch::Toggled)| {
                 toggle.set(event.now);
             }) on Key(|event: event!(Key)| {
                 if event.pressed && event.repeat != Some(true)
@@ -431,4 +435,21 @@ pub fn focus_ring(
 /// explicitly so Mirui subscribes to changes, rather than hiding that read.
 pub fn text_size(scale: u16, base: u16) -> u16 {
     (u32::from(base) * u32::from(scale.clamp(100, 150)) / 100).min(u32::from(u16::MAX)) as u16
+}
+
+// Model commands publish unit changes. Queue extraction returns through the
+// synchronous update closure instead of violating that transaction protocol.
+impl ActionsHandle {
+    pub fn take(&self) -> Vec<(u16, bool)> {
+        let mut result = Vec::new();
+        mirui::core::model::ModelHandle::update(self, |data| { result = data.take(); });
+        result
+    }
+}
+impl ActionsOwned {
+    pub fn take(&mut self) -> Vec<(u16, bool)> {
+        let mut result = Vec::new();
+        mirui::core::model::OwnedModel::update(self, |data| { result = data.take(); });
+        result
+    }
 }

@@ -26,13 +26,13 @@ pub const HISTORY_MAX: usize = 32;
 pub const MENU_WIDTH: i32 = 214;
 
 /// The height of the context menu panel, in logical pixels.
-pub const MENU_HEIGHT: i32 = 214;
+pub const MENU_HEIGHT: i32 = mirui_kit::style::menu_height(8, 2);
 
 /// The height of the background context menu panel, in logical pixels.
 ///
 /// The background menu has fewer rows than the file menu, so its panel is
 /// shorter.
-pub const MENU_BACKGROUND_HEIGHT: i32 = 136;
+pub const MENU_BACKGROUND_HEIGHT: i32 = mirui_kit::style::menu_height(5, 2);
 
 /// How many notifications are on screen at once.
 ///
@@ -1151,6 +1151,7 @@ impl FmState {
     /// Update content pointer ownership. A blocked press stays blocked until
     /// release: closing a popup must not transfer the held pointer to a file.
     /// Returns whether content may process this sample.
+    #[model(local)]
     pub fn update_content_pointer(&mut self, down: bool) -> bool {
         let overlay = self.has_input_overlay();
         if !down {
@@ -1618,5 +1619,20 @@ impl FmState {
         }
 
         entries
+    }
+}
+
+impl FmStateHandle {
+    pub fn update_content_pointer(&self, down: bool) -> bool {
+        let mut allowed = false;
+        mirui::core::model::ModelHandle::update(self, |data| { allowed = data.update_content_pointer(down); });
+        allowed
+    }
+}
+impl FmStateOwned {
+    pub fn update_content_pointer(&mut self, down: bool) -> bool {
+        let mut allowed = false;
+        mirui::core::model::OwnedModel::update(self, |data| { allowed = data.update_content_pointer(down); });
+        allowed
     }
 }

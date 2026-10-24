@@ -28,14 +28,22 @@ patterns get frozen into the OS app suite.
 | ![view options](artifacts/12-view-options.png) | ![drag and drop](artifacts/13-drag-and-drop.png) |
 | ![notifications](artifacts/14-notifications.png) | ![the running app](artifacts/desktop-window.png) |
 
+## Desktop system direction
+
+The [desktop parity and full-system audit](docs/ux-audit/DESKTOP_SYSTEM_PARITY.md)
+records the GPUI Kit/shadcn/Material Expressive/HIG baseline, the explicit
+sidebar-aligned window-control decision, and the inspected Smart Protocol
+boundary. It distinguishes implemented native source from missing host behavior.
+
 ## Actual component coverage
 
-**The shared kit is not OS-suite complete.** Studio currently lists eight grouped
-catalog entries, not eight complete independent controls. ButtonGroup, TreeView,
-DataTable, SplitPane, generic form families and other fundamental contracts are
-missing or app-local. See the source-backed [current component catalog and
-OS-suite readiness matrix](docs/COMPONENT_CATALOG.md); native Mirui primitives
-and showcase surfaces are not counted as completed kit components.
+**The shared kit is not OS-suite complete.** Studio now lists 19 grouped source
+entries, not 19 independently accepted controls. Shared grouping, tree, integer
+entry, checkbox, table and feedback work is partial; many other families and
+cross-cutting services remain unfinished. See the [source-backed catalog](docs/COMPONENT_CATALOG.md)
+and [researched full baseline, implementation evidence and acceptance gates](docs/COMPONENT_COMPLETION.md).
+Native Mirui primitives, tested policies and macro expansion are not substitutes
+for verified complete widgets.
 
 ## Naledzi Studio source
 

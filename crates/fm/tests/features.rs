@@ -159,25 +159,11 @@ fn menu_row_centre(
     app: &App<ScriptedSurface, mirui::render::SwRendererFactory>,
     row: usize,
 ) -> (i32, i32) {
-    let query = app.world.query::<mirui::ui::ComputedRect>();
-    let panel_entity = query
-        .iter()
-        .find(|(_, rect)| rect.0.w.to_int() == 214)
-        .map(|(entity, _)| entity)
-        .expect("the panel entity");
-    let children = app
-        .world
-        .get::<mirui::ui::Children>(panel_entity)
-        .expect("the panel children");
-    let mut rows: Vec<mirui::types::Rect> = children
-        .0
-        .iter()
-        .filter_map(|child| app.world.get::<mirui::ui::ComputedRect>(*child))
-        .map(|rect| rect.0)
-        .filter(|rect| rect.h == Fixed::from_int(24))
-        .collect();
-    rows.sort_by_key(|rect| rect.y);
-    let rect = rows[row];
+    let entity = app.world.query::<fm::ui::menu::MenuRow>().iter()
+        .find(|(_, marker)| marker.item as usize == row)
+        .map(|(entity, _)| entity).expect("menu action is mounted");
+    let rect = app.world.get::<mirui::ui::ComputedRect>(entity)
+        .expect("menu row is laid out").0;
     (
         (rect.x + rect.w / 2).to_int(),
         (rect.y + rect.h / 2).to_int(),
@@ -605,3 +591,27 @@ fn clicking_a_notification_dismisses_it() {
     assert_eq!(state.notice_title(0), "Second");
 }
 
+
+#[test]
+fn every_context_action_fits_inside_the_menu_panel() {
+    let (mut app, state)=app_with(Vec::new());
+    state.open_menu(state.entry_id(0),300,180);
+    app.render().expect("menu frame");
+    let panel=app.world.resource::<mirui::ui::IdMap>().unwrap().get("menu_panel").unwrap();
+    let bounds=app.world.get::<mirui::ui::ComputedRect>(panel).unwrap().0;
+    let mut count=0;
+    for (entity,_) in app.world.query::<fm::ui::menu::MenuRow>().iter() {
+        let mut ancestor=Some(entity);
+        let mut visible=false;
+        for _ in 0..64 {
+            let Some(node)=ancestor else {visible=true;break;};
+            if mirui::ui::branch::is_effectively_hidden(&app.world,node) {break;}
+            ancestor=app.world.get::<mirui::ui::Parent>(node).map(|parent|parent.0);
+        }
+        if !visible {continue;}
+        let rect=app.world.get::<mirui::ui::ComputedRect>(entity).unwrap().0;
+        assert!(rect.y>=bounds.y && rect.y+rect.h<=bounds.y+bounds.h,"context action is clipped");
+        count+=1;
+    }
+    assert_eq!(count,8);
+}

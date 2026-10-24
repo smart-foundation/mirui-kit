@@ -9,13 +9,22 @@ more components. It evaluates whether people can understand and complete tasks,
 whether the UI tells the truth, and whether developers can reuse correct behavior
 without copying file-manager internals.
 
+## Latest desktop-system review
+
+[Desktop parity, compact chrome and Smart Protocol](DESKTOP_SYSTEM_PARITY.md)
+extends the audit against GPUI Kit, shadcn, Material Expressive and Apple HIG.
+It directly answers the sidebar/window-controls question and records actual
+source defects and host-integration limits.
+
 ## Current component coverage verdict
 
 The kit is **not OS-suite ready**. The updated [actual component catalog](../COMPONENT_CATALOG.md)
 separates shared partial APIs, app-local implementations, native Mirui primitives
-and missing components. Eight catalog groups and 17 showcase surface IDs do not
-establish completeness. ButtonGroup and TreeView are unimplemented shared controls,
-not visual polish items. The visual-shell review does not supersede this verdict.
+and missing components. The [researched full baseline](../COMPONENT_COMPLETION.md)
+covers all standard families and service contracts. New group/tree/table/form
+source is partial, not release accepted. Neither the expanded catalog nor the
+17 showcase surface IDs establishes completeness. The visual-shell review does
+not supersede this verdict.
 
 ## Read these reports
 
@@ -181,3 +190,11 @@ into six task-based screens and a shared-component implementation contract. Its
 inspection, scope, feedback and lifecycle checks. The Files palette now has a
 semantic-icon/registry-row patch; F20 remains patched but unverified, not closed.
 The audit evidence inventory is the earlier snapshot, not a hash of this later patch.
+
+## Native component visual regressions
+
+[Component visual review](COMPONENT_VISUAL_REVIEW.md) records the first real
+isolated native inspection: 288 generated captures, 15 visually inspected
+representatives, exactly five screenshot-visible findings, and explicit limits.
+[Baseline policy](../visual-baselines/README.md) explains manual approval and
+pixel/geometry evidence; generated images do not approve themselves.

@@ -8,6 +8,12 @@ pub struct ComponentDoc {
 }
 pub const COMPONENTS: &[ComponentDoc] = &[
     ComponentDoc {
+        title: "Resizable split panes",
+        api: "mirui_kit::split::SplitPane + SplitState (horizontal/vertical)",
+        source: "crates/kit/src/split.rs",
+        route: Command::Workbench,
+    },
+    ComponentDoc {
         title: "Action / button / icon",
         api: "mirui_kit::widgets::action(actions, id, label, icon, overlay)",
         source: "crates/kit/src/widgets.rs::action",
@@ -53,6 +59,66 @@ pub const COMPONENTS: &[ComponentDoc] = &[
         title: "Semantic appearance / typography",
         api: "mirui_kit::{theme, font}; Cargo feature weights-all",
         source: "crates/kit/src/theme.rs; crates/kit/src/font.rs",
+        route: Command::Foundations,
+    },
+    ComponentDoc {
+        title: "Choice groups / radio-style selection",
+        api: "controls::{ChoiceGroup, choice_group}; GroupKind::{Actions, Single, Multiple}",
+        source: "crates/kit/src/controls.rs; behavior/group.rs — runtime acceptance pending",
+        route: Command::Controls,
+    },
+    ComponentDoc {
+        title: "TreeView / hierarchy",
+        api: "controls::{Hierarchy, tree_view}; behavior::tree::{TreeNode, TreeState}",
+        source: "crates/kit/src/controls.rs; behavior/tree.rs — non-virtualized; runtime acceptance pending",
+        route: Command::Collections,
+    },
+    ComponentDoc {
+        title: "Tri-state checkbox",
+        api: "controls::{Check, checkbox}; behavior::forms::CheckState",
+        source: "crates/kit/src/controls.rs — runtime acceptance pending",
+        route: Command::Controls,
+    },
+    ComponentDoc {
+        title: "Numeric text entry / spin controls",
+        api: "forms::{NumericEntry, number_field}",
+        source: "crates/kit/src/forms.rs — integer entry; runtime acceptance pending",
+        route: Command::Controls,
+    },
+    ComponentDoc {
+        title: "Labelled form field / validation feedback",
+        api: "forms::{Validation, form_field}",
+        source: "crates/kit/src/forms.rs — consumer validation; runtime acceptance pending",
+        route: Command::Controls,
+    },
+    ComponentDoc {
+        title: "Feedback / badge / alert / empty state / progress",
+        api: "feedback::{badge, alert, empty_state, progress, separator}",
+        source: "crates/kit/src/feedback.rs — runtime and announcement acceptance pending",
+        route: Command::Controls,
+    },
+    ComponentDoc {
+        title: "Data table / typed cell sorting",
+        api: "table::{DataTable, data_table}; behavior::table::{Column, TableRow, Cell}",
+        source: "crates/kit/src/table.rs — partial keyboard support; runtime acceptance pending",
+        route: Command::Collections,
+    },
+    ComponentDoc {
+        title: "Listbox / multiple option selection",
+        api: "choices::{ChoiceList, list_box}",
+        source: "crates/kit/src/choices.rs — pointer modifiers and virtualization pending",
+        route: Command::Controls,
+    },
+    ComponentDoc {
+        title: "Gregorian calendar / date ranges",
+        api: "calendar::{Calendar, calendar}; CalendarMode::{Single, Range}",
+        source: "crates/kit/src/calendar.rs — date-only, ISO formatting; picker popup and host semantics pending",
+        route: Command::Controls,
+    },
+    ComponentDoc {
+        title: "Native slotted layout / content sizing",
+        api: "layout::{Panel, AppFrame, ToolbarLayout}; sizing::ContentFit",
+        source: "crates/kit/src/layout.rs; crates/kit/src/sizing.rs — geometry, not command routing or window host services",
         route: Command::Foundations,
     },
 ];
