@@ -349,3 +349,65 @@ fn native_table_aligns_cells_and_updates_retained_rows_and_column_widths() {
     assert_eq!(rect(&app,number).x,previous+Fixed::from_int(60));
     assert_eq!(rect(&app,size).x,rect(&app,number).x);
 }
+
+#[compose]
+fn split_fixture(actions:model!(Actions),state:model!(mirui_kit::split::SplitState))->Entity {
+    use mirui_kit::split::SplitPane;
+    ui! {View (width:500,height:160) {
+        SplitPane (state:state.clone(),actions:actions.clone(),key:50,overlay:false) {
+            @first {View (id:"split_first_content",width:Dimension::percent(100),height:Dimension::percent(100))}
+            @second {View (id:"split_second_content",width:Dimension::percent(100),height:Dimension::percent(100))}
+        }
+    }}
+}
+#[test]
+fn native_split_panes_preserve_slots_bound_geometry_and_accept_keyboard_and_drag() {
+    use mirui_kit::split::{SplitState,Axis,SplitDivider,SplitDrag};
+    use mirui::surface::{InputEvent,PointerKind};
+    let mut app=support::app_with_size(600,400);
+    let actions=app.add_model(Actions::default()).finish();
+    let state=app.add_model(SplitState::new(Axis::Horizontal,200,100,120)).finish();
+    let root=app.spawn_root().id();app.compose(root,split_fixture(actions,state.clone()));
+    for _ in 0..4 {app.tick();app.render().unwrap();}
+    let first=app.world.find_by_id("split_first_content").unwrap();
+    let second=app.world.find_by_id("split_second_content").unwrap();
+    let divider=app.world.query::<SplitDivider>().iter().next().unwrap().0;
+    let rect=|app:&support::TestApp,node|app.world.get::<mirui::ui::ComputedRect>(node).unwrap().0;
+    assert_eq!(rect(&app,first).w,Fixed::from_int(200));
+    assert_eq!(rect(&app,first).w+rect(&app,divider).w+rect(&app,second).w,Fixed::from_int(500));
+    support::tap(&mut app,divider);
+    let key=|physical|InputEvent::Key{physical:Some(physical),code:0,pressed:true,modifiers:Some(Default::default()),repeat:Some(false)};
+    app.backend.events.push_back(key(PhysicalKey::ArrowRight));app.tick();app.render().unwrap();
+    assert_eq!(state.sizes().first,208);
+    let r=rect(&app,divider);let x=r.x+r.w/2;let y=r.y+r.h/2;
+    app.backend.events.push_back(InputEvent::PointerDown{kind:PointerKind::Mouse,id:0,x,y});app.tick();
+    for delta in [20,40,60] {
+        app.backend.events.push_back(InputEvent::PointerMove{kind:PointerKind::Mouse,id:0,x:x+Fixed::from_int(delta),y});app.tick();
+    }
+    app.backend.events.push_back(InputEvent::PointerUp{kind:PointerKind::Mouse,id:0,x:x+Fixed::from_int(60),y});app.tick();app.render().unwrap();
+    assert!(state.sizes().first>208);
+    assert!(!app.world.has::<SplitDrag>(divider));
+    app.backend.events.push_back(key(PhysicalKey::End));app.tick();app.render().unwrap();
+    assert_eq!(state.sizes().second,120);
+    assert_eq!(app.world.find_by_id("split_first_content"),Some(first));
+    state.set_disabled(true);app.tick();app.render().unwrap();
+    assert!(app.world.has::<InputBlocked>(divider));
+    let before=state.sizes().first;app.backend.events.push_back(key(PhysicalKey::Home));app.tick();
+    assert_eq!(state.sizes().first,before);
+}
+#[test]
+fn vertical_split_with_impossible_minima_stays_inside_the_viewport() {
+    use mirui_kit::split::{SplitState,Axis,SplitDivider};
+    let mut app=support::app_with_size(600,400);
+    let actions=app.add_model(Actions::default()).finish();
+    let state=app.add_model(SplitState::new(Axis::Vertical,200,200,300)).finish();
+    let root=app.spawn_root().id();app.compose(root,split_fixture(actions,state.clone()));
+    for _ in 0..4 {app.tick();app.render().unwrap();}
+    let height=|node|app.world.get::<mirui::ui::ComputedRect>(node).unwrap().0.h;
+    let first=app.world.find_by_id("split_first_content").unwrap();
+    let second=app.world.find_by_id("split_second_content").unwrap();
+    let divider=app.world.query::<SplitDivider>().iter().next().unwrap().0;
+    assert!(state.sizes().constrained);
+    assert_eq!(height(first)+height(divider)+height(second),Fixed::from_int(160));
+    assert!(height(first)>Fixed::ZERO && height(second)>Fixed::ZERO);
+}

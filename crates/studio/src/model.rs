@@ -63,6 +63,7 @@ use studio_core::{Error, Route, Session, Surface, Theme};
 
 #[model]
 pub struct Studio {
+    pub demo_split: model!(owned mirui_kit::split::SplitState),
     pub demo_calendar: model!(owned mirui_kit::calendar::Calendar),
     pub demo_options: model!(owned mirui_kit::choices::ChoiceList),
     pub demo_table: model!(owned DataTable),
@@ -106,6 +107,7 @@ impl Default for Studio {
         Self {
             actions: Actions::default().into(),
             demo_choices: example_choices().into(),
+            demo_split: mirui_kit::split::SplitState::new(mirui_kit::split::Axis::Horizontal,240,120,160).into(),
             demo_calendar: {
                 use mirui_kit::behavior::{forms::Date,calendar::{CalendarMode,WeekStart}};
                 mirui_kit::calendar::Calendar::new(Date::new(2026,10,24).unwrap(),Date::new(2026,1,1).unwrap(),Date::new(2027,12,31).unwrap(),CalendarMode::Range,WeekStart::Monday).unwrap().into()

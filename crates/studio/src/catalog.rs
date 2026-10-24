@@ -8,6 +8,12 @@ pub struct ComponentDoc {
 }
 pub const COMPONENTS: &[ComponentDoc] = &[
     ComponentDoc {
+        title: "Resizable split panes",
+        api: "mirui_kit::split::SplitPane + SplitState (horizontal/vertical)",
+        source: "crates/kit/src/split.rs",
+        route: Command::Workbench,
+    },
+    ComponentDoc {
         title: "Action / button / icon",
         api: "mirui_kit::widgets::action(actions, id, label, icon, overlay)",
         source: "crates/kit/src/widgets.rs::action",

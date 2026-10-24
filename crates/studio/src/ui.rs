@@ -11,6 +11,7 @@ use mirui::ui::{
 };
 use mirui_kit::{
     InputGate, font, icons,
+    split::SplitPane,
     scrollbar::ScrollBar,
     theme,
     widgets::{action, field, number, text_size, toggle},
@@ -406,6 +407,13 @@ fn workbench(state: model!(Studio)) -> Entity {
                 font_size: ${ text_size(state.actions().text_scale(), font::CAPTION_SIZE) },
                 text_color: ColorToken::OnSurfaceVariant
             )
+            heading(state,"Resizable workspace","Drag the divider or focus it and use Left/Right. Shift steps faster; Home/End respect panel minima.")
+            View (width:Dimension::percent(100),height:180) {
+                SplitPane (state:state.demo_split(),actions:state.actions(),key:350,overlay:false) {
+                    @first {View (width:Dimension::percent(100),height:Dimension::percent(100),padding:Padding::all(12),bg_color:ColorToken::SurfaceVariant) {Text ("Navigation pane",font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)}}
+                    @second {View (width:Dimension::percent(100),height:Dimension::percent(100),padding:Padding::all(12),bg_color:ColorToken::SurfaceVariant) {Text ("Application-owned content",font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurface)}}
+                }
+            }
         }
     }
 }

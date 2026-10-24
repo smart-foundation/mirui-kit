@@ -42,6 +42,7 @@ fn arena_sources_expand_against_real_051_macros() {
         "crates/kit/src/calendar.rs",
         "crates/kit/src/layout.rs",
         "crates/kit/src/sizing.rs",
+        "crates/kit/src/split.rs",
         "crates/fm/src/ui/menu.rs",
         "crates/kit/tests/native_contracts.rs",
         "crates/kit/src/feedback.rs",
