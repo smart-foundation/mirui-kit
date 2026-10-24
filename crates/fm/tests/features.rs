@@ -601,7 +601,14 @@ fn every_context_action_fits_inside_the_menu_panel() {
     let bounds=app.world.get::<mirui::ui::ComputedRect>(panel).unwrap().0;
     let mut count=0;
     for (entity,_) in app.world.query::<fm::ui::menu::MenuRow>().iter() {
-        if mirui::ui::branch::is_hidden_in_tree(&app.world,entity) {continue;}
+        let mut ancestor=Some(entity);
+        let mut visible=false;
+        for _ in 0..64 {
+            let Some(node)=ancestor else {visible=true;break;};
+            if app.world.has::<mirui::ui::Hidden>(node) {break;}
+            ancestor=app.world.get::<mirui::ui::Parent>(node).map(|parent|parent.0);
+        }
+        if !visible {continue;}
         let rect=app.world.get::<mirui::ui::ComputedRect>(entity).unwrap().0;
         assert!(rect.y>=bounds.y && rect.y+rect.h<=bounds.y+bounds.h,"context action is clipped");
         count+=1;

@@ -26,16 +26,22 @@ jobs:
       - name: Full workspace tests, including existing Files regressions
         run: python3 tools/ci-check.py cargo test --locked --workspace --no-fail-fast
       - name: no_std Studio on RISC-V
+        if: ${{ !cancelled() }}
         run: python3 tools/ci-check.py cargo check --locked -p studio --no-default-features --target riscv64gc-unknown-none-elf
       - name: SDL host compilation
+        if: ${{ !cancelled() }}
         run: python3 tools/ci-check.py cargo check --locked -p studio-host --features desktop --bin studio-desktop
       - name: Shared selection policy and no_std check
+        if: ${{ !cancelled() }}
         run: sh tools/test-editing-policy.sh
       - name: Pinned upstream macro parsing and lowering
+        if: ${{ !cancelled() }}
         run: python3 tools/check-mirui-syntax.py
       - name: Fresh route and overlay captures
+        if: ${{ !cancelled() }}
         run: python3 tools/ci-check.py cargo run --locked -p studio-host --bin studio-snapshot -- --out artifacts/studio
       - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
         with:
           name: studio-review-captures
           path: artifacts/studio
