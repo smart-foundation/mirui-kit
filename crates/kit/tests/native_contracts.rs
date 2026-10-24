@@ -290,7 +290,7 @@ fn changing_content(actions:model!(Actions),toggle:model!(mirui_kit::Toggle))->E
     use mirui::ui::widgets::{Text,ParagraphStyle};
     ui! {Column (id:"changing_fit",width:180,row_gap:8) [mirui_kit::sizing::ContentFit] {
         Text (id:"scaled_body","A readable paragraph wraps at its container and grows with text scale.",width:Dimension::percent(100),paragraph:ParagraphStyle::default(),font:mirui_kit::font::MEDIUM,font_size:${mirui_kit::widgets::text_size(actions.text_scale(),14)})
-        View (id:"conditional_extent",visible:${toggle.value()},width:100,height:40)
+        View (id:"conditional_extent",visible:${toggle.checked()},width:100,height:40)
         View (id:"fit_tail",width:100,height:20)
     }}
 }
