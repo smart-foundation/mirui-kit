@@ -36,3 +36,22 @@ review, nested-overlay/drag/scrollbar ownership, semantic accessibility and
 suite-scale performance remain separate completion gates. The sidebar-aligned
 caption-cap recommendation still stands; these component images do not validate
 host window behavior.
+
+## Follow-up verification
+
+Implementation commit `97dca89` passed
+[CI 40098636313](https://github.com/smart-foundation/mirui-kit/actions/runs/40098636313):
+workspace/native tests, both new geometry contracts, no_std RISC-V, SDL,
+upstream macro checks, route/overlay captures and all eight component shards.
+All 288 isolated captures were regenerated. The four corrected representative
+PNGs were recovered and visually inspected again: numeric field/steps now share
+their bottom edge, list labels are left-aligned, the switch outline follows its
+capsule, and the short badge hugs its text. These four fixes are verified;
+compact slider paint remains open.
+
+The badge contract caught a failed intermediate content-width attempt that
+collapsed an unmeasured wrapper. The final composition puts native `Text::label`
+on the badge surface so Mirui can measure its intrinsic dimensions—no guessed
+text-width formula or alternative renderer. Both nonzero bounds and non-banner
+width are now asserted at 100/150% text scale. No unreviewed matrix states were
+promoted to approved baselines.
