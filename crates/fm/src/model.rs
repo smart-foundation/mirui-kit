@@ -1151,6 +1151,7 @@ impl FmState {
     /// Update content pointer ownership. A blocked press stays blocked until
     /// release: closing a popup must not transfer the held pointer to a file.
     /// Returns whether content may process this sample.
+    #[model(local)]
     pub fn update_content_pointer(&mut self, down: bool) -> bool {
         let overlay = self.has_input_overlay();
         if !down {
@@ -1618,5 +1619,20 @@ impl FmState {
         }
 
         entries
+    }
+}
+
+impl FmStateHandle {
+    pub fn update_content_pointer(&self, down: bool) -> bool {
+        let mut allowed = false;
+        mirui::core::model::ModelHandle::update(self, |data| { allowed = data.update_content_pointer(down); });
+        allowed
+    }
+}
+impl FmStateOwned {
+    pub fn update_content_pointer(&mut self, down: bool) -> bool {
+        let mut allowed = false;
+        mirui::core::model::OwnedModel::update(self, |data| { allowed = data.update_content_pointer(down); });
+        allowed
     }
 }

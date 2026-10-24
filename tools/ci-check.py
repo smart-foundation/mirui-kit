@@ -6,6 +6,7 @@ runner's separate log-download host cannot be reached. Never mark failures green
 """
 import collections
 import os
+import re
 import subprocess
 import sys
 
@@ -19,7 +20,13 @@ with subprocess.Popen(sys.argv[1:], stdout=subprocess.PIPE,
         lines.append(line)
     status = child.wait()
 if status:
-    text = "".join(lines)
+    full = "".join(lines)
+    diagnostics = re.split(r"(?=^error(?:\[|:))", full, flags=re.M)
+    text = "\n".join("\n".join(block.splitlines()[:18]) for block in diagnostics if block.startswith("error"))
+    if not text:
+        text = full[-18000:]
+    if len(text) > 18000:
+        text = text[:18000]
     if len(text) > 80000:
         text = text[:65000] + "\n... middle diagnostics omitted ...\n" + text[-15000:]
     for i in range(0, len(text), 2000):

@@ -17,6 +17,7 @@ fn tab(
     focus: res!(mut FocusState),
     targets: query!(Entity, FocusItem),
     hidden: query!(Hidden),
+    blocked: query!(crate::availability::InputBlocked),
     parents: query!(Parent),
     commands: commands!(),
 ) -> bool {
@@ -29,15 +30,16 @@ fn tab(
             continue;
         }
         let mut node = entity;
-        let mut visible = true;
+        let mut visible = false;
         for _ in 0..64 {
-            if hidden.get(node).is_some() {
+            if hidden.get(node).is_some() || blocked.get(node).is_some() {
                 visible = false;
                 break;
             }
             if let Some(parent) = parents.get(node) {
                 node = parent.0;
             } else {
+                visible = true;
                 break;
             }
         }
@@ -71,6 +73,7 @@ fn focus_layer(
     focus: res!(mut FocusState),
     targets: query!(Entity, FocusItem),
     hidden: query!(Hidden),
+    blocked: query!(crate::availability::InputBlocked),
     parents: query!(Parent),
     commands: commands!(),
 ) {
@@ -86,15 +89,16 @@ fn focus_layer(
             continue;
         }
         let mut node = entity;
-        let mut visible = true;
+        let mut visible = false;
         for _ in 0..64 {
-            if hidden.get(node).is_some() {
+            if hidden.get(node).is_some() || blocked.get(node).is_some() {
                 visible = false;
                 break;
             }
             if let Some(parent) = parents.get(node) {
                 node = parent.0;
             } else {
+                visible = true;
                 break;
             }
         }
