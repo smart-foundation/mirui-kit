@@ -2,7 +2,7 @@
 //! they must not nest a popup under an input-blocked background subtree.
 use alloc::{string::String,vec::Vec};
 use mirui::prelude::*;
-use mirui::ui::widgets::{Button,Text};
+use mirui::ui::widgets::{Button,ButtonSize,Text};
 use crate::{Actions,FocusItem,font,style,theme,widgets::{FocusRing,text_size}};
 use crate::behavior::{choices::{Choices,OptionItem},collection::{ItemId,Modifiers,SelectionMode},group::Move};
 #[model]

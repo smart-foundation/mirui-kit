@@ -51,3 +51,20 @@ Do not compare screenshots rendered by different fonts/toolchains/viewport
 scales without explaining the environment change. Do not use wide tolerances
 as a substitute for deterministic rendering. Pixel comparison catches changes;
 human review establishes whether a change is an improvement or a regression.
+
+## Restricted-network review
+
+A successful `[capture-review]` run exports resting representatives as lossless
+Checks annotations in addition to uploading all 288 matrix PNGs as artifacts.
+Recover and view the representative evidence without an artifact-host redirect:
+
+```sh
+python3 tools/recover-component-evidence.py RUN_NUMBER
+python3 tools/component-review-gallery.py artifacts/studio/component-review
+```
+
+`evidence.json` records the source commit, run/check IDs, exact PNG SHA-256 and
+viewport. `review.html` embeds those unchanged PNGs with provenance and an actual
+pixel-size toggle. The recovery command rejects failed runs, incomplete chunks,
+corrupt PNGs and duplicate chunks. This representative export is not a transport
+for every state; the complete matrix remains in the run artifacts.
