@@ -40,7 +40,7 @@ pub fn toolbar(fm:model!(FmState))->Entity {
     // One mounted search document and view switcher: native retained branches
     // must never duplicate their IDs or editing state to achieve responsive layout.
     ui! {Row (id:"files_toolbar",grow:1.0,shrink:1.0,min_width:0,height:Dimension::percent(100),wrap:FlexWrap::Wrap,bg_color:theme::TOOLBAR,align:AlignItems::Center) {
-        Row (width:${{let _=fm.viewport();if fm.compact_toolbar() {Dimension::percent(100)} else {Dimension::px(0)}}},grow:${{let _=fm.viewport();if fm.compact_toolbar() {0.0} else {1.0}}},min_width:160,height:56,align:AlignItems::Center,column_gap:8,padding:pad_h(12)) {
+        Row (width:${{let _=fm.viewport();if fm.compact_toolbar() {Dimension::percent(100)} else {Dimension::px(0)}}},grow:1.0,min_width:160,height:56,align:AlignItems::Center,column_gap:8,padding:pad_h(12)) {
             back_button (fm)
             forward_button (fm)
             Column (width:0,grow:1.0,shrink:1.0,min_width:0,height:34,row_gap:0,justify:JustifyContent::Center) {
@@ -226,7 +226,7 @@ fn search_field(fm: model!(FmState)) -> Entity {
         Row (
             id: "toolbar_search_frame",
             width: ${{let _=fm.viewport();if fm.compact_toolbar() {0} else {224}}},
-            grow: ${{let _=fm.viewport();if fm.compact_toolbar() {1.0} else {0.0}}},
+            grow: 1.0,
             shrink: 1.0,
             min_width: 0,
             height: 36,
