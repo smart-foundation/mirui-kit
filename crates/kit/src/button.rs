@@ -54,18 +54,26 @@ pub fn button(actions:model!(Actions),state:model!(ButtonState),key:u16,spec:But
     assert!(!spec.icon_only || spec.icon.is_some(),"icon buttons require an icon");
     ui! {
         Button (
+            font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},
+            text_color:spec.intent.foreground(),
             width:if spec.full_width {Dimension::percent(100)} else {Dimension::Auto},
             height:${text_size(actions.text_scale(),spec.density.control_height() as u16)},
-            min_width:spec.density.control_height(),padding:Padding::all(spec.density.inset()),
+            min_width:spec.density.control_height(),
+            padding:Padding{left:Dimension::px(if spec.icon.is_some() && !spec.icon_only {spec.density.inset()+18+style::GAP} else {spec.density.inset()}),right:Dimension::px(spec.density.inset()),top:Dimension::px(4),bottom:Dimension::px(4)},
             border_width:style::FOCUS_WIDTH,border_color:${if state.checked() {theme::FOCUS} else {ColorToken::Outline}},
             border_radius:style::RADIUS,normal_color:spec.intent.background(),pressed_color:theme::PRESSED
-        ) [Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()},ButtonAvailability{state:state.clone()},ControlName{label:spec.label.clone()}] {
-            Row (column_gap:style::GAP,align:AlignItems::Center) {
-                if spec.icon.is_some() {
-                    Icon (path:spec.icon.expect("icon exists").clone(),width:18,height:18,color:spec.intent.foreground())
-                }
-                if !spec.icon_only {
-                    Text (text:spec.label.clone(),font:font::MEDIUM,font_size:${text_size(actions.text_scale(),font::BODY_SIZE)},text_color:spec.intent.foreground())
+        ) [Text::label(if spec.icon_only {String::new()} else {spec.label.clone()}),Focusable,FocusItem{overlay,order:key},FocusRing{actions:actions.clone()},ButtonAvailability{state:state.clone()},ControlName{label:spec.label.clone()}] {
+            if spec.icon.is_some() {
+                if spec.icon_only {
+                    Icon (path:spec.icon.expect("icon exists").clone(),position:Position::Absolute,
+                        left:@width {(width-Fixed::from_int(18))/2},
+                        top:${(text_size(actions.text_scale(),spec.density.control_height() as u16) as i32-18)/2},
+                        width:18,height:18,color:spec.intent.foreground())
+                } else {
+                    Icon (path:spec.icon.expect("icon exists").clone(),position:Position::Absolute,
+                        left:spec.density.inset(),
+                        top:${(text_size(actions.text_scale(),spec.density.control_height() as u16) as i32-18)/2},
+                        width:18,height:18,color:spec.intent.foreground())
                 }
             }
         } on Tap {
