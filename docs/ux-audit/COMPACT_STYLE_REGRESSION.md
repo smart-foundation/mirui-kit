@@ -61,3 +61,32 @@ navigation wraps a button in an oversized blue backing, full-width commands
 flatten action hierarchy, preview panes waste space, and Collections/Surfaces
 still prioritize inventories over composed tasks. No visual baseline is approved
 and this run does not establish core framework parity or suite readiness.
+
+
+## Showcase refinement — verified source `08b4df3`
+
+[Native CI 40112022393](https://github.com/smart-foundation/mirui-kit/actions/runs/40112022393)
+passed all jobs. All six fresh route captures were recovered and visually
+reviewed. The ignored review index is
+`artifacts/studio/showcase-refinement/review.html`.
+
+- Shared `action_with_intent` preserves native input/dispatch/focus behavior
+  while supporting quiet navigation. Studio no longer places a 32px button
+  inside a 44px padded selection backing; selection occupies one compact row.
+- Controls uses bounded task actions in a native wrapping row and a fitted
+  preview card; Foundations' typography preview also fits its content.
+- Navigation width and control height follow text scale. Regression tests
+  exercise 100% and 150% through the real apply/keep appearance flow, not an
+  action-scale value that session publication subsequently resets.
+- Shared ContentFit now counts native wrapping line positions. A native test
+  verifies the second line, clearance to following content, and 20 idle frames
+  without geometry drift. Studio also checks action containment at both scales.
+
+Visual review confirms the compact selection and task grouping changes, not
+full acceptance. The native slider still couples painted thickness/thumb size
+to its hit rectangle; shrinking that rectangle would reduce the target. It was
+not changed. Collections and Surfaces remain specimen-first, Workbench remains
+a single-line session-note example with a sparse split-pane specimen, and other
+routes retain overly wide command bars. Core parity, virtualization, complete
+showcase composition and Smart Protocol integration remain outstanding. No new
+visual baseline was approved.

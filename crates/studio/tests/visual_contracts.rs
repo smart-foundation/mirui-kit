@@ -89,3 +89,22 @@ fn preview_card_hugs_content_and_task_actions_do_not_fill_the_form() {
         }
     }
 }
+
+#[test]
+fn collections_places_browsing_before_independent_reference_specimens() {
+    use studio::commands::Command;
+    for scale in [100,150] {
+        let mut app=App::headless(1400,900);app.with_default_widgets().with_default_systems();
+        let state=studio::install(&mut app);apply_text_scale(&state,scale);
+        state.execute(Command::Collections as u16);
+        for _ in 0..8 {app.tick();app.render().unwrap();}
+        let reference=app.world.query::<studio::ui::CollectionReference>().iter().next().expect("reference section").0;
+        let reference=app.world.get::<mirui::ui::ComputedRect>(reference).unwrap().0;
+        for key in [110,Command::Up as u16,Command::NewFolder as u16,Command::Options as u16] {
+            let control=app.world.query::<mirui_kit::FocusItem>().iter().find(|(_,item)|item.order==key).expect("browsing control").0;
+            let control=app.world.get::<mirui::ui::ComputedRect>(control).unwrap().0;
+            assert!(control.h>Fixed::ZERO && control.w>Fixed::ZERO);
+            assert!(control.y+control.h<=reference.y,"component references displaced the primary browsing workflow");
+        }
+    }
+}

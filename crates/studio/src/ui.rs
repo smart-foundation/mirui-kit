@@ -47,6 +47,8 @@ pub struct NavigationItem;
 pub struct PreviewCard;
 #[component]
 pub struct TaskActions;
+#[component]
+pub struct CollectionReference;
 
 /// Bounded task actions avoid turning every command into a full-width bar.
 /// The label and target grow with text scale; containing rows wrap natively.
@@ -291,21 +293,11 @@ fn collections(state: model!(Studio)) -> Entity {
                 font_size: ${ text_size(state.actions().text_scale(), font::SECTION_SIZE) },
                 text_color: ColorToken::OnSurface
             )
-            heading (state, "Hierarchy specimen", "Independent in-memory tree. Right/Left expand and collapse; Up/Down move focus; Space toggles selection; Ctrl+A selects visible available nodes.")
-            tree_view (state.actions(),state.demo_hierarchy(),310,false)
-            heading (state, "Data table specimen", "Read-only text and integer cells with stable row selection. Click a column heading to cycle sorting; Up/Down move focus and Space toggles selection. Header keyboard navigation and virtualization remain pending.")
-            data_table (state.actions(),state.demo_table(),320,false)
             field (state.actions(), state.query(), 110, "Filter this folder", false, 0)
-            Row (width: Dimension::percent(100), column_gap: 8) {
-                View (grow: 1.0) {
-                    command (state, (Command::Up), false)
-                }
-                View (grow: 1.0) {
-                    command (state, (Command::NewFolder), false)
-                }
-                View (grow: 1.0) {
-                    command (state, (Command::Options), false)
-                }
+            Row (width:Dimension::percent(100),wrap:FlexWrap::Wrap,column_gap:8,row_gap:8) {
+                compact_command(state,(Command::Up),160)
+                compact_command(state,(Command::NewFolder),144)
+                compact_command(state,(Command::Options),208)
             }
             Column (width: Dimension::percent(100), row_gap: 6) {
                 walk ${
@@ -345,6 +337,12 @@ fn collections(state: model!(Studio)) -> Entity {
                         command (state, (Command::Inspector), false)
                     }
                 }
+            }
+            Column (width:Dimension::percent(100),row_gap:16) [CollectionReference] {
+            heading (state, "Hierarchy specimen", "Independent in-memory tree. Right/Left expand and collapse; Up/Down move focus; Space toggles selection; Ctrl+A selects visible available nodes.")
+            tree_view (state.actions(),state.demo_hierarchy(),310,false)
+            heading (state, "Data table specimen", "Read-only text and integer cells with stable row selection. Click a column heading to cycle sorting; Up/Down move focus and Space toggles selection. Header keyboard navigation and virtualization remain pending.")
+            data_table (state.actions(),state.demo_table(),320,false)
             }
         }
     }
@@ -451,9 +449,15 @@ fn surfaces(state: model!(Studio)) -> Entity {
                 "Surfaces / Safe changes",
                 "Review an explicit sample transaction. Backdrops consume dismissal; background input is disabled."
             )
-            command (state, (Command::Review), false)
+            Text ("Try a real flow",font:font::SEMIBOLD,font_size:${text_size(state.actions().text_scale(),font::SECTION_SIZE)},text_color:ColorToken::OnSurface)
+            Row (width:Dimension::percent(100),wrap:FlexWrap::Wrap,column_gap:8,row_gap:8) {
+                compact_command(state,(Command::Review),220)
+                compact_command(state,(Command::Palette),196)
+                compact_command(state,(Command::Notices),176)
+            }
+            Text ("Review a change before applying it, find an action with Ctrl P, or inspect session feedback. Selection and unsaved-change dialogs open through Collections and Workbench.",width:Dimension::percent(100),font:font::MEDIUM,font_size:${text_size(state.actions().text_scale(),font::BODY_SIZE)},text_color:ColorToken::OnSurfaceVariant)
             Text (
-                "SURFACE CATALOG",
+                "SURFACE REFERENCE",
                 font: font::SEMIBOLD,
                 font_size: ${ text_size(state.actions().text_scale(), font::SECTION_SIZE) },
                 text_color: ColorToken::OnSurface
